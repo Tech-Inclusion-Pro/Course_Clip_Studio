@@ -10,6 +10,7 @@ import { CourseTreePanel } from '@/components/editor/CourseTreePanel'
 import { EditorCanvas } from '@/components/editor/EditorCanvas'
 import { PropertiesPanel } from '@/components/editor/PropertiesPanel'
 import { ThemeEditor } from '@/components/editor/ThemeEditor'
+import { AIPanel } from '@/components/editor/AIPanel'
 
 export function EditorView(): JSX.Element {
   const navigate = useNavigate()
@@ -17,7 +18,9 @@ export function EditorView(): JSX.Element {
   const leftPanelOpen = useEditorStore((s) => s.leftPanelOpen)
   const rightPanelOpen = useEditorStore((s) => s.rightPanelOpen)
   const themeEditorOpen = useEditorStore((s) => s.themeEditorOpen)
+  const aiPanelOpen = useEditorStore((s) => s.aiPanelOpen)
   const toggleThemeEditor = useEditorStore((s) => s.toggleThemeEditor)
+  const toggleAIPanel = useEditorStore((s) => s.toggleAIPanel)
   const pushSnapshot = useHistoryStore((s) => s.pushSnapshot)
   const shouldAutoSnapshot = useHistoryStore((s) => s.shouldAutoSnapshot)
   const markAutoSnapshot = useHistoryStore((s) => s.markAutoSnapshot)
@@ -99,6 +102,16 @@ export function EditorView(): JSX.Element {
             aria-label="Theme editor"
           >
             <ThemeEditor onClose={toggleThemeEditor} />
+          </aside>
+        )}
+
+        {/* AI Assistant Panel */}
+        {aiPanelOpen && (
+          <aside
+            className="w-80 shrink-0 border-l border-[var(--border-default)] bg-[var(--bg-surface)] overflow-y-auto"
+            aria-label="AI assistant"
+          >
+            <AIPanel onClose={toggleAIPanel} />
           </aside>
         )}
       </div>
