@@ -14,7 +14,8 @@ import {
   Monitor,
   Tablet,
   Smartphone,
-  SplitSquareHorizontal
+  SplitSquareHorizontal,
+  Palette
 } from 'lucide-react'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useEditorStore, type PreviewDevice } from '@/stores/useEditorStore'
@@ -45,11 +46,13 @@ export function EditorToolbar(): JSX.Element {
   const leftPanelOpen = useEditorStore((s) => s.leftPanelOpen)
   const rightPanelOpen = useEditorStore((s) => s.rightPanelOpen)
   const aiPanelOpen = useEditorStore((s) => s.aiPanelOpen)
+  const themeEditorOpen = useEditorStore((s) => s.themeEditorOpen)
   const splitPreviewOpen = useEditorStore((s) => s.splitPreviewOpen)
   const previewDevice = useEditorStore((s) => s.previewDevice)
   const toggleLeftPanel = useEditorStore((s) => s.toggleLeftPanel)
   const toggleRightPanel = useEditorStore((s) => s.toggleRightPanel)
   const toggleAIPanel = useEditorStore((s) => s.toggleAIPanel)
+  const toggleThemeEditor = useEditorStore((s) => s.toggleThemeEditor)
   const toggleSplitPreview = useEditorStore((s) => s.toggleSplitPreview)
   const setPreviewDevice = useEditorStore((s) => s.setPreviewDevice)
 
@@ -184,6 +187,12 @@ export function EditorToolbar(): JSX.Element {
 
       {/* Right: Panel toggles */}
       <div className="flex items-center gap-1">
+        <ToolbarButton
+          icon={Palette}
+          label="Theme Editor"
+          active={themeEditorOpen}
+          onClick={toggleThemeEditor}
+        />
         <ToolbarButton
           icon={Sparkles}
           label="AI Assistant"

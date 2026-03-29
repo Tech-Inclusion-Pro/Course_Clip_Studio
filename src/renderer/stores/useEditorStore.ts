@@ -25,6 +25,7 @@ interface EditorState {
   leftPanelOpen: boolean
   rightPanelOpen: boolean
   aiPanelOpen: boolean
+  themeEditorOpen: boolean
 
   // Dirty state
   isDirty: boolean
@@ -58,6 +59,7 @@ interface EditorState {
   toggleLeftPanel: () => void
   toggleRightPanel: () => void
   toggleAIPanel: () => void
+  toggleThemeEditor: () => void
 
   // Dirty
   markDirty: () => void
@@ -85,6 +87,7 @@ const initialState = {
   leftPanelOpen: true,
   rightPanelOpen: true,
   aiPanelOpen: false,
+  themeEditorOpen: false,
   isDirty: false,
   clipboardBlockIds: [] as string[],
   clipboardOperation: null as 'copy' | 'cut' | null
@@ -134,6 +137,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   toggleLeftPanel: () => set((s) => ({ leftPanelOpen: !s.leftPanelOpen })),
   toggleRightPanel: () => set((s) => ({ rightPanelOpen: !s.rightPanelOpen })),
   toggleAIPanel: () => set((s) => ({ aiPanelOpen: !s.aiPanelOpen })),
+  toggleThemeEditor: () => set((s) => ({ themeEditorOpen: !s.themeEditorOpen })),
 
   // Dirty
   markDirty: () => set({ isDirty: true }),

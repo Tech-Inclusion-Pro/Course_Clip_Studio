@@ -9,12 +9,15 @@ import { EditorToolbar } from '@/components/editor/EditorToolbar'
 import { CourseTreePanel } from '@/components/editor/CourseTreePanel'
 import { EditorCanvas } from '@/components/editor/EditorCanvas'
 import { PropertiesPanel } from '@/components/editor/PropertiesPanel'
+import { ThemeEditor } from '@/components/editor/ThemeEditor'
 
 export function EditorView(): JSX.Element {
   const navigate = useNavigate()
   const course = useCourseStore((s) => s.courses.find((c) => c.id === s.activeCourseId))
   const leftPanelOpen = useEditorStore((s) => s.leftPanelOpen)
   const rightPanelOpen = useEditorStore((s) => s.rightPanelOpen)
+  const themeEditorOpen = useEditorStore((s) => s.themeEditorOpen)
+  const toggleThemeEditor = useEditorStore((s) => s.toggleThemeEditor)
   const pushSnapshot = useHistoryStore((s) => s.pushSnapshot)
   const shouldAutoSnapshot = useHistoryStore((s) => s.shouldAutoSnapshot)
   const markAutoSnapshot = useHistoryStore((s) => s.markAutoSnapshot)
@@ -86,6 +89,16 @@ export function EditorView(): JSX.Element {
             aria-label="Block properties"
           >
             <PropertiesPanel />
+          </aside>
+        )}
+
+        {/* Theme Editor Panel */}
+        {themeEditorOpen && (
+          <aside
+            className="w-80 shrink-0 border-l border-[var(--border-default)] bg-[var(--bg-surface)] overflow-y-auto"
+            aria-label="Theme editor"
+          >
+            <ThemeEditor onClose={toggleThemeEditor} />
           </aside>
         )}
       </div>
