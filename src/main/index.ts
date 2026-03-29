@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow } from 'electron'
+import { app, shell, BrowserWindow, session } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { registerIpcHandlers } from './ipc-handlers'
@@ -14,7 +14,7 @@ function createWindow(): void {
     trafficLightPosition: { x: 16, y: 16 },
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: true,
+      sandbox: false,
       contextIsolation: true
     }
   })
@@ -36,7 +36,21 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
-  electronApp.setAppUserModelId('com.lumina-udl')
+  electronApp.setAppUserModelId('com.course-clip-studio')
+
+  // Production CSP
+  if (!is.dev) {
+    session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          'Content-Security-Policy': [
+            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:"
+          ]
+        }
+      })
+    })
+  }
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)

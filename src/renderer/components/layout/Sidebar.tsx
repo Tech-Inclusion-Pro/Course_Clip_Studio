@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { useAppStore } from '@/stores/useAppStore'
 import { NAV_ITEMS } from '@/lib/constants'
+import logoSrc from '@/assets/logo.png'
 
 const iconMap: Record<string, typeof LayoutDashboard> = {
   LayoutDashboard,
@@ -34,8 +35,19 @@ export function Sidebar(): JSX.Element {
       style={{ width: collapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)' }}
       aria-label="Main navigation"
     >
-      {/* Spacer for macOS traffic lights */}
-      <div className="h-[var(--topbar-height)] shrink-0" />
+      {/* Logo + brand */}
+      <div className="flex items-center gap-2.5 px-3 pt-10 pb-3 shrink-0">
+        <img
+          src={logoSrc}
+          alt="Course Clip Studio logo"
+          className="w-8 h-8 rounded-[var(--radius-md)] shrink-0"
+        />
+        {!collapsed && (
+          <span className="text-sm font-[var(--font-weight-bold)] text-[var(--text-primary)] truncate">
+            Course Clip Studio
+          </span>
+        )}
+      </div>
 
       <nav className="flex flex-col gap-1 p-2 flex-1">
         {NAV_ITEMS.map((item) => {

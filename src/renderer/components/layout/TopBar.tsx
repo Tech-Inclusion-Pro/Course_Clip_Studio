@@ -5,7 +5,7 @@ import { NAV_ITEMS } from '@/lib/constants'
 export function TopBar(): JSX.Element {
   const location = useLocation()
   const currentItem = NAV_ITEMS.find((item) => item.path === location.pathname)
-  const title = currentItem?.label ?? 'LuminaUDL'
+  const title = currentItem?.label ?? 'Course Clip Studio'
 
   return (
     <header

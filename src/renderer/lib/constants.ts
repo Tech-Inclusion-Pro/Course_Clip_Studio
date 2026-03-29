@@ -1,4 +1,4 @@
-export const APP_NAME = 'LuminaUDL'
+export const APP_NAME = 'Course Clip Studio'
 export const APP_VERSION = '0.1.0'
 
 export const ROUTES = {
