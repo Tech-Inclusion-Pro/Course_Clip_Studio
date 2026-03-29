@@ -11,6 +11,7 @@ import { EditorCanvas } from '@/components/editor/EditorCanvas'
 import { PropertiesPanel } from '@/components/editor/PropertiesPanel'
 import { ThemeEditor } from '@/components/editor/ThemeEditor'
 import { AIPanel } from '@/components/editor/AIPanel'
+import { AccessibilityAuditPanel } from '@/components/editor/AccessibilityAuditPanel'
 
 export function EditorView(): JSX.Element {
   const navigate = useNavigate()
@@ -19,8 +20,10 @@ export function EditorView(): JSX.Element {
   const rightPanelOpen = useEditorStore((s) => s.rightPanelOpen)
   const themeEditorOpen = useEditorStore((s) => s.themeEditorOpen)
   const aiPanelOpen = useEditorStore((s) => s.aiPanelOpen)
+  const auditPanelOpen = useEditorStore((s) => s.auditPanelOpen)
   const toggleThemeEditor = useEditorStore((s) => s.toggleThemeEditor)
   const toggleAIPanel = useEditorStore((s) => s.toggleAIPanel)
+  const toggleAuditPanel = useEditorStore((s) => s.toggleAuditPanel)
   const pushSnapshot = useHistoryStore((s) => s.pushSnapshot)
   const shouldAutoSnapshot = useHistoryStore((s) => s.shouldAutoSnapshot)
   const markAutoSnapshot = useHistoryStore((s) => s.markAutoSnapshot)
@@ -102,6 +105,16 @@ export function EditorView(): JSX.Element {
             aria-label="Theme editor"
           >
             <ThemeEditor onClose={toggleThemeEditor} />
+          </aside>
+        )}
+
+        {/* Accessibility Audit Panel */}
+        {auditPanelOpen && (
+          <aside
+            className="w-80 shrink-0 border-l border-[var(--border-default)] bg-[var(--bg-surface)] overflow-y-auto"
+            aria-label="Accessibility audit"
+          >
+            <AccessibilityAuditPanel onClose={toggleAuditPanel} />
           </aside>
         )}
 

@@ -15,7 +15,8 @@ import {
   Tablet,
   Smartphone,
   SplitSquareHorizontal,
-  Palette
+  Palette,
+  ShieldCheck
 } from 'lucide-react'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useEditorStore, type PreviewDevice } from '@/stores/useEditorStore'
@@ -47,12 +48,14 @@ export function EditorToolbar(): JSX.Element {
   const rightPanelOpen = useEditorStore((s) => s.rightPanelOpen)
   const aiPanelOpen = useEditorStore((s) => s.aiPanelOpen)
   const themeEditorOpen = useEditorStore((s) => s.themeEditorOpen)
+  const auditPanelOpen = useEditorStore((s) => s.auditPanelOpen)
   const splitPreviewOpen = useEditorStore((s) => s.splitPreviewOpen)
   const previewDevice = useEditorStore((s) => s.previewDevice)
   const toggleLeftPanel = useEditorStore((s) => s.toggleLeftPanel)
   const toggleRightPanel = useEditorStore((s) => s.toggleRightPanel)
   const toggleAIPanel = useEditorStore((s) => s.toggleAIPanel)
   const toggleThemeEditor = useEditorStore((s) => s.toggleThemeEditor)
+  const toggleAuditPanel = useEditorStore((s) => s.toggleAuditPanel)
   const toggleSplitPreview = useEditorStore((s) => s.toggleSplitPreview)
   const setPreviewDevice = useEditorStore((s) => s.setPreviewDevice)
 
@@ -192,6 +195,12 @@ export function EditorToolbar(): JSX.Element {
           label="Theme Editor"
           active={themeEditorOpen}
           onClick={toggleThemeEditor}
+        />
+        <ToolbarButton
+          icon={ShieldCheck}
+          label="Accessibility Audit"
+          active={auditPanelOpen}
+          onClick={toggleAuditPanel}
         />
         <ToolbarButton
           icon={Sparkles}
