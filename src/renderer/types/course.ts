@@ -1,3 +1,7 @@
+// ─── Publish Status ───
+
+export type PublishStatus = 'draft' | 'review' | 'published' | 'archived'
+
 // ─── Core Course Structure ───
 
 export interface Course {
@@ -8,8 +12,20 @@ export interface Course {
   certificate: CertificateConfig | null
   settings: CourseSettings
   history: VersionSnapshot[]
+  publishStatus: PublishStatus
   createdAt: string
   updatedAt: string
+}
+
+// ─── Course Template ───
+
+export interface CourseTemplate {
+  id: string
+  name: string
+  description: string
+  icon: string
+  tags: string[]
+  factory: () => Omit<Course, 'id' | 'createdAt' | 'updatedAt'>
 }
 
 export interface CourseMeta {
@@ -368,3 +384,91 @@ export interface CollaboratorNote {
 // ─── Export Formats ───
 
 export type ExportFormat = 'scorm-1.2' | 'scorm-2004' | 'xapi' | 'html5' | 'pdf'
+
+// ─── Block Type Literal ───
+
+export type BlockType = ContentBlock['type']
+
+export const BLOCK_TYPES: readonly BlockType[] = [
+  'text',
+  'media',
+  'video',
+  'audio',
+  'quiz',
+  'drag-drop',
+  'matching',
+  'accordion',
+  'tabs',
+  'flashcard',
+  'branching',
+  'embed',
+  'code',
+  'divider',
+  'callout',
+  'h5p',
+  'custom-html'
+] as const
+
+export const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
+  'text': 'Text',
+  'media': 'Image / Media',
+  'video': 'Video',
+  'audio': 'Audio',
+  'quiz': 'Quiz',
+  'drag-drop': 'Drag & Drop',
+  'matching': 'Matching',
+  'accordion': 'Accordion',
+  'tabs': 'Tabs',
+  'flashcard': 'Flashcard',
+  'branching': 'Branching Scenario',
+  'embed': 'Embed',
+  'code': 'Code',
+  'divider': 'Divider',
+  'callout': 'Callout',
+  'h5p': 'H5P',
+  'custom-html': 'Custom HTML'
+}
+
+// ─── Brand Kit ───
+
+export interface BrandKit {
+  id: string
+  name: string
+  logoPath: string | null
+  primaryColor: string
+  secondaryColor: string
+  accentColor: string
+  fontFamily: string
+  fontFamilyHeading: string
+  customFontPaths: string[]
+  createdAt: string
+  updatedAt: string
+}
+
+// ─── App Settings ───
+
+export interface AppSettings {
+  authorName: string
+  defaultLanguage: string
+  autoSaveIntervalMs: number
+  defaultExportFolder: string | null
+  activeBrandKitId: string | null
+  brandKits: BrandKit[]
+  ai: AISettings
+  accessibility: AccessibilitySettings
+}
+
+export interface AISettings {
+  provider: 'anthropic' | 'openai' | 'ollama' | null
+  anthropicApiKey: string | null
+  openaiApiKey: string | null
+  ollamaEndpoint: string
+  ollamaModel: string | null
+  defaultAILanguage: string
+}
+
+export interface AccessibilitySettings {
+  highContrastMode: boolean
+  baseFontSize: number
+  reducedMotion: boolean
+}
