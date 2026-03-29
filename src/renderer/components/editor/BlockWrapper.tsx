@@ -7,6 +7,8 @@ import {
   ChevronDown,
   MessageSquare
 } from 'lucide-react'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { useEditorStore } from '@/stores/useEditorStore'
 import { BLOCK_TYPE_LABELS } from '@/types/course'
 import type { ContentBlock } from '@/types/course'
@@ -40,6 +42,22 @@ export function BlockWrapper({
   const isSelected = selectedBlockId === block.id
   const hasNotes = block.notes.length > 0
 
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: block.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : undefined
+  }
+
   function handleClick(e: React.MouseEvent) {
     if (e.shiftKey) {
       toggleBlockSelection(block.id)
@@ -65,9 +83,12 @@ export function BlockWrapper({
 
   return (
     <div
+      ref={setNodeRef}
+      style={style}
       className={`
         group relative flex items-start gap-0
         rounded-lg border transition-all duration-[var(--duration-fast)]
+        ${isDragging ? 'shadow-lg' : ''}
         ${isSelected
           ? 'border-[var(--brand-magenta)] shadow-[0_0_0_1px_var(--brand-magenta)]'
           : 'border-transparent hover:border-[var(--border-default)]'
@@ -78,14 +99,16 @@ export function BlockWrapper({
       tabIndex={0}
       role="listitem"
       aria-label={`${BLOCK_TYPE_LABELS[block.type]} block`}
+      {...attributes}
     >
       {/* Left gutter: drag handle + type badge */}
       <div className="flex flex-col items-center gap-1 py-2 px-1 shrink-0 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
         <button
-          className="p-0.5 rounded cursor-grab text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] active:cursor-grabbing"
+          className="p-0.5 rounded cursor-grab text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] active:cursor-grabbing touch-none"
           aria-label="Drag to reorder"
           title="Drag to reorder (Alt+Arrow to move)"
           tabIndex={-1}
+          {...listeners}
         >
           <GripVertical size={14} />
         </button>

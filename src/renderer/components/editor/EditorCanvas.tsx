@@ -1,13 +1,29 @@
-import { useMemo } from 'react'
+import { useMemo, useCallback } from 'react'
 import { Layers } from 'lucide-react'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  sortableKeyboardCoordinates
+} from '@dnd-kit/sortable'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useEditorStore } from '@/stores/useEditorStore'
 import { findLesson } from '@/lib/course-helpers'
 import { createBlock } from '@/lib/block-factories'
 import { BlockWrapper } from './BlockWrapper'
 import { BlockPreview } from './BlockPreview'
+import { TextBlockEditor } from './TextBlockEditor'
+import { MediaBlockEditor } from './MediaBlockEditor'
 import { BlockInserterButton } from './BlockInserter'
-import type { BlockType } from '@/types/course'
+import type { BlockType, ContentBlock } from '@/types/course'
 
 export function EditorCanvas(): JSX.Element {
   const activeCourseId = useCourseStore((s) => s.activeCourseId)
@@ -16,15 +32,35 @@ export function EditorCanvas(): JSX.Element {
   const removeBlock = useCourseStore((s) => s.removeBlock)
   const duplicateBlock = useCourseStore((s) => s.duplicateBlock)
   const reorderBlocks = useCourseStore((s) => s.reorderBlocks)
+  const updateBlock = useCourseStore((s) => s.updateBlock)
 
   const activeModuleId = useEditorStore((s) => s.activeModuleId)
   const activeLessonId = useEditorStore((s) => s.activeLessonId)
+  const selectedBlockId = useEditorStore((s) => s.selectedBlockId)
   const setSelectedBlock = useEditorStore((s) => s.setSelectedBlock)
 
   const lessonData = useMemo(() => {
     if (!course || !activeLessonId) return null
     return findLesson(course, activeLessonId)
   }, [course, activeLessonId])
+
+  // dnd-kit sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 }
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates
+    })
+  )
+
+  const handleBlockUpdate = useCallback(
+    (blockId: string, partial: Partial<ContentBlock>) => {
+      if (!activeCourseId || !activeModuleId || !activeLessonId) return
+      updateBlock(activeCourseId, activeModuleId, activeLessonId, blockId, partial)
+    },
+    [activeCourseId, activeModuleId, activeLessonId, updateBlock]
+  )
 
   function handleInsertBlock(type: BlockType, atIndex?: number) {
     if (!activeCourseId || !activeModuleId || !activeLessonId) return
@@ -50,6 +86,20 @@ export function EditorCanvas(): JSX.Element {
     reorderBlocks(activeCourseId, activeModuleId, activeLessonId, fromIndex, toIndex)
   }
 
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    if (!activeCourseId || !activeModuleId || !activeLessonId || !lessonData) return
+
+    const blocks = lessonData.lesson.blocks
+    const fromIndex = blocks.findIndex((b) => b.id === active.id)
+    const toIndex = blocks.findIndex((b) => b.id === over.id)
+
+    if (fromIndex !== -1 && toIndex !== -1) {
+      reorderBlocks(activeCourseId, activeModuleId, activeLessonId, fromIndex, toIndex)
+    }
+  }
+
   // No lesson selected
   if (!lessonData) {
     return (
@@ -68,6 +118,32 @@ export function EditorCanvas(): JSX.Element {
   }
 
   const { lesson, module } = lessonData
+  const blockIds = lesson.blocks.map((b) => b.id)
+
+  function renderBlockContent(block: ContentBlock) {
+    const isSelected = selectedBlockId === block.id
+
+    // Inline editors for text and media blocks when selected
+    if (isSelected && block.type === 'text') {
+      return (
+        <TextBlockEditor
+          block={block}
+          onUpdate={(partial) => handleBlockUpdate(block.id, partial as Partial<ContentBlock>)}
+        />
+      )
+    }
+
+    if (isSelected && block.type === 'media') {
+      return (
+        <MediaBlockEditor
+          block={block}
+          onUpdate={(partial) => handleBlockUpdate(block.id, partial as Partial<ContentBlock>)}
+        />
+      )
+    }
+
+    return <BlockPreview block={block} />
+  }
 
   return (
     <div className="flex-1 overflow-y-auto bg-[var(--bg-app)]">
@@ -96,27 +172,35 @@ export function EditorCanvas(): JSX.Element {
             </p>
           </div>
         ) : (
-          lesson.blocks.map((block, index) => (
-            <div key={block.id}>
-              <BlockWrapper
-                block={block}
-                index={index}
-                totalBlocks={lesson.blocks.length}
-                onSelect={() => setSelectedBlock(block.id)}
-                onDuplicate={() => handleDuplicateBlock(block.id)}
-                onDelete={() => handleDeleteBlock(block.id)}
-                onMoveUp={() => handleMoveBlock(index, 'up')}
-                onMoveDown={() => handleMoveBlock(index, 'down')}
-              >
-                <BlockPreview block={block} />
-              </BlockWrapper>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={blockIds} strategy={verticalListSortingStrategy}>
+              {lesson.blocks.map((block, index) => (
+                <div key={block.id}>
+                  <BlockWrapper
+                    block={block}
+                    index={index}
+                    totalBlocks={lesson.blocks.length}
+                    onSelect={() => setSelectedBlock(block.id)}
+                    onDuplicate={() => handleDuplicateBlock(block.id)}
+                    onDelete={() => handleDeleteBlock(block.id)}
+                    onMoveUp={() => handleMoveBlock(index, 'up')}
+                    onMoveDown={() => handleMoveBlock(index, 'down')}
+                  >
+                    {renderBlockContent(block)}
+                  </BlockWrapper>
 
-              {/* Inserter between blocks */}
-              <div className="py-1">
-                <BlockInserterButton onInsert={(type) => handleInsertBlock(type, index + 1)} />
-              </div>
-            </div>
-          ))
+                  {/* Inserter between blocks */}
+                  <div className="py-1">
+                    <BlockInserterButton onInsert={(type) => handleInsertBlock(type, index + 1)} />
+                  </div>
+                </div>
+              ))}
+            </SortableContext>
+          </DndContext>
         )}
       </div>
 

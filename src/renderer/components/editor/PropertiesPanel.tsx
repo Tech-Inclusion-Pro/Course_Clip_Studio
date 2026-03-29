@@ -130,30 +130,29 @@ function TypeSpecificFields({
     case 'text':
       return (
         <>
-          <FieldGroup label="Content">
-            <textarea
-              value={block.content}
-              onChange={(e) => onUpdate({ content: e.target.value } as Partial<ContentBlock>)}
-              rows={6}
-              className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)] resize-y font-mono"
-              placeholder="Enter text content..."
-            />
-          </FieldGroup>
-          {block.readingLevel !== undefined && (
+          <p className="text-xs text-[var(--text-tertiary)]">
+            Use the inline editor in the canvas to edit rich text content.
+          </p>
+          {block.readingLevel !== undefined && block.readingLevel !== null && (
             <div className="flex items-center gap-2">
               <span className="text-xs text-[var(--text-secondary)]">Reading Level:</span>
               <span
                 className={`text-xs font-[var(--font-weight-medium)] px-1.5 py-0.5 rounded ${
                   (block.readingLevel ?? 0) <= 8
-                    ? 'bg-emerald-100 text-emerald-700'
+                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
                     : (block.readingLevel ?? 0) <= 12
-                      ? 'bg-yellow-100 text-yellow-700'
-                      : 'bg-red-100 text-red-700'
+                      ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                      : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                 }`}
               >
                 Grade {block.readingLevel}
               </span>
             </div>
+          )}
+          {(!block.readingLevel) && block.content && (
+            <p className="text-xs text-[var(--text-tertiary)]">
+              Add more text to see reading level analysis.
+            </p>
           )}
         </>
       )
@@ -161,6 +160,9 @@ function TypeSpecificFields({
     case 'media':
       return (
         <>
+          <p className="text-xs text-[var(--text-tertiary)] mb-2">
+            Use the inline editor in the canvas to manage image, alt text, and caption.
+          </p>
           <FieldGroup label="Image Path">
             <input
               type="text"
@@ -179,9 +181,11 @@ function TypeSpecificFields({
                 !block.altText ? 'border-[var(--color-danger-600)]' : 'border-[var(--border-default)]'
               }`}
               placeholder="Describe this image for screen readers..."
+              aria-required="true"
+              aria-invalid={!block.altText}
             />
             {!block.altText && (
-              <p className="text-xs text-[var(--color-danger-600)] mt-0.5">Required before publishing</p>
+              <p className="text-xs text-[var(--color-danger-600)] mt-0.5">Required before publishing (WCAG 1.1.1)</p>
             )}
           </FieldGroup>
           <FieldGroup label="Caption">
