@@ -1,0 +1,248 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import {
+  ArrowLeft,
+  Undo2,
+  Redo2,
+  Eye,
+  Upload,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
+  Sparkles,
+  Monitor,
+  Tablet,
+  Smartphone,
+  SplitSquareHorizontal
+} from 'lucide-react'
+import { useCourseStore } from '@/stores/useCourseStore'
+import { useEditorStore, type PreviewDevice } from '@/stores/useEditorStore'
+import { useHistoryStore } from '@/stores/useHistoryStore'
+import { serializeCourse, deserializeCourse } from '@/lib/course-helpers'
+import { ROUTES } from '@/lib/constants'
+
+const DEVICE_ICONS: Record<PreviewDevice, typeof Monitor> = {
+  desktop: Monitor,
+  tablet: Tablet,
+  mobile: Smartphone
+}
+
+const DEVICE_LABELS: Record<PreviewDevice, string> = {
+  desktop: 'Desktop',
+  tablet: 'Tablet',
+  mobile: 'Mobile'
+}
+
+export function EditorToolbar(): JSX.Element {
+  const navigate = useNavigate()
+
+  const course = useCourseStore((s) => s.courses.find((c) => c.id === s.activeCourseId))
+  const activeCourseId = useCourseStore((s) => s.activeCourseId)
+  const updateCourseMeta = useCourseStore((s) => s.updateCourseMeta)
+  const updateCourse = useCourseStore((s) => s.updateCourse)
+
+  const leftPanelOpen = useEditorStore((s) => s.leftPanelOpen)
+  const rightPanelOpen = useEditorStore((s) => s.rightPanelOpen)
+  const aiPanelOpen = useEditorStore((s) => s.aiPanelOpen)
+  const splitPreviewOpen = useEditorStore((s) => s.splitPreviewOpen)
+  const previewDevice = useEditorStore((s) => s.previewDevice)
+  const toggleLeftPanel = useEditorStore((s) => s.toggleLeftPanel)
+  const toggleRightPanel = useEditorStore((s) => s.toggleRightPanel)
+  const toggleAIPanel = useEditorStore((s) => s.toggleAIPanel)
+  const toggleSplitPreview = useEditorStore((s) => s.toggleSplitPreview)
+  const setPreviewDevice = useEditorStore((s) => s.setPreviewDevice)
+
+  const canUndo = useHistoryStore((s) => s.canUndo())
+  const canRedo = useHistoryStore((s) => s.canRedo())
+  const pushSnapshot = useHistoryStore((s) => s.pushSnapshot)
+  const undo = useHistoryStore((s) => s.undo)
+  const redo = useHistoryStore((s) => s.redo)
+
+  const [editingTitle, setEditingTitle] = useState(false)
+  const [titleValue, setTitleValue] = useState('')
+
+  function handleUndo() {
+    if (!course) return
+    // Save current state to redo stack
+    pushSnapshot(serializeCourse(course))
+    const snapshot = undo()
+    if (snapshot && activeCourseId) {
+      const restored = deserializeCourse(snapshot.courseJson)
+      updateCourse(activeCourseId, restored)
+    }
+  }
+
+  function handleRedo() {
+    if (!course) return
+    const snapshot = redo()
+    if (snapshot && activeCourseId) {
+      const restored = deserializeCourse(snapshot.courseJson)
+      updateCourse(activeCourseId, restored)
+    }
+  }
+
+  function startEditTitle() {
+    if (course) {
+      setTitleValue(course.meta.title)
+      setEditingTitle(true)
+    }
+  }
+
+  function commitTitle() {
+    if (activeCourseId && titleValue.trim()) {
+      updateCourseMeta(activeCourseId, { title: titleValue.trim() })
+    }
+    setEditingTitle(false)
+  }
+
+  const DeviceIcon = DEVICE_ICONS[previewDevice]
+
+  return (
+    <div className="flex items-center justify-between h-10 px-3 border-b border-[var(--border-default)] bg-[var(--bg-surface)] shrink-0">
+      {/* Left: Back + Title */}
+      <div className="flex items-center gap-2 min-w-0">
+        <button
+          onClick={() => navigate(ROUTES.DASHBOARD)}
+          className="p-1.5 rounded-md cursor-pointer text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors"
+          aria-label="Back to dashboard"
+          title="Back to dashboard"
+        >
+          <ArrowLeft size={16} />
+        </button>
+
+        {editingTitle ? (
+          <input
+            value={titleValue}
+            onChange={(e) => setTitleValue(e.target.value)}
+            onBlur={commitTitle}
+            onKeyDown={(e) => { if (e.key === 'Enter') commitTitle(); if (e.key === 'Escape') setEditingTitle(false) }}
+            autoFocus
+            className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-primary)] bg-transparent border-b border-[var(--border-default)] focus:border-[var(--brand-magenta)] focus:outline-none px-1 min-w-0"
+          />
+        ) : (
+          <button
+            onClick={startEditTitle}
+            className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-primary)] truncate hover:text-[var(--brand-magenta)] transition-colors cursor-pointer"
+            title="Click to rename course"
+          >
+            {course?.meta.title ?? 'Untitled Course'}
+          </button>
+        )}
+      </div>
+
+      {/* Center: Core actions */}
+      <div className="flex items-center gap-1">
+        <ToolbarButton
+          icon={Undo2}
+          label="Undo"
+          shortcut="Ctrl+Z"
+          disabled={!canUndo}
+          onClick={handleUndo}
+        />
+        <ToolbarButton
+          icon={Redo2}
+          label="Redo"
+          shortcut="Ctrl+Shift+Z"
+          disabled={!canRedo}
+          onClick={handleRedo}
+        />
+
+        <div className="w-px h-5 bg-[var(--border-default)] mx-1" aria-hidden="true" />
+
+        <ToolbarButton
+          icon={SplitSquareHorizontal}
+          label="Split preview"
+          active={splitPreviewOpen}
+          onClick={toggleSplitPreview}
+        />
+
+        {/* Device switcher */}
+        <ToolbarButton
+          icon={DeviceIcon}
+          label={`Preview: ${DEVICE_LABELS[previewDevice]}`}
+          onClick={() => {
+            const devices: PreviewDevice[] = ['desktop', 'tablet', 'mobile']
+            const idx = devices.indexOf(previewDevice)
+            setPreviewDevice(devices[(idx + 1) % devices.length])
+          }}
+        />
+
+        <div className="w-px h-5 bg-[var(--border-default)] mx-1" aria-hidden="true" />
+
+        <ToolbarButton
+          icon={Eye}
+          label="Preview"
+          onClick={() => navigate(ROUTES.PREVIEW)}
+        />
+        <ToolbarButton
+          icon={Upload}
+          label="Publish"
+          onClick={() => navigate(ROUTES.PUBLISH)}
+        />
+      </div>
+
+      {/* Right: Panel toggles */}
+      <div className="flex items-center gap-1">
+        <ToolbarButton
+          icon={Sparkles}
+          label="AI Assistant"
+          active={aiPanelOpen}
+          onClick={toggleAIPanel}
+        />
+
+        <div className="w-px h-5 bg-[var(--border-default)] mx-1" aria-hidden="true" />
+
+        <ToolbarButton
+          icon={leftPanelOpen ? PanelLeftClose : PanelLeftOpen}
+          label={leftPanelOpen ? 'Hide outline' : 'Show outline'}
+          onClick={toggleLeftPanel}
+        />
+        <ToolbarButton
+          icon={rightPanelOpen ? PanelRightClose : PanelRightOpen}
+          label={rightPanelOpen ? 'Hide properties' : 'Show properties'}
+          onClick={toggleRightPanel}
+        />
+      </div>
+    </div>
+  )
+}
+
+// ─── Toolbar Button ───
+
+function ToolbarButton({
+  icon: Icon,
+  label,
+  shortcut,
+  active,
+  disabled,
+  onClick
+}: {
+  icon: typeof Undo2
+  label: string
+  shortcut?: string
+  active?: boolean
+  disabled?: boolean
+  onClick: () => void
+}): JSX.Element {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`
+        p-1.5 rounded-md cursor-pointer
+        transition-colors duration-[var(--duration-fast)]
+        disabled:opacity-30 disabled:cursor-not-allowed
+        focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]
+        ${active
+          ? 'bg-[var(--bg-active)] text-[var(--text-brand)]'
+          : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
+        }
+      `}
+      aria-label={label}
+      title={shortcut ? `${label} (${shortcut})` : label}
+    >
+      <Icon size={16} />
+    </button>
+  )
+}

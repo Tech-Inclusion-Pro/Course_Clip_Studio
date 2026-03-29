@@ -1,54 +1,107 @@
-import { List, Layers, SlidersHorizontal } from 'lucide-react'
+import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useCourseStore } from '@/stores/useCourseStore'
+import { useEditorStore } from '@/stores/useEditorStore'
+import { useHistoryStore } from '@/stores/useHistoryStore'
+import { serializeCourse } from '@/lib/course-helpers'
+import { ROUTES } from '@/lib/constants'
+import { EditorToolbar } from '@/components/editor/EditorToolbar'
+import { CourseTreePanel } from '@/components/editor/CourseTreePanel'
+import { EditorCanvas } from '@/components/editor/EditorCanvas'
+import { PropertiesPanel } from '@/components/editor/PropertiesPanel'
 
 export function EditorView(): JSX.Element {
-  return (
-    <div className="flex h-full gap-0 -m-6">
-      {/* Outline Panel */}
-      <aside
-        className="
-          w-60 shrink-0 border-r border-[var(--border-default)]
-          bg-[var(--bg-surface)] overflow-y-auto p-4
-        "
-        aria-label="Course outline"
-      >
-        <div className="flex items-center gap-2 mb-4">
-          <List size={18} className="text-[var(--icon-default)]" />
-          <h2 className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-primary)]">
-            Outline
-          </h2>
-        </div>
-        <p className="text-sm text-[var(--text-tertiary)]">No course loaded</p>
-      </aside>
+  const navigate = useNavigate()
+  const course = useCourseStore((s) => s.courses.find((c) => c.id === s.activeCourseId))
+  const leftPanelOpen = useEditorStore((s) => s.leftPanelOpen)
+  const rightPanelOpen = useEditorStore((s) => s.rightPanelOpen)
+  const pushSnapshot = useHistoryStore((s) => s.pushSnapshot)
+  const shouldAutoSnapshot = useHistoryStore((s) => s.shouldAutoSnapshot)
+  const markAutoSnapshot = useHistoryStore((s) => s.markAutoSnapshot)
 
-      {/* Canvas */}
-      <div className="flex-1 flex flex-col items-center justify-center bg-[var(--bg-app)] overflow-y-auto">
-        <div className="flex flex-col items-center text-center p-8">
-          <Layers size={40} className="text-[var(--text-tertiary)] mb-3" />
-          <h2 className="text-lg font-[var(--font-weight-semibold)] text-[var(--text-primary)] mb-1">
-            Canvas
-          </h2>
-          <p className="text-sm text-[var(--text-secondary)]">
-            Select a lesson from the outline to start editing
-          </p>
-        </div>
+  // Redirect to dashboard if no course is loaded
+  useEffect(() => {
+    if (!course) {
+      navigate(ROUTES.DASHBOARD)
+    }
+  }, [course, navigate])
+
+  // Auto-snapshot every 5 minutes
+  useEffect(() => {
+    if (!course) return
+    const interval = setInterval(() => {
+      if (shouldAutoSnapshot(5 * 60 * 1000)) {
+        pushSnapshot(serializeCourse(course), 'Auto-save')
+        markAutoSnapshot()
+      }
+    }, 30_000) // Check every 30s
+    return () => clearInterval(interval)
+  }, [course, pushSnapshot, shouldAutoSnapshot, markAutoSnapshot])
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      const isMod = e.metaKey || e.ctrlKey
+
+      // Undo: Cmd/Ctrl+Z
+      if (isMod && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        // Handled by toolbar store subscription
+      }
+      // Redo: Cmd/Ctrl+Shift+Z
+      if (isMod && e.key === 'z' && e.shiftKey) {
+        e.preventDefault()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  if (!course) return <div />
+
+  return (
+    <div className="flex flex-col h-full -m-6">
+      {/* Toolbar */}
+      <EditorToolbar />
+
+      {/* Main 3-panel layout */}
+      <div className="flex flex-1 min-h-0">
+        {/* Left Panel: Course Tree */}
+        {leftPanelOpen && (
+          <aside
+            className="w-60 shrink-0 border-r border-[var(--border-default)] bg-[var(--bg-surface)] overflow-y-auto"
+            aria-label="Course outline"
+          >
+            <CourseTreePanel />
+          </aside>
+        )}
+
+        {/* Center: Canvas */}
+        <EditorCanvas />
+
+        {/* Right Panel: Properties */}
+        {rightPanelOpen && (
+          <aside
+            className="w-72 shrink-0 border-l border-[var(--border-default)] bg-[var(--bg-surface)] overflow-y-auto"
+            aria-label="Block properties"
+          >
+            <PropertiesPanel />
+          </aside>
+        )}
       </div>
 
-      {/* Properties Panel */}
-      <aside
-        className="
-          w-72 shrink-0 border-l border-[var(--border-default)]
-          bg-[var(--bg-surface)] overflow-y-auto p-4
-        "
-        aria-label="Block properties"
+      {/* Status bar */}
+      <div
+        className="flex items-center justify-between h-6 px-3 border-t border-[var(--border-default)] bg-[var(--bg-surface)] text-[10px] text-[var(--text-tertiary)] shrink-0"
+        role="status"
       >
-        <div className="flex items-center gap-2 mb-4">
-          <SlidersHorizontal size={18} className="text-[var(--icon-default)]" />
-          <h2 className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-primary)]">
-            Properties
-          </h2>
-        </div>
-        <p className="text-sm text-[var(--text-tertiary)]">No block selected</p>
-      </aside>
+        <span>
+          {course.modules.length} module{course.modules.length !== 1 ? 's' : ''}
+          {' / '}
+          {course.modules.reduce((s, m) => s + m.lessons.length, 0)} lesson{course.modules.reduce((s, m) => s + m.lessons.length, 0) !== 1 ? 's' : ''}
+        </span>
+        <span>v{course.meta.version}</span>
+      </div>
     </div>
   )
 }
