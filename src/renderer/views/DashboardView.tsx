@@ -1,72 +1,162 @@
-import { Plus, BookOpen } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import { Plus, BookOpen, Search as SearchIcon } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useCourseStore } from '@/stores/useCourseStore'
+import { useDashboardStore } from '@/stores/useDashboardStore'
+import { useMockDataInit } from '@/hooks/useMockDataInit'
+import { COURSE_TEMPLATES } from '@/lib/constants'
+import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar'
+import { SearchBar } from '@/components/dashboard/SearchBar'
+import { FilterBar } from '@/components/dashboard/FilterBar'
+import { CourseCard } from '@/components/dashboard/CourseCard'
+import { TemplateCard } from '@/components/dashboard/TemplateCard'
+import { NewCourseDialog } from '@/components/dashboard/NewCourseDialog'
+import { createCourse } from '@/lib/mock-data'
+import type { CourseTemplate } from '@/types/course'
 
 export function DashboardView(): JSX.Element {
+  useMockDataInit()
+
   const courses = useCourseStore((s) => s.courses)
+  const addCourse = useCourseStore((s) => s.addCourse)
+  const searchQuery = useDashboardStore((s) => s.searchQuery)
+  const statusFilter = useDashboardStore((s) => s.statusFilter)
+  const tagFilter = useDashboardStore((s) => s.tagFilter)
+  const activeSection = useDashboardStore((s) => s.activeSection)
+
+  const [dialogOpen, setDialogOpen] = useState(false)
+
+  // Collect all unique tags
+  const allTags = useMemo(() => {
+    const tags = new Set<string>()
+    courses.forEach((c) => c.meta.tags.forEach((t) => tags.add(t)))
+    return Array.from(tags).sort()
+  }, [courses])
+
+  // Filter courses
+  const filteredCourses = useMemo(() => {
+    return courses.filter((c) => {
+      // Search
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase()
+        const matchesTitle = c.meta.title.toLowerCase().includes(q)
+        const matchesDesc = c.meta.description.toLowerCase().includes(q)
+        if (!matchesTitle && !matchesDesc) return false
+      }
+      // Status
+      if (statusFilter !== 'all' && c.publishStatus !== statusFilter) return false
+      // Tag
+      if (tagFilter && !c.meta.tags.includes(tagFilter)) return false
+      return true
+    })
+  }, [courses, searchQuery, statusFilter, tagFilter])
+
+  function handleTemplateCreate(template: CourseTemplate) {
+    const base = template.factory()
+    const course = createCourse(base)
+    addCourse(course)
+  }
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h2 className="text-2xl font-[var(--font-weight-bold)] text-[var(--text-primary)]">
-            My Courses
-          </h2>
-          <p className="mt-1 text-sm text-[var(--text-secondary)]">
-            Create and manage your course content
-          </p>
-        </div>
-        <Button variant="primary" size="md">
-          <Plus size={18} />
-          New Course
-        </Button>
-      </div>
+    <div className="flex h-full -m-6">
+      <DashboardSidebar />
 
-      {courses.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div
-            className="
-              w-16 h-16 mb-4 rounded-[var(--radius-xl)]
-              bg-[var(--bg-muted)] flex items-center justify-center
-            "
-          >
-            <BookOpen size={32} className="text-[var(--text-tertiary)]" />
-          </div>
-          <h3 className="text-lg font-[var(--font-weight-semibold)] text-[var(--text-primary)] mb-2">
-            No courses yet
-          </h3>
-          <p className="text-sm text-[var(--text-secondary)] max-w-md mb-6">
-            Get started by creating your first course. You can add modules, lessons, and interactive
-            content blocks.
-          </p>
-          <Button variant="primary" size="lg">
-            <Plus size={18} />
-            Create Your First Course
-          </Button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {courses.map((course) => (
-            <div
-              key={course.id}
-              className="
-                p-4 rounded-[var(--radius-lg)]
-                bg-[var(--bg-surface)] border border-[var(--border-default)]
-                shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)]
-                transition-shadow duration-[var(--duration-fast)]
-                cursor-pointer
-              "
-            >
-              <h3 className="font-[var(--font-weight-semibold)] text-[var(--text-primary)]">
-                {course.meta.title}
-              </h3>
-              <p className="mt-1 text-sm text-[var(--text-secondary)] line-clamp-2">
-                {course.meta.description}
+      <div className="flex-1 overflow-y-auto p-6">
+        {activeSection === 'courses' ? (
+          <>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-[var(--font-weight-bold)] text-[var(--text-primary)]">
+                  My Courses
+                </h2>
+                <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                  Create and manage your course content
+                </p>
+              </div>
+              <Button variant="primary" size="md" onClick={() => setDialogOpen(true)}>
+                <Plus size={18} />
+                New Course
+              </Button>
+            </div>
+
+            {/* Search + Filter */}
+            <div className="mb-4 max-w-sm">
+              <SearchBar />
+            </div>
+            <div className="mb-6">
+              <FilterBar allTags={allTags} />
+            </div>
+
+            {/* Result count (live region) */}
+            <div aria-live="polite" className="sr-only">
+              {filteredCourses.length} course{filteredCourses.length !== 1 ? 's' : ''} found
+            </div>
+
+            {/* Course grid */}
+            {filteredCourses.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="w-16 h-16 mb-4 rounded-2xl bg-[var(--bg-muted)] flex items-center justify-center">
+                  {searchQuery || statusFilter !== 'all' || tagFilter ? (
+                    <SearchIcon size={32} className="text-[var(--text-tertiary)]" />
+                  ) : (
+                    <BookOpen size={32} className="text-[var(--text-tertiary)]" />
+                  )}
+                </div>
+                <h3 className="text-lg font-[var(--font-weight-semibold)] text-[var(--text-primary)] mb-2">
+                  {searchQuery || statusFilter !== 'all' || tagFilter
+                    ? 'No matching courses'
+                    : 'No courses yet'}
+                </h3>
+                <p className="text-sm text-[var(--text-secondary)] max-w-md mb-6">
+                  {searchQuery || statusFilter !== 'all' || tagFilter
+                    ? 'Try adjusting your search or filters to find what you\'re looking for.'
+                    : 'Get started by creating your first course. You can add modules, lessons, and interactive content blocks.'}
+                </p>
+                {!searchQuery && statusFilter === 'all' && !tagFilter && (
+                  <Button variant="primary" size="lg" onClick={() => setDialogOpen(true)}>
+                    <Plus size={18} />
+                    Create Your First Course
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div
+                role="list"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+              >
+                {filteredCourses.map((course) => (
+                  <CourseCard key={course.id} course={course} />
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          /* Templates Section */
+          <>
+            <div className="mb-6">
+              <h2 className="text-2xl font-[var(--font-weight-bold)] text-[var(--text-primary)]">
+                Templates
+              </h2>
+              <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                Start with a pre-built course structure
               </p>
             </div>
-          ))}
-        </div>
-      )}
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {COURSE_TEMPLATES.map((template) => (
+                <TemplateCard
+                  key={template.id}
+                  template={template}
+                  onSelect={handleTemplateCreate}
+                />
+              ))}
+            </div>
+          </>
+        )}
+
+        <NewCourseDialog open={dialogOpen} onClose={() => setDialogOpen(false)} />
+      </div>
     </div>
   )
 }
