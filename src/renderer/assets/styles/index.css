@@ -55,6 +55,19 @@ body {
   top: var(--space-4);
 }
 
+/* ─── Gradients (spec §14) ─── */
+.gradient-primary {
+  background: linear-gradient(135deg, #3a2b95 0%, #6f2fa6 50%, #a23b84 100%);
+}
+
+.gradient-surface {
+  background: linear-gradient(180deg, #f5f4fb 0%, #eeecf8 100%);
+}
+
+.dark .gradient-surface {
+  background: linear-gradient(180deg, #1a1830 0%, #232040 100%);
+}
+
 /* ─── Scrollbar ─── */
 ::-webkit-scrollbar {
   width: 8px;
@@ -66,20 +79,20 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-neutral-300);
+  background: #d4cef0;
   border-radius: var(--radius-full);
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: var(--color-neutral-600);
+  background: #3a3460;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-neutral-400);
+  background: #b8b0de;
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-neutral-500);
+  background: #4a4470;
 }
 
 /* ─── Drag Region (macOS titlebar) ─── */
@@ -111,11 +124,11 @@ body {
 
 /* ─── Selection ─── */
 ::selection {
-  background: var(--color-brand-200);
-  color: var(--color-brand-900);
+  background: #d4cef0;
+  color: #1a1a2e;
 }
 
 .dark ::selection {
-  background: var(--color-brand-800);
-  color: var(--color-brand-100);
+  background: #3a3460;
+  color: #f0eeff;
 }

@@ -1,11 +1,13 @@
+// ─── Core Course Structure ───
+
 export interface Course {
   id: string
   meta: CourseMeta
-  modules: Module[]
   theme: CourseTheme
+  modules: Module[]
+  certificate: CertificateConfig | null
   settings: CourseSettings
-  udlChecklist: UDLChecklist
-  certificate: CertificateConfig
+  history: VersionSnapshot[]
   createdAt: string
   updatedAt: string
 }
@@ -14,12 +16,11 @@ export interface CourseMeta {
   title: string
   description: string
   author: string
-  version: string
   language: string
+  estimatedDuration: number
   tags: string[]
-  thumbnail?: string
-  duration?: string
-  level?: 'beginner' | 'intermediate' | 'advanced'
+  thumbnail: string | null
+  version: string
 }
 
 export interface Module {
@@ -27,88 +28,188 @@ export interface Module {
   title: string
   description: string
   lessons: Lesson[]
-  order: number
+  udlChecklist: UDLChecklist
+  completionRequired: boolean
 }
 
 export interface Lesson {
   id: string
   title: string
-  description: string
   blocks: ContentBlock[]
-  order: number
-  duration?: string
+  notes: CollaboratorNote[]
+  accessibilityScore: number | null
+  readingLevel: number | null
 }
 
-// ─── Content Block Types ───
+// ─── Content Block Union ───
 
 export type ContentBlock =
   | TextBlock
-  | ImageBlock
+  | MediaBlock
   | VideoBlock
   | AudioBlock
   | QuizBlock
-  | InteractiveBlock
-  | CodeBlock
+  | DragDropBlock
+  | MatchingBlock
+  | AccordionBlock
+  | TabsBlock
+  | FlashcardBlock
+  | BranchingBlock
   | EmbedBlock
+  | CodeBlock
   | DividerBlock
   | CalloutBlock
+  | H5PBlock
+  | CustomHTMLBlock
 
-interface BaseBlock {
+// ─── Base Block ───
+
+export interface BaseBlock {
   id: string
-  order: number
-  udlTags: UDLTag[]
+  type: string
+  ariaLabel: string
+  altText?: string
+  notes: string
+  animation?: BlockAnimation
 }
+
+export interface BlockAnimation {
+  type: 'fade-in' | 'slide-up' | 'slide-left' | 'scale' | 'none'
+  duration: number
+  delay: number
+}
+
+// ─── Block Types ───
 
 export interface TextBlock extends BaseBlock {
   type: 'text'
   content: string
-  format: 'paragraph' | 'heading1' | 'heading2' | 'heading3' | 'list' | 'quote'
+  readingLevel?: number
 }
 
-export interface ImageBlock extends BaseBlock {
-  type: 'image'
-  src: string
-  alt: string
-  caption?: string
-  width?: number
-  height?: number
+export interface MediaBlock extends BaseBlock {
+  type: 'media'
+  assetPath: string
+  caption: string
+  altText: string
 }
 
 export interface VideoBlock extends BaseBlock {
   type: 'video'
-  src: string
-  poster?: string
-  caption?: string
-  transcript?: string
+  source: 'upload' | 'embed'
+  url: string
+  transcript: string
+  captions: CaptionTrack[]
+  poster: string
 }
 
 export interface AudioBlock extends BaseBlock {
   type: 'audio'
+  assetPath: string
+  transcript: string
+  captions: CaptionTrack[]
+}
+
+export interface CaptionTrack {
+  id: string
+  language: string
+  label: string
   src: string
-  caption?: string
-  transcript?: string
+  kind: 'subtitles' | 'captions' | 'descriptions'
 }
 
 export interface QuizBlock extends BaseBlock {
   type: 'quiz'
-  question: string
-  questionType: 'multiple-choice' | 'true-false' | 'short-answer' | 'matching'
-  options?: QuizOption[]
-  correctAnswer: string | string[]
-  explanation?: string
-  points: number
+  questions: QuizQuestion[]
+  passThreshold: number
+  showFeedback: boolean
+  allowRetry: boolean
+  shuffleQuestions: boolean
+  shuffleAnswers: boolean
 }
 
-export interface QuizOption {
+export interface QuizQuestion {
+  id: string
+  type: 'multiple-choice' | 'true-false' | 'short-answer' | 'likert'
+  prompt: string
+  choices: QuizChoice[]
+  correctId: string | string[]
+  feedbackCorrect: string
+  feedbackIncorrect: string
+}
+
+export interface QuizChoice {
   id: string
   label: string
   isCorrect: boolean
 }
 
-export interface InteractiveBlock extends BaseBlock {
-  type: 'interactive'
-  interactionType: 'drag-drop' | 'hotspot' | 'timeline' | 'accordion' | 'tabs' | 'flipcard'
-  data: Record<string, unknown>
+export interface DragDropBlock extends BaseBlock {
+  type: 'drag-drop'
+  items: DragItem[]
+  zones: DropZone[]
+  instruction: string
+}
+
+export interface DragItem {
+  id: string
+  label: string
+  image?: string
+  correctZoneId: string
+}
+
+export interface DropZone {
+  id: string
+  label: string
+}
+
+export interface MatchingBlock extends BaseBlock {
+  type: 'matching'
+  leftItems: MatchItem[]
+  rightItems: MatchItem[]
+  correctPairs: { leftId: string; rightId: string }[]
+  instruction: string
+}
+
+export interface MatchItem {
+  id: string
+  label: string
+}
+
+export interface AccordionBlock extends BaseBlock {
+  type: 'accordion'
+  items: { title: string; content: string }[]
+}
+
+export interface TabsBlock extends BaseBlock {
+  type: 'tabs'
+  tabs: { label: string; content: string }[]
+}
+
+export interface FlashcardBlock extends BaseBlock {
+  type: 'flashcard'
+  cards: { front: string; back: string }[]
+}
+
+export interface BranchingBlock extends BaseBlock {
+  type: 'branching'
+  scenario: string
+  choices: BranchChoice[]
+}
+
+export interface BranchChoice {
+  id: string
+  label: string
+  consequence: string
+  nextLessonId: string | null
+}
+
+export interface EmbedBlock extends BaseBlock {
+  type: 'embed'
+  url: string
+  title: string
+  width?: number
+  height?: number
 }
 
 export interface CodeBlock extends BaseBlock {
@@ -116,14 +217,6 @@ export interface CodeBlock extends BaseBlock {
   language: string
   code: string
   runnable: boolean
-}
-
-export interface EmbedBlock extends BaseBlock {
-  type: 'embed'
-  url: string
-  embedType: 'iframe' | 'scorm' | 'h5p' | 'lti'
-  width?: number
-  height?: number
 }
 
 export interface DividerBlock extends BaseBlock {
@@ -138,57 +231,140 @@ export interface CalloutBlock extends BaseBlock {
   content: string
 }
 
+export interface H5PBlock extends BaseBlock {
+  type: 'h5p'
+  embedUrl: string
+}
+
+export interface CustomHTMLBlock extends BaseBlock {
+  type: 'custom-html'
+  html: string
+  css: string
+  js: string
+}
+
 // ─── UDL ───
 
-export type UDLPrinciple = 'engagement' | 'representation' | 'action-expression'
-
-export interface UDLTag {
-  principle: UDLPrinciple
-  guideline: string
-}
-
 export interface UDLChecklist {
-  engagement: UDLChecklistItem[]
-  representation: UDLChecklistItem[]
-  actionExpression: UDLChecklistItem[]
+  representation: {
+    multipleFormats: boolean
+    altTextPresent: boolean
+    transcriptsPresent: boolean
+    captionsPresent: boolean
+    readingLevelAppropriate: boolean
+  }
+  action: {
+    keyboardNavigable: boolean
+    multipleResponseModes: boolean
+    sufficientTime: boolean
+  }
+  engagement: {
+    choiceAndAutonomy: boolean
+    relevantContext: boolean
+    feedbackPresent: boolean
+    progressVisible: boolean
+  }
 }
 
-export interface UDLChecklistItem {
-  id: string
-  label: string
-  checked: boolean
-}
-
-// ─── Theme & Config ───
+// ─── Theme & Branding ───
 
 export interface CourseTheme {
+  id: string
+  name: string
   primaryColor: string
+  secondaryColor: string
   accentColor: string
+  backgroundColor: string
+  surfaceColor: string
+  textColor: string
   fontFamily: string
-  fontSize: number
-  borderRadius: number
-  customCSS?: string
+  fontFamilyHeading: string
+  logoPath: string | null
+  customCSS: string
+  darkMode: boolean
+  playerShell: PlayerShellConfig
+  loadingScreen: LoadingScreenConfig
 }
+
+export interface PlayerShellConfig {
+  headerColor: string
+  buttonStyle: 'rounded' | 'square' | 'pill'
+  progressBarColor: string
+  backgroundColor: string
+  showLogo: boolean
+}
+
+export interface LoadingScreenConfig {
+  logoPath: string | null
+  backgroundColor: string
+  showProgressRing: boolean
+  message: string
+}
+
+// ─── Certificate ───
 
 export interface CertificateConfig {
   enabled: boolean
-  title: string
-  description: string
-  signatoryName: string
-  signatoryTitle: string
-  logo?: string
-  background?: string
+  template: string
+  triggerOnCompletion: boolean
+  passScoreRequired: number | null
+  logoPath: string | null
+  signatureLine: string
+  brandColors: boolean
 }
 
+// ─── Course Settings ───
+
 export interface CourseSettings {
-  navigation: 'free' | 'sequential' | 'gated'
-  progressTracking: boolean
-  completionThreshold: number
-  showTimer: boolean
-  allowRetakes: boolean
-  maxAttempts: number
-  passingScore: number
-  exportFormats: ExportFormat[]
+  requireLinearNavigation: boolean
+  allowSkip: boolean
+  showProgressBar: boolean
+  showEstimatedTime: boolean
+  learnerNotesEnabled: boolean
+  learnerBookmarksEnabled: boolean
+  feedbackFormsEnabled: boolean
+  accessibilityModeToggle: boolean
+  completionCriteria: 'visit-all' | 'quiz-pass' | 'both'
+  xapi: XAPIConfig | null
+  scorm: SCORMConfig | null
 }
+
+export interface XAPIConfig {
+  endpoint: string
+  authType: 'basic' | 'oauth'
+  username: string
+  password: string
+  actorName: string
+  actorEmail: string
+}
+
+export interface SCORMConfig {
+  version: '1.2' | '2004-2nd' | '2004-3rd' | '2004-4th'
+  completionCriteria: 'launch' | 'complete' | 'passed'
+  masteryScore: number
+  lessonMode: 'normal' | 'browse' | 'review'
+}
+
+// ─── Version History ───
+
+export interface VersionSnapshot {
+  id: string
+  timestamp: string
+  label: string
+  courseJson: string
+}
+
+// ─── Collaboration ───
+
+export interface CollaboratorNote {
+  id: string
+  blockId: string
+  author: string
+  content: string
+  timestamp: string
+  resolved: boolean
+}
+
+// ─── Export Formats ───
 
 export type ExportFormat = 'scorm-1.2' | 'scorm-2004' | 'xapi' | 'html5' | 'pdf'

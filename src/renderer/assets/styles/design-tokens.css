@@ -1,28 +1,16 @@
 :root {
-  /* ─── Brand Colors ─── */
-  --color-brand-50: #eff6ff;
-  --color-brand-100: #dbeafe;
-  --color-brand-200: #bfdbfe;
-  --color-brand-300: #93c5fd;
-  --color-brand-400: #60a5fa;
-  --color-brand-500: #3b82f6;
-  --color-brand-600: #2563eb;
-  --color-brand-700: #1d4ed8;
-  --color-brand-800: #1e40af;
-  --color-brand-900: #1e3a8a;
+  /* ─── Brand Colors (from spec §14) ─── */
+  --brand-magenta: #a23b84;
+  --brand-indigo: #3a2b95;
+  --brand-purple: #6f2fa6;
 
-  /* ─── Neutral Colors ─── */
-  --color-neutral-50: #f8fafc;
-  --color-neutral-100: #f1f5f9;
-  --color-neutral-200: #e2e8f0;
-  --color-neutral-300: #cbd5e1;
-  --color-neutral-400: #94a3b8;
-  --color-neutral-500: #64748b;
-  --color-neutral-600: #475569;
-  --color-neutral-700: #334155;
-  --color-neutral-800: #1e293b;
-  --color-neutral-900: #0f172a;
-  --color-neutral-950: #020617;
+  /* Brand shades for hover/active states */
+  --brand-magenta-light: #c45aa3;
+  --brand-magenta-dark: #832f6b;
+  --brand-indigo-light: #5040b5;
+  --brand-indigo-dark: #2a1f70;
+  --brand-purple-light: #8c45c4;
+  --brand-purple-dark: #561f85;
 
   /* ─── Semantic Colors ─── */
   --color-success-500: #22c55e;
@@ -34,9 +22,9 @@
   --color-info-500: #06b6d4;
   --color-info-600: #0891b2;
 
-  /* ─── Typography ─── */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  /* ─── Typography (spec: Arial system fallback) ─── */
+  --font-sans: Arial, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
 
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
@@ -44,7 +32,7 @@
   --text-lg: 1.125rem;
   --text-xl: 1.25rem;
   --text-2xl: 1.5rem;
-  --text-3xl: 1.875rem;
+  --text-3xl: 2rem;
 
   --leading-tight: 1.25;
   --leading-normal: 1.5;
@@ -68,7 +56,7 @@
   --space-12: 3rem;
   --space-16: 4rem;
 
-  /* ─── Border Radius ─── */
+  /* ─── Border Radius (spec: 8px for buttons) ─── */
   --radius-sm: 0.25rem;
   --radius-md: 0.375rem;
   --radius-lg: 0.5rem;
@@ -82,8 +70,8 @@
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 
-  /* ─── Focus Ring ─── */
-  --focus-ring-color: var(--color-brand-500);
+  /* ─── Focus Ring (spec: --brand-indigo) ─── */
+  --focus-ring-color: var(--brand-indigo);
   --focus-ring-width: 3px;
   --focus-ring-offset: 2px;
 
@@ -100,61 +88,63 @@
   --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ─── Light Theme (default) ─── */
+/* ─── Light Theme (default — spec §14) ─── */
 .light,
 :root {
-  --bg-app: var(--color-neutral-50);
+  --bg-app: #f5f4fb;
   --bg-surface: #ffffff;
   --bg-surface-raised: #ffffff;
   --bg-surface-overlay: #ffffff;
-  --bg-sidebar: var(--color-neutral-100);
-  --bg-topbar: var(--color-neutral-50);
-  --bg-muted: var(--color-neutral-100);
-  --bg-hover: var(--color-neutral-200);
-  --bg-active: var(--color-brand-50);
+  --bg-sidebar: #eeecf8;
+  --bg-topbar: #f5f4fb;
+  --bg-panel: #eeecf8;
+  --bg-muted: #eeecf8;
+  --bg-hover: #e4e1f3;
+  --bg-active: #e0dcf5;
 
-  --text-primary: var(--color-neutral-900);
-  --text-secondary: var(--color-neutral-600);
-  --text-tertiary: var(--color-neutral-400);
+  --text-primary: #1a1a2e;
+  --text-secondary: #4a4a6a;
+  --text-tertiary: #7a7a9a;
   --text-inverse: #ffffff;
-  --text-brand: var(--color-brand-600);
+  --text-brand: var(--brand-magenta);
 
-  --border-default: var(--color-neutral-200);
-  --border-strong: var(--color-neutral-300);
-  --border-brand: var(--color-brand-500);
+  --border-default: #d4cef0;
+  --border-strong: #b8b0de;
+  --border-brand: var(--brand-indigo);
 
-  --icon-default: var(--color-neutral-500);
-  --icon-active: var(--color-brand-600);
+  --icon-default: #4a4a6a;
+  --icon-active: var(--brand-magenta);
 }
 
-/* ─── Dark Theme ─── */
+/* ─── Dark Theme (spec §14) ─── */
 .dark {
-  --bg-app: var(--color-neutral-950);
-  --bg-surface: var(--color-neutral-900);
-  --bg-surface-raised: var(--color-neutral-800);
-  --bg-surface-overlay: var(--color-neutral-800);
-  --bg-sidebar: var(--color-neutral-900);
-  --bg-topbar: var(--color-neutral-950);
-  --bg-muted: var(--color-neutral-800);
-  --bg-hover: var(--color-neutral-700);
-  --bg-active: color-mix(in srgb, var(--color-brand-600) 20%, transparent);
+  --bg-app: #0f0e1a;
+  --bg-surface: #1a1830;
+  --bg-surface-raised: #232040;
+  --bg-surface-overlay: #232040;
+  --bg-sidebar: #1a1830;
+  --bg-topbar: #0f0e1a;
+  --bg-panel: #232040;
+  --bg-muted: #232040;
+  --bg-hover: #2e2a50;
+  --bg-active: #3a3460;
 
-  --text-primary: var(--color-neutral-50);
-  --text-secondary: var(--color-neutral-400);
-  --text-tertiary: var(--color-neutral-500);
-  --text-inverse: var(--color-neutral-900);
-  --text-brand: var(--color-brand-400);
+  --text-primary: #f0eeff;
+  --text-secondary: #a09cc0;
+  --text-tertiary: #706c90;
+  --text-inverse: #0f0e1a;
+  --text-brand: var(--brand-magenta-light);
 
-  --border-default: var(--color-neutral-700);
-  --border-strong: var(--color-neutral-600);
-  --border-brand: var(--color-brand-400);
+  --border-default: #3a3460;
+  --border-strong: #4a4470;
+  --border-brand: var(--brand-purple-light);
 
-  --icon-default: var(--color-neutral-400);
-  --icon-active: var(--color-brand-400);
+  --icon-default: #a09cc0;
+  --icon-active: var(--brand-magenta-light);
 
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.2);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
 
-  --focus-ring-color: var(--color-brand-400);
+  --focus-ring-color: var(--brand-purple-light);
 }

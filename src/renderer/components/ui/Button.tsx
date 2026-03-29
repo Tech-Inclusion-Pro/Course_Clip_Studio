@@ -10,7 +10,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles: Record<Variant, string> = {
   primary:
-    'bg-[var(--color-brand-600)] text-white hover:bg-[var(--color-brand-700)] active:bg-[var(--color-brand-800)]',
+    'bg-[var(--brand-magenta)] text-white hover:bg-[var(--brand-magenta-dark)] active:bg-[var(--brand-magenta-dark)]',
   secondary:
     'bg-[var(--bg-muted)] text-[var(--text-primary)] border border-[var(--border-default)] hover:bg-[var(--bg-hover)]',
   ghost: 'bg-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]',
@@ -32,7 +32,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled}
         className={`
           inline-flex items-center justify-center gap-2
-          min-tap-target rounded-[var(--radius-md)]
+          min-tap-target rounded-lg
           font-[var(--font-weight-medium)]
           transition-colors duration-[var(--duration-fast)]
           cursor-pointer select-none
