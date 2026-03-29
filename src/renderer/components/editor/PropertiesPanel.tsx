@@ -271,13 +271,16 @@ function TypeSpecificFields({
     case 'quiz':
       return (
         <>
+          <p className="text-xs text-[var(--text-tertiary)] mb-2">
+            Use the inline editor in the canvas to add and edit questions.
+          </p>
           <FieldGroup label="Pass Threshold (%)">
             <input
               type="number"
               min={0}
               max={100}
               value={block.passThreshold}
-              onChange={(e) => onUpdate({ passThreshold: Number(e.target.value) } as Partial<ContentBlock>)}
+              onChange={(e) => onUpdate({ passThreshold: Math.max(0, Math.min(100, Number(e.target.value))) } as Partial<ContentBlock>)}
               className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
             />
           </FieldGroup>
@@ -287,9 +290,20 @@ function TypeSpecificFields({
             <ToggleField label="Shuffle Questions" checked={block.shuffleQuestions} onChange={(v) => onUpdate({ shuffleQuestions: v } as Partial<ContentBlock>)} />
             <ToggleField label="Shuffle Answers" checked={block.shuffleAnswers} onChange={(v) => onUpdate({ shuffleAnswers: v } as Partial<ContentBlock>)} />
           </div>
-          <p className="text-xs text-[var(--text-tertiary)]">
-            {block.questions.length} question{block.questions.length !== 1 ? 's' : ''} configured
-          </p>
+          <div className="p-2 rounded-md bg-[var(--bg-muted)]">
+            <p className="text-xs font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+              {block.questions.length} question{block.questions.length !== 1 ? 's' : ''}
+            </p>
+            {block.questions.length > 0 && (
+              <div className="mt-1 space-y-0.5">
+                {block.questions.map((q, i) => (
+                  <p key={q.id} className="text-[10px] text-[var(--text-tertiary)] truncate">
+                    Q{i + 1}: {q.prompt || 'Untitled'} ({q.type})
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
         </>
       )
 

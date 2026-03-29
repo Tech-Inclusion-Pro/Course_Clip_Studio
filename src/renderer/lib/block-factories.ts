@@ -7,6 +7,8 @@ import type {
   VideoBlock,
   AudioBlock,
   QuizBlock,
+  QuizQuestion,
+  QuizChoice,
   DragDropBlock,
   MatchingBlock,
   AccordionBlock,
@@ -233,6 +235,70 @@ export function createCustomHTMLBlock(overrides: Partial<CustomHTMLBlock> = {}):
     js: '',
     ...overrides
   }
+}
+
+// ─── Quiz Helpers ───
+
+export function createQuizChoice(overrides: Partial<QuizChoice> = {}): QuizChoice {
+  return {
+    id: uid('choice'),
+    label: '',
+    isCorrect: false,
+    ...overrides
+  }
+}
+
+export function createQuizQuestion(
+  type: QuizQuestion['type'] = 'multiple-choice',
+  overrides: Partial<QuizQuestion> = {}
+): QuizQuestion {
+  const baseQuestion: QuizQuestion = {
+    id: uid('question'),
+    type,
+    prompt: '',
+    choices: [],
+    correctId: '',
+    feedbackCorrect: '',
+    feedbackIncorrect: '',
+    ...overrides
+  }
+
+  // Set up default choices based on type
+  if (baseQuestion.choices.length === 0) {
+    switch (type) {
+      case 'multiple-choice': {
+        const a = createQuizChoice({ label: 'Option A', isCorrect: true })
+        const b = createQuizChoice({ label: 'Option B' })
+        const c = createQuizChoice({ label: 'Option C' })
+        const d = createQuizChoice({ label: 'Option D' })
+        baseQuestion.choices = [a, b, c, d]
+        baseQuestion.correctId = a.id
+        break
+      }
+      case 'true-false': {
+        const t = createQuizChoice({ label: 'True', isCorrect: true })
+        const f = createQuizChoice({ label: 'False' })
+        baseQuestion.choices = [t, f]
+        baseQuestion.correctId = t.id
+        break
+      }
+      case 'likert': {
+        baseQuestion.choices = [
+          createQuizChoice({ label: 'Strongly Disagree' }),
+          createQuizChoice({ label: 'Disagree' }),
+          createQuizChoice({ label: 'Neutral' }),
+          createQuizChoice({ label: 'Agree' }),
+          createQuizChoice({ label: 'Strongly Agree' })
+        ]
+        break
+      }
+      // short-answer has no choices
+      default:
+        break
+    }
+  }
+
+  return baseQuestion
 }
 
 // ─── Universal Factory ───

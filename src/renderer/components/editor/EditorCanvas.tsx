@@ -22,6 +22,7 @@ import { BlockWrapper } from './BlockWrapper'
 import { BlockPreview } from './BlockPreview'
 import { TextBlockEditor } from './TextBlockEditor'
 import { MediaBlockEditor } from './MediaBlockEditor'
+import { QuizBlockEditor } from './QuizBlockEditor'
 import { BlockInserterButton } from './BlockInserter'
 import type { BlockType, ContentBlock } from '@/types/course'
 
@@ -136,6 +137,15 @@ export function EditorCanvas(): JSX.Element {
     if (isSelected && block.type === 'media') {
       return (
         <MediaBlockEditor
+          block={block}
+          onUpdate={(partial) => handleBlockUpdate(block.id, partial as Partial<ContentBlock>)}
+        />
+      )
+    }
+
+    if (isSelected && block.type === 'quiz') {
+      return (
+        <QuizBlockEditor
           block={block}
           onUpdate={(partial) => handleBlockUpdate(block.id, partial as Partial<ContentBlock>)}
         />
