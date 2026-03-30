@@ -15,6 +15,12 @@ const api = {
   app: {
     getInfo: (): Promise<{ name: string; version: string; platform: string; arch: string }> =>
       ipcRenderer.invoke('app:getInfo')
+  },
+  fs: {
+    readFile: (filePath: string, encoding?: 'utf-8' | 'base64'): Promise<string> =>
+      ipcRenderer.invoke('fs:readFile', filePath, encoding),
+    readFileBuffer: (filePath: string): Promise<ArrayBuffer> =>
+      ipcRenderer.invoke('fs:readFileBuffer', filePath)
   }
 }
 

@@ -12,6 +12,10 @@ interface LuminaAPI {
   app: {
     getInfo(): Promise<{ name: string; version: string; platform: string; arch: string }>
   }
+  fs: {
+    readFile(filePath: string, encoding?: 'utf-8' | 'base64'): Promise<string>
+    readFileBuffer(filePath: string): Promise<ArrayBuffer>
+  }
 }
 
 declare global {

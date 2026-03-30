@@ -1,5 +1,5 @@
 import { ipcMain, dialog, app } from 'electron'
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
+import { readFileSync, readFile, writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join } from 'path'
 
 function getConfigPath(): string {
@@ -53,5 +53,35 @@ export function registerIpcHandlers(): void {
       platform: process.platform,
       arch: process.arch
     }
+  })
+
+  // Read a file as text (UTF-8) or binary (base64)
+  ipcMain.handle(
+    'fs:readFile',
+    async (_event, filePath: string, encoding?: 'utf-8' | 'base64') => {
+      return new Promise<string>((resolve, reject) => {
+        if (encoding === 'base64') {
+          readFile(filePath, (err, data) => {
+            if (err) return reject(err.message)
+            resolve(data.toString('base64'))
+          })
+        } else {
+          readFile(filePath, 'utf-8', (err, data) => {
+            if (err) return reject(err.message)
+            resolve(data)
+          })
+        }
+      })
+    }
+  )
+
+  // Read a file as an ArrayBuffer (for binary formats like PPTX)
+  ipcMain.handle('fs:readFileBuffer', async (_event, filePath: string) => {
+    return new Promise<ArrayBuffer>((resolve, reject) => {
+      readFile(filePath, (err, data) => {
+        if (err) return reject(err.message)
+        resolve(data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength))
+      })
+    })
   })
 }

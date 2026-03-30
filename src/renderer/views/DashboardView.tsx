@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Plus, BookOpen, Search as SearchIcon } from 'lucide-react'
+import { Plus, Upload, BookOpen, Search as SearchIcon } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useDashboardStore } from '@/stores/useDashboardStore'
@@ -11,6 +11,7 @@ import { FilterBar } from '@/components/dashboard/FilterBar'
 import { CourseCard } from '@/components/dashboard/CourseCard'
 import { TemplateCard } from '@/components/dashboard/TemplateCard'
 import { NewCourseDialog } from '@/components/dashboard/NewCourseDialog'
+import { ImportDialog } from '@/components/dashboard/ImportDialog'
 import { createCourse } from '@/lib/mock-data'
 import type { CourseTemplate } from '@/types/course'
 
@@ -25,6 +26,7 @@ export function DashboardView(): JSX.Element {
   const activeSection = useDashboardStore((s) => s.activeSection)
 
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
 
   // Collect all unique tags
   const allTags = useMemo(() => {
@@ -74,10 +76,16 @@ export function DashboardView(): JSX.Element {
                   Create and manage your course content
                 </p>
               </div>
-              <Button variant="primary" size="md" onClick={() => setDialogOpen(true)}>
-                <Plus size={18} />
-                New Course
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="secondary" size="md" onClick={() => setImportOpen(true)}>
+                  <Upload size={18} />
+                  Import
+                </Button>
+                <Button variant="primary" size="md" onClick={() => setDialogOpen(true)}>
+                  <Plus size={18} />
+                  New Course
+                </Button>
+              </div>
             </div>
 
             {/* Search + Filter */}
@@ -156,6 +164,7 @@ export function DashboardView(): JSX.Element {
         )}
 
         <NewCourseDialog open={dialogOpen} onClose={() => setDialogOpen(false)} />
+        <ImportDialog open={importOpen} onClose={() => setImportOpen(false)} />
       </div>
     </div>
   )
