@@ -28,6 +28,8 @@ interface EditorState {
   themeEditorOpen: boolean
   auditPanelOpen: boolean
   certificateDesignerOpen: boolean
+  versionHistoryOpen: boolean
+  notesPanelOpen: boolean
 
   // Dirty state
   isDirty: boolean
@@ -64,6 +66,8 @@ interface EditorState {
   toggleThemeEditor: () => void
   toggleAuditPanel: () => void
   toggleCertificateDesigner: () => void
+  toggleVersionHistory: () => void
+  toggleNotesPanel: () => void
 
   // Dirty
   markDirty: () => void
@@ -94,6 +98,8 @@ const initialState = {
   themeEditorOpen: false,
   auditPanelOpen: false,
   certificateDesignerOpen: false,
+  versionHistoryOpen: false,
+  notesPanelOpen: false,
   isDirty: false,
   clipboardBlockIds: [] as string[],
   clipboardOperation: null as 'copy' | 'cut' | null
@@ -146,6 +152,8 @@ export const useEditorStore = create<EditorState>((set) => ({
   toggleThemeEditor: () => set((s) => ({ themeEditorOpen: !s.themeEditorOpen })),
   toggleAuditPanel: () => set((s) => ({ auditPanelOpen: !s.auditPanelOpen })),
   toggleCertificateDesigner: () => set((s) => ({ certificateDesignerOpen: !s.certificateDesignerOpen })),
+  toggleVersionHistory: () => set((s) => ({ versionHistoryOpen: !s.versionHistoryOpen })),
+  toggleNotesPanel: () => set((s) => ({ notesPanelOpen: !s.notesPanelOpen })),
 
   // Dirty
   markDirty: () => set({ isDirty: true }),

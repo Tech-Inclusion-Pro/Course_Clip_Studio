@@ -17,7 +17,9 @@ import {
   SplitSquareHorizontal,
   Palette,
   ShieldCheck,
-  Award
+  Award,
+  History,
+  MessageSquare
 } from 'lucide-react'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useEditorStore, type PreviewDevice } from '@/stores/useEditorStore'
@@ -59,6 +61,10 @@ export function EditorToolbar(): JSX.Element {
   const toggleThemeEditor = useEditorStore((s) => s.toggleThemeEditor)
   const toggleAuditPanel = useEditorStore((s) => s.toggleAuditPanel)
   const toggleCertificateDesigner = useEditorStore((s) => s.toggleCertificateDesigner)
+  const versionHistoryOpen = useEditorStore((s) => s.versionHistoryOpen)
+  const toggleVersionHistory = useEditorStore((s) => s.toggleVersionHistory)
+  const notesPanelOpen = useEditorStore((s) => s.notesPanelOpen)
+  const toggleNotesPanel = useEditorStore((s) => s.toggleNotesPanel)
   const toggleSplitPreview = useEditorStore((s) => s.toggleSplitPreview)
   const setPreviewDevice = useEditorStore((s) => s.setPreviewDevice)
 
@@ -216,6 +222,21 @@ export function EditorToolbar(): JSX.Element {
           label="AI Assistant"
           active={aiPanelOpen}
           onClick={toggleAIPanel}
+        />
+
+        <div className="w-px h-5 bg-[var(--border-default)] mx-1" aria-hidden="true" />
+
+        <ToolbarButton
+          icon={History}
+          label="Version History"
+          active={versionHistoryOpen}
+          onClick={toggleVersionHistory}
+        />
+        <ToolbarButton
+          icon={MessageSquare}
+          label="Notes"
+          active={notesPanelOpen}
+          onClick={toggleNotesPanel}
         />
 
         <div className="w-px h-5 bg-[var(--border-default)] mx-1" aria-hidden="true" />

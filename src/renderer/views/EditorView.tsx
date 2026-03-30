@@ -13,6 +13,8 @@ import { ThemeEditor } from '@/components/editor/ThemeEditor'
 import { AIPanel } from '@/components/editor/AIPanel'
 import { AccessibilityAuditPanel } from '@/components/editor/AccessibilityAuditPanel'
 import { CertificateDesigner } from '@/components/editor/CertificateDesigner'
+import { VersionHistoryPanel } from '@/components/editor/VersionHistoryPanel'
+import { CollaboratorNotesPanel } from '@/components/editor/CollaboratorNotesPanel'
 
 export function EditorView(): JSX.Element {
   const navigate = useNavigate()
@@ -27,6 +29,10 @@ export function EditorView(): JSX.Element {
   const toggleAuditPanel = useEditorStore((s) => s.toggleAuditPanel)
   const certificateDesignerOpen = useEditorStore((s) => s.certificateDesignerOpen)
   const toggleCertificateDesigner = useEditorStore((s) => s.toggleCertificateDesigner)
+  const versionHistoryOpen = useEditorStore((s) => s.versionHistoryOpen)
+  const toggleVersionHistory = useEditorStore((s) => s.toggleVersionHistory)
+  const notesPanelOpen = useEditorStore((s) => s.notesPanelOpen)
+  const toggleNotesPanel = useEditorStore((s) => s.toggleNotesPanel)
   const pushSnapshot = useHistoryStore((s) => s.pushSnapshot)
   const shouldAutoSnapshot = useHistoryStore((s) => s.shouldAutoSnapshot)
   const markAutoSnapshot = useHistoryStore((s) => s.markAutoSnapshot)
@@ -138,6 +144,26 @@ export function EditorView(): JSX.Element {
             aria-label="AI assistant"
           >
             <AIPanel onClose={toggleAIPanel} />
+          </aside>
+        )}
+
+        {/* Version History Panel */}
+        {versionHistoryOpen && (
+          <aside
+            className="w-80 shrink-0 border-l border-[var(--border-default)] bg-[var(--bg-surface)] overflow-y-auto"
+            aria-label="Version history"
+          >
+            <VersionHistoryPanel onClose={toggleVersionHistory} />
+          </aside>
+        )}
+
+        {/* Collaborator Notes Panel */}
+        {notesPanelOpen && (
+          <aside
+            className="w-80 shrink-0 border-l border-[var(--border-default)] bg-[var(--bg-surface)] overflow-y-auto"
+            aria-label="Collaborator notes"
+          >
+            <CollaboratorNotesPanel onClose={toggleNotesPanel} />
           </aside>
         )}
       </div>

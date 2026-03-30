@@ -17,11 +17,13 @@ interface BlockWrapperProps {
   block: ContentBlock
   index: number
   totalBlocks: number
+  collaboratorNoteCount?: number
   onSelect: () => void
   onDuplicate: () => void
   onDelete: () => void
   onMoveUp: () => void
   onMoveDown: () => void
+  onAddNote?: () => void
   children: React.ReactNode
 }
 
@@ -29,18 +31,20 @@ export function BlockWrapper({
   block,
   index,
   totalBlocks,
+  collaboratorNoteCount = 0,
   onSelect,
   onDuplicate,
   onDelete,
   onMoveUp,
   onMoveDown,
+  onAddNote,
   children
 }: BlockWrapperProps): JSX.Element {
   const selectedBlockId = useEditorStore((s) => s.selectedBlockId)
   const setSelectedBlock = useEditorStore((s) => s.setSelectedBlock)
   const toggleBlockSelection = useEditorStore((s) => s.toggleBlockSelection)
   const isSelected = selectedBlockId === block.id
-  const hasNotes = block.notes.length > 0
+  const hasNotes = block.notes.length > 0 || collaboratorNoteCount > 0
 
   const {
     attributes,
@@ -159,6 +163,16 @@ export function BlockWrapper({
         >
           <Copy size={13} />
         </button>
+        {onAddNote && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onAddNote() }}
+            className="p-1 rounded cursor-pointer text-[var(--text-tertiary)] hover:text-[var(--brand-purple)] hover:bg-[var(--bg-hover)]"
+            aria-label="Add note to block"
+            title="Add note"
+          >
+            <MessageSquare size={13} />
+          </button>
+        )}
         <button
           onClick={(e) => { e.stopPropagation(); onDelete() }}
           className="p-1 rounded cursor-pointer text-[var(--color-danger-600)] hover:bg-[var(--color-danger-100,#fee2e2)]"
@@ -173,10 +187,14 @@ export function BlockWrapper({
       {hasNotes && (
         <div
           className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[var(--brand-magenta)] text-white flex items-center justify-center"
-          title="Has collaborator notes"
-          aria-label="Block has notes"
+          title={collaboratorNoteCount > 0 ? `${collaboratorNoteCount} note${collaboratorNoteCount !== 1 ? 's' : ''}` : 'Has notes'}
+          aria-label={collaboratorNoteCount > 0 ? `${collaboratorNoteCount} collaborator notes` : 'Block has notes'}
         >
-          <MessageSquare size={10} />
+          {collaboratorNoteCount > 0 ? (
+            <span className="text-[8px] font-[var(--font-weight-semibold)]">{collaboratorNoteCount}</span>
+          ) : (
+            <MessageSquare size={10} />
+          )}
         </div>
       )}
     </div>

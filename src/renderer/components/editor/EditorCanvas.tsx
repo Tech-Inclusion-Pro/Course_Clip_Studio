@@ -16,6 +16,8 @@ import {
 } from '@dnd-kit/sortable'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useEditorStore } from '@/stores/useEditorStore'
+import { useAppStore } from '@/stores/useAppStore'
+import { uid } from '@/lib/uid'
 import { findLesson } from '@/lib/course-helpers'
 import { createBlock } from '@/lib/block-factories'
 import { BlockWrapper } from './BlockWrapper'
@@ -43,6 +45,7 @@ export function EditorCanvas(): JSX.Element {
   const activeCourseId = useCourseStore((s) => s.activeCourseId)
   const course = useCourseStore((s) => s.courses.find((c) => c.id === s.activeCourseId))
   const addBlock = useCourseStore((s) => s.addBlock)
+  const addNote = useCourseStore((s) => s.addNote)
   const removeBlock = useCourseStore((s) => s.removeBlock)
   const duplicateBlock = useCourseStore((s) => s.duplicateBlock)
   const reorderBlocks = useCourseStore((s) => s.reorderBlocks)
@@ -52,11 +55,45 @@ export function EditorCanvas(): JSX.Element {
   const activeLessonId = useEditorStore((s) => s.activeLessonId)
   const selectedBlockId = useEditorStore((s) => s.selectedBlockId)
   const setSelectedBlock = useEditorStore((s) => s.setSelectedBlock)
+  const toggleNotesPanel = useEditorStore((s) => s.toggleNotesPanel)
+  const notesPanelOpen = useEditorStore((s) => s.notesPanelOpen)
+
+  const authorName = useAppStore((s) => s.authorName)
 
   const lessonData = useMemo(() => {
     if (!course || !activeLessonId) return null
     return findLesson(course, activeLessonId)
   }, [course, activeLessonId])
+
+  // Count unresolved collaborator notes per block
+  const noteCountMap = useMemo(() => {
+    const map = new Map<string, number>()
+    if (!lessonData) return map
+    for (const note of lessonData.lesson.notes) {
+      if (!note.resolved && note.blockId) {
+        map.set(note.blockId, (map.get(note.blockId) ?? 0) + 1)
+      }
+    }
+    return map
+  }, [lessonData])
+
+  function handleAddNoteToBlock(blockId: string) {
+    if (!activeCourseId || !activeModuleId || !activeLessonId) return
+    const note = {
+      id: uid('note'),
+      blockId,
+      author: authorName,
+      content: '',
+      timestamp: new Date().toISOString(),
+      resolved: false
+    }
+    // Open the notes panel and let user fill in the note there
+    if (!notesPanelOpen) toggleNotesPanel()
+    addNote(activeCourseId, activeModuleId, activeLessonId, {
+      ...note,
+      content: 'New note — edit in the Notes panel'
+    })
+  }
 
   // dnd-kit sensors
   const sensors = useSensors(
@@ -223,11 +260,13 @@ export function EditorCanvas(): JSX.Element {
                     block={block}
                     index={index}
                     totalBlocks={lesson.blocks.length}
+                    collaboratorNoteCount={noteCountMap.get(block.id) ?? 0}
                     onSelect={() => setSelectedBlock(block.id)}
                     onDuplicate={() => handleDuplicateBlock(block.id)}
                     onDelete={() => handleDeleteBlock(block.id)}
                     onMoveUp={() => handleMoveBlock(index, 'up')}
                     onMoveDown={() => handleMoveBlock(index, 'down')}
+                    onAddNote={() => handleAddNoteToBlock(block.id)}
                   >
                     {renderBlockContent(block)}
                   </BlockWrapper>

@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { uid } from '@/lib/uid'
 import { reorder } from '@/lib/course-helpers'
-import type { Course, Module, Lesson, ContentBlock, CourseMeta, CourseSettings, CourseTheme, UDLChecklist, PublishStatus } from '@/types/course'
+import type { Course, Module, Lesson, ContentBlock, CourseMeta, CourseSettings, CourseTheme, UDLChecklist, PublishStatus, CollaboratorNote } from '@/types/course'
 
 // ─── Helper: immutably update a course by ID ───
 
@@ -68,6 +68,12 @@ interface CourseState {
   updateLesson: (courseId: string, moduleId: string, lessonId: string, partial: Partial<Lesson>) => void
   reorderLessons: (courseId: string, moduleId: string, fromIndex: number, toIndex: number) => void
   moveLessonToModule: (courseId: string, fromModuleId: string, toModuleId: string, lessonId: string, toIndex: number) => void
+
+  // Note-level (collaborator notes on lessons)
+  addNote: (courseId: string, moduleId: string, lessonId: string, note: CollaboratorNote) => void
+  resolveNote: (courseId: string, moduleId: string, lessonId: string, noteId: string) => void
+  unresolveNote: (courseId: string, moduleId: string, lessonId: string, noteId: string) => void
+  deleteNote: (courseId: string, moduleId: string, lessonId: string, noteId: string) => void
 
   // Block-level
   addBlock: (courseId: string, moduleId: string, lessonId: string, block: ContentBlock, atIndex?: number) => void
@@ -273,6 +279,48 @@ export const useCourseStore = create<CourseState>((set, get) => ({
           updatedAt: new Date().toISOString()
         }
       })
+    })),
+
+  // ─── Note-level (collaborator notes) ───
+
+  addNote: (courseId, moduleId, lessonId, note) =>
+    set((state) => ({
+      courses: mapCourse(state.courses, courseId, (c) =>
+        mapLesson(c, moduleId, lessonId, (l) => ({
+          ...l,
+          notes: [...l.notes, note]
+        }))
+      )
+    })),
+
+  resolveNote: (courseId, moduleId, lessonId, noteId) =>
+    set((state) => ({
+      courses: mapCourse(state.courses, courseId, (c) =>
+        mapLesson(c, moduleId, lessonId, (l) => ({
+          ...l,
+          notes: l.notes.map((n) => (n.id === noteId ? { ...n, resolved: true } : n))
+        }))
+      )
+    })),
+
+  unresolveNote: (courseId, moduleId, lessonId, noteId) =>
+    set((state) => ({
+      courses: mapCourse(state.courses, courseId, (c) =>
+        mapLesson(c, moduleId, lessonId, (l) => ({
+          ...l,
+          notes: l.notes.map((n) => (n.id === noteId ? { ...n, resolved: false } : n))
+        }))
+      )
+    })),
+
+  deleteNote: (courseId, moduleId, lessonId, noteId) =>
+    set((state) => ({
+      courses: mapCourse(state.courses, courseId, (c) =>
+        mapLesson(c, moduleId, lessonId, (l) => ({
+          ...l,
+          notes: l.notes.filter((n) => n.id !== noteId)
+        }))
+      )
     })),
 
   // ─── Block-level ───
