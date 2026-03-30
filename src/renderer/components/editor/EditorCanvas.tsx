@@ -23,6 +23,19 @@ import { BlockPreview } from './BlockPreview'
 import { TextBlockEditor } from './TextBlockEditor'
 import { MediaBlockEditor } from './MediaBlockEditor'
 import { QuizBlockEditor } from './QuizBlockEditor'
+import { VideoBlockEditor } from './VideoBlockEditor'
+import { AudioBlockEditor } from './AudioBlockEditor'
+import { DragDropBlockEditor } from './DragDropBlockEditor'
+import { MatchingBlockEditor } from './MatchingBlockEditor'
+import { AccordionBlockEditor } from './AccordionBlockEditor'
+import { TabsBlockEditor } from './TabsBlockEditor'
+import { FlashcardBlockEditor } from './FlashcardBlockEditor'
+import { BranchingBlockEditor } from './BranchingBlockEditor'
+import { EmbedBlockEditor } from './EmbedBlockEditor'
+import { CodeBlockEditor } from './CodeBlockEditor'
+import { CalloutBlockEditor } from './CalloutBlockEditor'
+import { H5PBlockEditor } from './H5PBlockEditor'
+import { CustomHTMLBlockEditor } from './CustomHTMLBlockEditor'
 import { BlockInserterButton } from './BlockInserter'
 import type { BlockType, ContentBlock } from '@/types/course'
 
@@ -123,36 +136,52 @@ export function EditorCanvas(): JSX.Element {
 
   function renderBlockContent(block: ContentBlock) {
     const isSelected = selectedBlockId === block.id
+    const updateFn = (partial: Partial<ContentBlock>) => handleBlockUpdate(block.id, partial)
 
-    // Inline editors for text and media blocks when selected
-    if (isSelected && block.type === 'text') {
-      return (
-        <TextBlockEditor
-          block={block}
-          onUpdate={(partial) => handleBlockUpdate(block.id, partial as Partial<ContentBlock>)}
-        />
-      )
+    if (!isSelected) {
+      return <BlockPreview block={block} />
     }
 
-    if (isSelected && block.type === 'media') {
-      return (
-        <MediaBlockEditor
-          block={block}
-          onUpdate={(partial) => handleBlockUpdate(block.id, partial as Partial<ContentBlock>)}
-        />
-      )
+    // Inline editors for all block types when selected
+    switch (block.type) {
+      case 'text':
+        return <TextBlockEditor block={block} onUpdate={updateFn} />
+      case 'media':
+        return <MediaBlockEditor block={block} onUpdate={updateFn} />
+      case 'quiz':
+        return <QuizBlockEditor block={block} onUpdate={updateFn} />
+      case 'video':
+        return <VideoBlockEditor block={block} onUpdate={updateFn} />
+      case 'audio':
+        return <AudioBlockEditor block={block} onUpdate={updateFn} />
+      case 'drag-drop':
+        return <DragDropBlockEditor block={block} onUpdate={updateFn} />
+      case 'matching':
+        return <MatchingBlockEditor block={block} onUpdate={updateFn} />
+      case 'accordion':
+        return <AccordionBlockEditor block={block} onUpdate={updateFn} />
+      case 'tabs':
+        return <TabsBlockEditor block={block} onUpdate={updateFn} />
+      case 'flashcard':
+        return <FlashcardBlockEditor block={block} onUpdate={updateFn} />
+      case 'branching':
+        return <BranchingBlockEditor block={block} onUpdate={updateFn} />
+      case 'embed':
+        return <EmbedBlockEditor block={block} onUpdate={updateFn} />
+      case 'code':
+        return <CodeBlockEditor block={block} onUpdate={updateFn} />
+      case 'callout':
+        return <CalloutBlockEditor block={block} onUpdate={updateFn} />
+      case 'h5p':
+        return <H5PBlockEditor block={block} onUpdate={updateFn} />
+      case 'custom-html':
+        return <CustomHTMLBlockEditor block={block} onUpdate={updateFn} />
+      case 'divider':
+        // Divider is simple enough to just show preview even when selected
+        return <BlockPreview block={block} />
+      default:
+        return <BlockPreview block={block} />
     }
-
-    if (isSelected && block.type === 'quiz') {
-      return (
-        <QuizBlockEditor
-          block={block}
-          onUpdate={(partial) => handleBlockUpdate(block.id, partial as Partial<ContentBlock>)}
-        />
-      )
-    }
-
-    return <BlockPreview block={block} />
   }
 
   return (

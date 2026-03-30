@@ -1,5 +1,4 @@
 import {
-  Type,
   Image,
   Video,
   AudioLines,
@@ -7,36 +6,24 @@ import {
   GripVertical,
   Link2,
   ChevronsUpDown,
-  Layers,
   FlipVertical,
   GitBranch,
-  Code2,
-  Minus,
   AlertTriangle,
   Box,
-  FileCode
+  FileCode,
+  Info,
+  CheckCircle2,
+  XCircle,
+  Lightbulb
 } from 'lucide-react'
-import { BLOCK_TYPE_LABELS } from '@/types/course'
-import type { ContentBlock, BlockType } from '@/types/course'
+import type { ContentBlock, CalloutBlock } from '@/types/course'
 
-const BLOCK_ICONS: Record<BlockType, typeof Type> = {
-  'text': Type,
-  'media': Image,
-  'video': Video,
-  'audio': AudioLines,
-  'quiz': HelpCircle,
-  'drag-drop': GripVertical,
-  'matching': Link2,
-  'accordion': ChevronsUpDown,
-  'tabs': Layers,
-  'flashcard': FlipVertical,
-  'branching': GitBranch,
-  'embed': Box,
-  'code': Code2,
-  'divider': Minus,
-  'callout': AlertTriangle,
-  'h5p': Box,
-  'custom-html': FileCode
+const CALLOUT_ICONS: Record<CalloutBlock['variant'], typeof Info> = {
+  info: Info,
+  warning: AlertTriangle,
+  success: CheckCircle2,
+  danger: XCircle,
+  tip: Lightbulb
 }
 
 interface BlockPreviewProps {
@@ -118,6 +105,187 @@ export function BlockPreview({ block }: BlockPreviewProps): JSX.Element {
         </div>
       )
 
+    case 'drag-drop':
+      return (
+        <div className="p-3 rounded-lg bg-[var(--bg-muted)]">
+          <div className="flex items-center gap-2 mb-1">
+            <GripVertical size={16} className="text-[var(--text-tertiary)]" />
+            <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+              Drag & Drop
+            </span>
+          </div>
+          <p className="text-xs text-[var(--text-secondary)]">
+            {block.items.length} item{block.items.length !== 1 ? 's' : ''} &rarr; {block.zones.length} zone{block.zones.length !== 1 ? 's' : ''}
+          </p>
+          {block.instruction && (
+            <p className="text-xs text-[var(--text-tertiary)] mt-1 truncate italic">{block.instruction}</p>
+          )}
+        </div>
+      )
+
+    case 'matching':
+      return (
+        <div className="p-3 rounded-lg bg-[var(--bg-muted)]">
+          <div className="flex items-center gap-2 mb-1">
+            <Link2 size={16} className="text-[var(--text-tertiary)]" />
+            <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+              Matching Activity
+            </span>
+          </div>
+          <p className="text-xs text-[var(--text-secondary)]">
+            {block.leftItems.length} left &harr; {block.rightItems.length} right ({block.correctPairs.length} pair{block.correctPairs.length !== 1 ? 's' : ''})
+          </p>
+        </div>
+      )
+
+    case 'accordion':
+      return (
+        <div className="p-3 rounded-lg bg-[var(--bg-muted)]">
+          <div className="flex items-center gap-2 mb-1.5">
+            <ChevronsUpDown size={16} className="text-[var(--text-tertiary)]" />
+            <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+              Accordion ({block.items.length} section{block.items.length !== 1 ? 's' : ''})
+            </span>
+          </div>
+          <div className="space-y-1">
+            {block.items.slice(0, 3).map((item, i) => (
+              <div key={i} className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
+                <span className="text-[var(--text-tertiary)]">&rsaquo;</span>
+                <span className="truncate">{item.title || `Section ${i + 1}`}</span>
+              </div>
+            ))}
+            {block.items.length > 3 && (
+              <p className="text-[10px] text-[var(--text-tertiary)]">+{block.items.length - 3} more</p>
+            )}
+          </div>
+        </div>
+      )
+
+    case 'tabs':
+      return (
+        <div className="rounded-lg bg-[var(--bg-muted)] overflow-hidden">
+          <div className="flex items-center gap-0.5 px-3 pt-2 border-b border-[var(--border-default)]">
+            {block.tabs.slice(0, 4).map((tab, i) => (
+              <span
+                key={i}
+                className={`px-2 py-1 text-xs rounded-t-md ${
+                  i === 0
+                    ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] font-[var(--font-weight-medium)] border border-b-0 border-[var(--border-default)]'
+                    : 'text-[var(--text-tertiary)]'
+                }`}
+              >
+                {tab.label || `Tab ${i + 1}`}
+              </span>
+            ))}
+            {block.tabs.length > 4 && (
+              <span className="px-2 py-1 text-[10px] text-[var(--text-tertiary)]">+{block.tabs.length - 4}</span>
+            )}
+          </div>
+          <div className="p-3">
+            <p className="text-xs text-[var(--text-secondary)] truncate">
+              {block.tabs[0]?.content || 'Empty tab content...'}
+            </p>
+          </div>
+        </div>
+      )
+
+    case 'flashcard':
+      return (
+        <div className="p-3 rounded-lg bg-[var(--bg-muted)]">
+          <div className="flex items-center gap-2 mb-1.5">
+            <FlipVertical size={16} className="text-[var(--text-tertiary)]" />
+            <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+              Flashcards ({block.cards.length} card{block.cards.length !== 1 ? 's' : ''})
+            </span>
+          </div>
+          {block.cards[0] && (
+            <div className="p-2 rounded-md bg-[var(--bg-surface)] border border-[var(--border-default)]">
+              <p className="text-xs text-[var(--text-primary)] truncate">
+                {block.cards[0].front || 'Empty front...'}
+              </p>
+            </div>
+          )}
+        </div>
+      )
+
+    case 'branching':
+      return (
+        <div className="p-3 rounded-lg bg-[var(--bg-muted)]">
+          <div className="flex items-center gap-2 mb-1.5">
+            <GitBranch size={16} className="text-[var(--text-tertiary)]" />
+            <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+              Branching Scenario
+            </span>
+          </div>
+          {block.scenario && (
+            <p className="text-xs text-[var(--text-secondary)] mb-1.5 line-clamp-2">{block.scenario}</p>
+          )}
+          <div className="flex flex-wrap gap-1">
+            {block.choices.map((choice, i) => (
+              <span key={choice.id} className="px-2 py-0.5 text-[10px] rounded-full bg-[var(--bg-surface)] border border-[var(--border-default)] text-[var(--text-secondary)]">
+                {choice.label || `Choice ${i + 1}`}
+              </span>
+            ))}
+            {block.choices.length === 0 && (
+              <p className="text-xs text-[var(--text-tertiary)] italic">No choices configured</p>
+            )}
+          </div>
+        </div>
+      )
+
+    case 'embed':
+      return (
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--bg-muted)]">
+          <Box size={24} className="text-[var(--text-tertiary)] shrink-0" />
+          <div className="min-w-0">
+            <p className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+              {block.title || 'Embed'}
+            </p>
+            <p className="text-xs text-[var(--text-secondary)] truncate">
+              {block.url || 'No URL set'}
+            </p>
+            {!block.title && (
+              <p className="text-xs text-[var(--color-danger-600)] mt-0.5">Missing accessible title</p>
+            )}
+          </div>
+        </div>
+      )
+
+    case 'h5p':
+      return (
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--bg-muted)]">
+          <Box size={24} className="text-[var(--text-tertiary)] shrink-0" />
+          <div className="min-w-0">
+            <p className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+              H5P Content
+            </p>
+            <p className="text-xs text-[var(--text-secondary)] truncate">
+              {block.embedUrl || 'No URL set'}
+            </p>
+          </div>
+        </div>
+      )
+
+    case 'custom-html':
+      return (
+        <div className="rounded-lg bg-[#1e1e2e] overflow-hidden">
+          <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[#313244]">
+            <FileCode size={12} className="text-[#a6adc8]" />
+            <span className="text-[10px] text-[#a6adc8]">Custom HTML</span>
+            <div className="ml-auto flex gap-2">
+              {block.html && <span className="text-[10px] text-[#89b4fa]">HTML</span>}
+              {block.css && <span className="text-[10px] text-[#a6e3a1]">CSS</span>}
+              {block.js && <span className="text-[10px] text-[#f9e2af]">JS</span>}
+            </div>
+          </div>
+          <div className="px-3 py-2">
+            <pre className="text-xs text-[#cdd6f4] font-mono whitespace-pre-wrap line-clamp-3">
+              {block.html || block.css || block.js || '<!-- Empty custom block -->'}
+            </pre>
+          </div>
+        </div>
+      )
+
     case 'callout': {
       const variantColors: Record<string, string> = {
         info: 'border-l-blue-500 bg-blue-50 dark:bg-blue-950/30',
@@ -126,14 +294,20 @@ export function BlockPreview({ block }: BlockPreviewProps): JSX.Element {
         danger: 'border-l-red-500 bg-red-50 dark:bg-red-950/30',
         tip: 'border-l-purple-500 bg-purple-50 dark:bg-purple-950/30'
       }
+      const CIcon = CALLOUT_ICONS[block.variant] || Info
       return (
         <div className={`p-3 rounded-lg border-l-4 ${variantColors[block.variant] || variantColors.info}`}>
-          {block.title && (
-            <p className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-primary)] mb-1">{block.title}</p>
-          )}
-          <p className="text-sm text-[var(--text-secondary)]">
-            {block.content || 'Empty callout...'}
-          </p>
+          <div className="flex items-start gap-2">
+            <CIcon size={16} className="shrink-0 mt-0.5 opacity-60" />
+            <div>
+              {block.title && (
+                <p className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-primary)] mb-0.5">{block.title}</p>
+              )}
+              <p className="text-sm text-[var(--text-secondary)]">
+                {block.content || 'Empty callout...'}
+              </p>
+            </div>
+          </div>
         </div>
       )
     }
@@ -158,19 +332,23 @@ export function BlockPreview({ block }: BlockPreviewProps): JSX.Element {
         <div className="p-3 rounded-lg bg-[#1e1e2e] text-[#cdd6f4] font-mono text-xs overflow-x-auto">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-[10px] uppercase tracking-wider text-[#a6adc8]">{block.language}</span>
+            {block.runnable && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-900/30 text-emerald-400">Runnable</span>
+            )}
           </div>
           <pre className="whitespace-pre-wrap">{block.code || '// Empty code block'}</pre>
         </div>
       )
 
     default: {
-      const Icon = BLOCK_ICONS[block.type] || Box
+      const _exhaustive: never = block
+      void _exhaustive
       return (
         <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--bg-muted)]">
-          <Icon size={20} className="text-[var(--text-tertiary)] shrink-0" />
+          <Box size={20} className="text-[var(--text-tertiary)] shrink-0" />
           <div>
             <p className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
-              {BLOCK_TYPE_LABELS[block.type]}
+              Unknown Block
             </p>
             <p className="text-xs text-[var(--text-tertiary)]">
               Click to configure this block

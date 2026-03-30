@@ -450,12 +450,156 @@ function TypeSpecificFields({
         </>
       )
 
-    default:
+    case 'drag-drop':
       return (
-        <p className="text-xs text-[var(--text-tertiary)]">
-          Properties editor for {BLOCK_TYPE_LABELS[block.type]} will be expanded in a future milestone.
-        </p>
+        <>
+          <p className="text-xs text-[var(--text-tertiary)] mb-2">
+            Use the inline editor in the canvas to manage items and zones.
+          </p>
+          <FieldGroup label="Instruction">
+            <input
+              type="text"
+              value={block.instruction}
+              onChange={(e) => onUpdate({ instruction: e.target.value } as Partial<ContentBlock>)}
+              className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+              placeholder="Drag each item to the correct zone."
+            />
+          </FieldGroup>
+          <div className="p-2 rounded-md bg-[var(--bg-muted)]">
+            <p className="text-xs font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+              {block.items.length} item{block.items.length !== 1 ? 's' : ''}, {block.zones.length} zone{block.zones.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+        </>
       )
+
+    case 'matching':
+      return (
+        <>
+          <p className="text-xs text-[var(--text-tertiary)] mb-2">
+            Use the inline editor in the canvas to manage matching pairs.
+          </p>
+          <FieldGroup label="Instruction">
+            <input
+              type="text"
+              value={block.instruction}
+              onChange={(e) => onUpdate({ instruction: e.target.value } as Partial<ContentBlock>)}
+              className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+            />
+          </FieldGroup>
+          <div className="p-2 rounded-md bg-[var(--bg-muted)]">
+            <p className="text-xs font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+              {block.leftItems.length} left, {block.rightItems.length} right, {block.correctPairs.length} pair{block.correctPairs.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+        </>
+      )
+
+    case 'accordion':
+      return (
+        <>
+          <p className="text-xs text-[var(--text-tertiary)] mb-2">
+            Use the inline editor in the canvas to manage accordion sections.
+          </p>
+          <div className="p-2 rounded-md bg-[var(--bg-muted)]">
+            <p className="text-xs font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+              {block.items.length} section{block.items.length !== 1 ? 's' : ''}
+            </p>
+            {block.items.length > 0 && (
+              <div className="mt-1 space-y-0.5">
+                {block.items.map((item, i) => (
+                  <p key={i} className="text-[10px] text-[var(--text-tertiary)] truncate">
+                    {i + 1}. {item.title || 'Untitled section'}
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )
+
+    case 'tabs':
+      return (
+        <>
+          <p className="text-xs text-[var(--text-tertiary)] mb-2">
+            Use the inline editor in the canvas to manage tabs.
+          </p>
+          <div className="p-2 rounded-md bg-[var(--bg-muted)]">
+            <p className="text-xs font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+              {block.tabs.length} tab{block.tabs.length !== 1 ? 's' : ''}
+            </p>
+            {block.tabs.length > 0 && (
+              <div className="mt-1 space-y-0.5">
+                {block.tabs.map((tab, i) => (
+                  <p key={i} className="text-[10px] text-[var(--text-tertiary)] truncate">
+                    {i + 1}. {tab.label || 'Untitled tab'}
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )
+
+    case 'flashcard':
+      return (
+        <>
+          <p className="text-xs text-[var(--text-tertiary)] mb-2">
+            Use the inline editor in the canvas to add and edit cards.
+          </p>
+          <div className="p-2 rounded-md bg-[var(--bg-muted)]">
+            <p className="text-xs font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+              {block.cards.length} card{block.cards.length !== 1 ? 's' : ''}
+            </p>
+            {block.cards.length > 0 && (
+              <div className="mt-1 space-y-0.5">
+                {block.cards.slice(0, 5).map((card, i) => (
+                  <p key={i} className="text-[10px] text-[var(--text-tertiary)] truncate">
+                    {i + 1}. {card.front || 'Empty front'}
+                  </p>
+                ))}
+                {block.cards.length > 5 && (
+                  <p className="text-[10px] text-[var(--text-tertiary)]">+{block.cards.length - 5} more</p>
+                )}
+              </div>
+            )}
+          </div>
+        </>
+      )
+
+    case 'branching':
+      return (
+        <>
+          <p className="text-xs text-[var(--text-tertiary)] mb-2">
+            Use the inline editor in the canvas to manage scenario and choices.
+          </p>
+          <FieldGroup label="Scenario">
+            <textarea
+              value={block.scenario}
+              onChange={(e) => onUpdate({ scenario: e.target.value } as Partial<ContentBlock>)}
+              rows={3}
+              className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)] resize-y"
+            />
+          </FieldGroup>
+          <div className="p-2 rounded-md bg-[var(--bg-muted)]">
+            <p className="text-xs font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+              {block.choices.length} choice{block.choices.length !== 1 ? 's' : ''} (max 4)
+            </p>
+            {block.choices.length > 0 && (
+              <div className="mt-1 space-y-0.5">
+                {block.choices.map((choice, i) => (
+                  <p key={choice.id} className="text-[10px] text-[var(--text-tertiary)] truncate">
+                    {i + 1}. {choice.label || 'Untitled choice'} {choice.nextLessonId ? '→ lesson' : ''}
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )
+
+    default:
+      return null
   }
 }
 
