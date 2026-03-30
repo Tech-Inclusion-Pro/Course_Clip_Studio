@@ -1,4 +1,4 @@
-import { ipcMain, dialog, app, BrowserWindow } from 'electron'
+import { ipcMain, dialog, app, BrowserWindow, net } from 'electron'
 import { readFileSync, readFile, writeFileSync, existsSync, mkdirSync, readdirSync, statSync, rmSync } from 'fs'
 import { join, dirname } from 'path'
 
@@ -185,4 +185,153 @@ export function registerIpcHandlers(): void {
     config[key] = value
     writeConfig(config)
   })
+
+  // ─── HTTP Requests (for LMS API calls, bypasses CORS) ───
+
+  ipcMain.handle(
+    'net:request',
+    async (
+      _event,
+      opts: {
+        url: string
+        method?: string
+        headers?: Record<string, string>
+        body?: string
+      }
+    ): Promise<{ status: number; statusText: string; headers: Record<string, string>; body: string }> => {
+      return new Promise((resolve, reject) => {
+        try {
+          const request = net.request({
+            url: opts.url,
+            method: (opts.method ?? 'GET') as 'GET' | 'POST' | 'PUT' | 'DELETE'
+          })
+
+          if (opts.headers) {
+            for (const [key, value] of Object.entries(opts.headers)) {
+              request.setHeader(key, value)
+            }
+          }
+
+          let responseBody = ''
+          let responseHeaders: Record<string, string> = {}
+
+          request.on('response', (response) => {
+            const rawHeaders = response.headers
+            for (const [key, value] of Object.entries(rawHeaders)) {
+              responseHeaders[key] = Array.isArray(value) ? value.join(', ') : (value as string)
+            }
+
+            response.on('data', (chunk: Buffer) => {
+              responseBody += chunk.toString()
+            })
+
+            response.on('end', () => {
+              resolve({
+                status: response.statusCode,
+                statusText: response.statusMessage ?? '',
+                headers: responseHeaders,
+                body: responseBody
+              })
+            })
+          })
+
+          request.on('error', (err) => {
+            reject(err.message)
+          })
+
+          if (opts.body) {
+            request.write(opts.body)
+          }
+
+          request.end()
+        } catch (err) {
+          reject(err instanceof Error ? err.message : 'Network request failed')
+        }
+      })
+    }
+  )
+
+  // Upload file with multipart/form-data (for LMS SCORM package upload)
+  ipcMain.handle(
+    'net:uploadFile',
+    async (
+      _event,
+      opts: {
+        url: string
+        method?: string
+        headers?: Record<string, string>
+        fileData: ArrayBuffer
+        fileName: string
+        fieldName: string
+        extraFields?: Record<string, string>
+      }
+    ): Promise<{ status: number; statusText: string; body: string }> => {
+      return new Promise((resolve, reject) => {
+        try {
+          const boundary = '----LuminaBoundary' + Date.now().toString(36)
+          const fileBuffer = Buffer.from(opts.fileData)
+
+          // Build multipart body
+          const parts: Buffer[] = []
+
+          // Extra form fields
+          if (opts.extraFields) {
+            for (const [key, value] of Object.entries(opts.extraFields)) {
+              parts.push(Buffer.from(
+                `--${boundary}\r\nContent-Disposition: form-data; name="${key}"\r\n\r\n${value}\r\n`
+              ))
+            }
+          }
+
+          // File field
+          parts.push(Buffer.from(
+            `--${boundary}\r\nContent-Disposition: form-data; name="${opts.fieldName}"; filename="${opts.fileName}"\r\nContent-Type: application/zip\r\n\r\n`
+          ))
+          parts.push(fileBuffer)
+          parts.push(Buffer.from(`\r\n--${boundary}--\r\n`))
+
+          const body = Buffer.concat(parts)
+
+          const request = net.request({
+            url: opts.url,
+            method: (opts.method ?? 'POST') as 'POST' | 'PUT'
+          })
+
+          request.setHeader('Content-Type', `multipart/form-data; boundary=${boundary}`)
+          request.setHeader('Content-Length', String(body.length))
+
+          if (opts.headers) {
+            for (const [key, value] of Object.entries(opts.headers)) {
+              request.setHeader(key, value)
+            }
+          }
+
+          let responseBody = ''
+
+          request.on('response', (response) => {
+            response.on('data', (chunk: Buffer) => {
+              responseBody += chunk.toString()
+            })
+
+            response.on('end', () => {
+              resolve({
+                status: response.statusCode,
+                statusText: response.statusMessage ?? '',
+                body: responseBody
+              })
+            })
+          })
+
+          request.on('error', (err) => {
+            reject(err.message)
+          })
+
+          request.write(body)
+          request.end()
+        } catch (err) {
+          reject(err instanceof Error ? err.message : 'Upload failed')
+        }
+      })
+    }
+  )
 }

@@ -19,6 +19,7 @@ import { buildScormPackage, downloadBlob, type PackageProgress } from '@/lib/sco
 import { buildScorm2004Package } from '@/lib/scorm'
 import { buildXapiPackage } from '@/lib/xapi'
 import { buildHtmlPackage, buildPdf, type PdfOptions } from '@/lib/export'
+import { LmsUploadWizard } from '@/components/publish/LmsUploadWizard'
 import type { Course, ExportFormat, XAPIConfig } from '@/types/course'
 
 type WizardStep = 'preflight' | 'format' | 'settings' | 'build'
@@ -83,6 +84,8 @@ function PublishWizard({ course }: { course: Course }): JSX.Element {
   const [progress, setProgress] = useState<PackageProgress | null>(null)
   const [buildError, setBuildError] = useState<string | null>(null)
   const [buildComplete, setBuildComplete] = useState(false)
+  const [builtBlob, setBuiltBlob] = useState<Blob | null>(null)
+  const [showLmsWizard, setShowLmsWizard] = useState(false)
 
   // Pre-flight checks
   const missingAlt = findMissingAltText(course)
@@ -97,13 +100,16 @@ function PublishWizard({ course }: { course: Course }): JSX.Element {
 
     try {
       const safeName = course.meta.title.replace(/[^a-zA-Z0-9]/g, '_')
+      setBuiltBlob(null)
 
       if (format === 'scorm-1.2') {
         const blob = await buildScormPackage(course, setProgress)
         downloadBlob(blob, `${safeName}_SCORM12.zip`)
+        setBuiltBlob(blob)
       } else if (format === 'scorm-2004') {
         const blob = await buildScorm2004Package(course, setProgress)
         downloadBlob(blob, `${safeName}_SCORM2004.zip`)
+        setBuiltBlob(blob)
       } else if (format === 'xapi') {
         const xapiConfig: XAPIConfig = {
           endpoint: xapiEndpoint,
@@ -257,6 +263,8 @@ function PublishWizard({ course }: { course: Course }): JSX.Element {
               onBuild={handleBuild}
               courseName={course.meta.title}
               format={format}
+              canUploadToLms={!!builtBlob && (format === 'scorm-1.2' || format === 'scorm-2004')}
+              onUploadToLms={() => setShowLmsWizard(true)}
             />
           )}
         </div>
@@ -286,6 +294,15 @@ function PublishWizard({ course }: { course: Course }): JSX.Element {
           <span />
         )}
       </div>
+
+      {/* LMS Upload Wizard Modal */}
+      {showLmsWizard && builtBlob && (
+        <LmsUploadWizard
+          packageBlob={builtBlob}
+          fileName={`${course.meta.title.replace(/[^a-zA-Z0-9]/g, '_')}${FORMAT_EXTENSIONS[format]}`}
+          onClose={() => setShowLmsWizard(false)}
+        />
+      )}
     </div>
   )
 }
@@ -1003,7 +1020,9 @@ function BuildStep({
   buildComplete,
   onBuild,
   courseName,
-  format
+  format,
+  canUploadToLms,
+  onUploadToLms
 }: {
   building: boolean
   progress: PackageProgress | null
@@ -1012,6 +1031,8 @@ function BuildStep({
   onBuild: () => void
   courseName: string
   format: ExportFormat
+  canUploadToLms?: boolean
+  onUploadToLms?: () => void
 }): JSX.Element {
   const safeName = courseName.replace(/[^a-zA-Z0-9]/g, '_')
   const fileName = `${safeName}${FORMAT_EXTENSIONS[format]}`
@@ -1108,11 +1129,25 @@ function BuildStep({
               <FileDown size={14} />
               Download Again
             </button>
+            {canUploadToLms && onUploadToLms && (
+              <button
+                onClick={onUploadToLms}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-xs text-white rounded-md bg-gradient-to-r from-[var(--brand-indigo)] to-[var(--brand-magenta)] hover:opacity-90 transition-opacity cursor-pointer font-[var(--font-weight-medium)]"
+              >
+                <Upload size={14} />
+                Upload to LMS
+              </button>
+            )}
           </div>
 
-          {(format === 'scorm-1.2' || format === 'scorm-2004') && (
+          {(format === 'scorm-1.2' || format === 'scorm-2004') && !canUploadToLms && (
             <p className="text-[10px] text-[var(--text-tertiary)] text-center">
               Upload the ZIP file to your LMS (Moodle, Canvas, Blackboard, etc.) to deploy.
+            </p>
+          )}
+          {canUploadToLms && (
+            <p className="text-[10px] text-[var(--text-tertiary)] text-center">
+              Click "Upload to LMS" to directly upload to Canvas, Moodle, or Blackboard, or upload the ZIP manually.
             </p>
           )}
           {format === 'xapi' && (

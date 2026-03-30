@@ -49,6 +49,25 @@ const api = {
         margins?: { top: number; bottom: number; left: number; right: number }
       }
     ): Promise<ArrayBuffer> => ipcRenderer.invoke('pdf:generate', html, options)
+  },
+  net: {
+    request: (opts: {
+      url: string
+      method?: string
+      headers?: Record<string, string>
+      body?: string
+    }): Promise<{ status: number; statusText: string; headers: Record<string, string>; body: string }> =>
+      ipcRenderer.invoke('net:request', opts),
+    uploadFile: (opts: {
+      url: string
+      method?: string
+      headers?: Record<string, string>
+      fileData: ArrayBuffer
+      fileName: string
+      fieldName: string
+      extraFields?: Record<string, string>
+    }): Promise<{ status: number; statusText: string; body: string }> =>
+      ipcRenderer.invoke('net:uploadFile', opts)
   }
 }
 
