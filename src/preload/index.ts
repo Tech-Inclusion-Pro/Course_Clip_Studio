@@ -68,6 +68,41 @@ const api = {
       extraFields?: Record<string, string>
     }): Promise<{ status: number; statusText: string; body: string }> =>
       ipcRenderer.invoke('net:uploadFile', opts)
+  },
+  updater: {
+    check: (): Promise<{ updateAvailable: boolean; version?: string }> =>
+      ipcRenderer.invoke('updater:check'),
+    download: (): Promise<void> =>
+      ipcRenderer.invoke('updater:download'),
+    install: (): Promise<void> =>
+      ipcRenderer.invoke('updater:install'),
+    onAvailable: (callback: (info: { version: string; releaseDate?: string }) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, info: { version: string; releaseDate?: string }): void => { callback(info) }
+      ipcRenderer.on('updater:available', handler)
+      return () => { ipcRenderer.removeListener('updater:available', handler) }
+    },
+    onProgress: (callback: (progress: { percent: number }) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, progress: { percent: number }): void => { callback(progress) }
+      ipcRenderer.on('updater:progress', handler)
+      return () => { ipcRenderer.removeListener('updater:progress', handler) }
+    },
+    onDownloaded: (callback: (info: { version: string }) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, info: { version: string }): void => { callback(info) }
+      ipcRenderer.on('updater:downloaded', handler)
+      return () => { ipcRenderer.removeListener('updater:downloaded', handler) }
+    },
+    onError: (callback: (error: string) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, error: string): void => { callback(error) }
+      ipcRenderer.on('updater:error', handler)
+      return () => { ipcRenderer.removeListener('updater:error', handler) }
+    }
+  },
+  deepLink: {
+    onOpenCourse: (callback: (coursePath: string) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, path: string): void => { callback(path) }
+      ipcRenderer.on('deep-link:open-course', handler)
+      return () => { ipcRenderer.removeListener('deep-link:open-course', handler) }
+    }
   }
 }
 

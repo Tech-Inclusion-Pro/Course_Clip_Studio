@@ -15,22 +15,69 @@
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "dist": "electron-vite build && electron-builder --mac --dir",
+    "dist:mac": "electron-vite build && electron-builder --mac",
+    "dist:win": "electron-vite build && electron-builder --win",
+    "dist:linux": "electron-vite build && electron-builder --linux",
+    "dist:all": "electron-vite build && electron-builder -mwl",
     "install-app": "npm run dist && codesign --force --deep --sign - \"dist/mac-arm64/Course Clip Studio.app\" && rm -rf \"/Applications/Course Clip Studio.app\" && cp -R \"dist/mac-arm64/Course Clip Studio.app\" \"/Applications/Course Clip Studio.app\""
   },
   "build": {
     "appId": "com.course-clip-studio",
     "productName": "Course Clip Studio",
+    "protocols": {
+      "name": "Course Clip Studio",
+      "schemes": ["lumina"]
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "Tech-Inclusion-Pro",
+      "repo": "Course_Clip_Studio"
+    },
     "mac": {
       "icon": "resources/icon.icns",
       "category": "public.app-category.education",
-      "target": "dir"
+      "target": [
+        { "target": "dmg", "arch": ["arm64", "x64"] },
+        { "target": "zip", "arch": ["arm64", "x64"] }
+      ],
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "contents": [
+        { "x": 130, "y": 220 },
+        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
+      ]
+    },
+    "win": {
+      "icon": "resources/icon.png",
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false
+    },
+    "linux": {
+      "icon": "resources/icon.png",
+      "target": [
+        { "target": "AppImage", "arch": ["x64"] }
+      ],
+      "category": "Education",
+      "mimeTypes": ["x-scheme-handler/lumina"]
     },
     "directories": {
       "output": "dist"
     },
     "files": [
       "out/**/*",
+      "resources/splash.html",
       "!node_modules"
+    ],
+    "extraResources": [
+      { "from": "resources/splash.html", "to": "splash.html" }
     ]
   },
   "dependencies": {
@@ -47,6 +94,7 @@
     "@tiptap/extension-underline": "^3.21.0",
     "@tiptap/react": "^3.21.0",
     "@tiptap/starter-kit": "^3.21.0",
+    "electron-updater": "^6.8.3",
     "jszip": "^3.10.1",
     "lucide-react": "^0.468.0",
     "react": "^18.3.1",

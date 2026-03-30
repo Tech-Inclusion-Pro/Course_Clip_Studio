@@ -53,6 +53,18 @@ interface LuminaAPI {
       extraFields?: Record<string, string>
     }): Promise<{ status: number; statusText: string; body: string }>
   }
+  updater: {
+    check(): Promise<{ updateAvailable: boolean; version?: string }>
+    download(): Promise<void>
+    install(): Promise<void>
+    onAvailable(callback: (info: { version: string; releaseDate?: string }) => void): () => void
+    onProgress(callback: (progress: { percent: number }) => void): () => void
+    onDownloaded(callback: (info: { version: string }) => void): () => void
+    onError(callback: (error: string) => void): () => void
+  }
+  deepLink: {
+    onOpenCourse(callback: (coursePath: string) => void): () => void
+  }
 }
 
 declare global {

@@ -2,9 +2,47 @@ import { app, shell, BrowserWindow, session } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { registerIpcHandlers } from './ipc-handlers'
+import { createSplashWindow, closeSplashWindow, updateSplashStatus } from './splash'
+import { initAutoUpdater } from './auto-updater'
+import { registerProtocol, handleDeepLink, setPendingDeepLink, processPendingDeepLink } from './deep-link'
+
+let mainWindow: BrowserWindow | null = null
+
+// Register deep link protocol before app is ready
+registerProtocol()
+
+// Handle protocol URL on macOS (app already running)
+app.on('open-url', (event, url) => {
+  event.preventDefault()
+  if (mainWindow) {
+    handleDeepLink(url, mainWindow)
+  } else {
+    setPendingDeepLink(url)
+  }
+})
+
+// Handle protocol URL on Windows/Linux (second instance)
+const gotTheLock = app.requestSingleInstanceLock()
+if (!gotTheLock) {
+  app.quit()
+} else {
+  app.on('second-instance', (_event, argv) => {
+    // Windows/Linux: protocol URL is in argv
+    const url = argv.find((arg) => arg.startsWith('lumina://'))
+    if (url) {
+      handleDeepLink(url, mainWindow)
+    }
+
+    // Focus existing window
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.focus()
+    }
+  })
+}
 
 function createWindow(): void {
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
     minWidth: 900,
@@ -20,12 +58,23 @@ function createWindow(): void {
   })
 
   mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
+    // Dismiss splash and show main window
+    closeSplashWindow()
+    mainWindow?.show()
+
+    // Process any pending deep link
+    if (mainWindow) {
+      processPendingDeepLink(mainWindow)
+    }
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }
+  })
+
+  mainWindow.on('closed', () => {
+    mainWindow = null
   })
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
@@ -37,6 +86,10 @@ function createWindow(): void {
 
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.course-clip-studio')
+
+  // Show splash screen
+  createSplashWindow()
+  updateSplashStatus('Initializing...')
 
   // Production CSP
   if (!is.dev) {
@@ -56,8 +109,22 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
+  updateSplashStatus('Loading workspace...')
   registerIpcHandlers()
   createWindow()
+
+  // Initialize auto-updater after main window is created
+  if (mainWindow) {
+    initAutoUpdater(mainWindow)
+  }
+
+  // Handle cold-start protocol URL on Windows/Linux
+  if (process.platform !== 'darwin') {
+    const url = process.argv.find((arg) => arg.startsWith('lumina://'))
+    if (url) {
+      setPendingDeepLink(url)
+    }
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

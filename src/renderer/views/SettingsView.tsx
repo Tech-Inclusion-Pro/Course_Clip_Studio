@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Settings,
   Palette,
@@ -10,7 +10,9 @@ import {
   Trash2,
   Check,
   TestTube,
-  FolderOpen
+  FolderOpen,
+  RefreshCw,
+  Info
 } from 'lucide-react'
 import { useAppStore, type ThemeMode } from '@/stores/useAppStore'
 import { useCourseStore } from '@/stores/useCourseStore'
@@ -165,7 +167,72 @@ function GeneralSettings(): JSX.Element {
       </SettingsCard>
 
       <WorkspaceFolderSettings />
+
+      <AboutAndUpdates />
     </div>
+  )
+}
+
+// ─── About & Updates ───
+
+function AboutAndUpdates(): JSX.Element {
+  const [appInfo, setAppInfo] = useState<{ name: string; version: string; platform: string; arch: string } | null>(null)
+  const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'available' | 'up-to-date' | 'error'>('idle')
+  const [updateVersion, setUpdateVersion] = useState<string | null>(null)
+
+  useEffect(() => {
+    window.electronAPI.app.getInfo().then(setAppInfo)
+  }, [])
+
+  async function handleCheckUpdates() {
+    setUpdateStatus('checking')
+    try {
+      const result = await window.electronAPI.updater.check()
+      if (result.updateAvailable) {
+        setUpdateStatus('available')
+        setUpdateVersion(result.version ?? null)
+      } else {
+        setUpdateStatus('up-to-date')
+      }
+    } catch {
+      setUpdateStatus('error')
+    }
+    setTimeout(() => {
+      setUpdateStatus((s) => (s !== 'available' ? 'idle' : s))
+    }, 5000)
+  }
+
+  return (
+    <SettingsCard title="About & Updates" icon={Info}>
+      <FieldRow label="Application" description="Course Clip Studio">
+        <span className="text-sm text-[var(--text-primary)] font-mono">
+          v{appInfo?.version ?? '...'} ({appInfo?.platform ?? ''}/{appInfo?.arch ?? ''})
+        </span>
+      </FieldRow>
+      <FieldRow label="Check for Updates" description="Download the latest version">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleCheckUpdates}
+            disabled={updateStatus === 'checking'}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] border border-[var(--border-default)] rounded-md hover:bg-[var(--bg-hover)] cursor-pointer disabled:opacity-50"
+          >
+            <RefreshCw size={14} className={updateStatus === 'checking' ? 'animate-spin' : ''} />
+            {updateStatus === 'checking' ? 'Checking...' : 'Check Now'}
+          </button>
+          {updateStatus === 'available' && (
+            <span className="text-xs text-[var(--accent)]">
+              v{updateVersion} available!
+            </span>
+          )}
+          {updateStatus === 'up-to-date' && (
+            <span className="text-xs text-emerald-600">Up to date</span>
+          )}
+          {updateStatus === 'error' && (
+            <span className="text-xs text-[var(--color-danger-600)]">Check failed</span>
+          )}
+        </div>
+      </FieldRow>
+    </SettingsCard>
   )
 }
 
