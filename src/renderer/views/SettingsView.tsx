@@ -9,10 +9,13 @@ import {
   Plus,
   Trash2,
   Check,
-  TestTube
+  TestTube,
+  FolderOpen
 } from 'lucide-react'
 import { useAppStore, type ThemeMode } from '@/stores/useAppStore'
+import { useCourseStore } from '@/stores/useCourseStore'
 import { uid } from '@/lib/uid'
+import { persistWorkspacePath, loadWorkspace } from '@/lib/workspace'
 import type { BrandKit } from '@/types/course'
 
 type SettingsTab = 'general' | 'brand' | 'ai' | 'accessibility'
@@ -160,7 +163,47 @@ function GeneralSettings(): JSX.Element {
           </div>
         </FieldRow>
       </SettingsCard>
+
+      <WorkspaceFolderSettings />
     </div>
+  )
+}
+
+// ─── Workspace Folder Settings ───
+
+function WorkspaceFolderSettings(): JSX.Element {
+  const workspacePath = useAppStore((s) => s.workspacePath)
+  const setWorkspacePath = useAppStore((s) => s.setWorkspacePath)
+  const setCourses = useCourseStore((s) => s.setCourses)
+
+  async function handleChange() {
+    const result = await window.electronAPI.dialog.openDirectory()
+    if (result.canceled || !result.filePaths[0]) return
+
+    const path = result.filePaths[0]
+    await persistWorkspacePath(path)
+    setWorkspacePath(path)
+
+    const courses = await loadWorkspace(path)
+    setCourses(courses)
+  }
+
+  return (
+    <SettingsCard title="Workspace" icon={FolderOpen}>
+      <FieldRow label="Workspace Folder" description="Where your courses are stored on disk">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-[var(--text-secondary)] font-mono max-w-[200px] truncate" title={workspacePath ?? 'Not set'}>
+            {workspacePath ?? 'Not set'}
+          </span>
+          <button
+            onClick={handleChange}
+            className="px-3 py-1.5 text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] border border-[var(--border-default)] rounded-md hover:bg-[var(--bg-hover)] cursor-pointer"
+          >
+            Change
+          </button>
+        </div>
+      </FieldRow>
+    </SettingsCard>
   )
 }
 

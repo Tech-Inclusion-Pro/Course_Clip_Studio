@@ -3,6 +3,8 @@ import { BookOpen, Layers, Calendar } from 'lucide-react'
 import type { Course } from '@/types/course'
 import { PUBLISH_STATUS_CONFIG, ROUTES } from '@/lib/constants'
 import { useCourseStore } from '@/stores/useCourseStore'
+import { useAppStore } from '@/stores/useAppStore'
+import { deleteCourseFromWorkspace } from '@/lib/workspace'
 import { CardActionsMenu } from './CardActionsMenu'
 
 interface CourseCardProps {
@@ -83,7 +85,15 @@ export function CourseCard({ course }: CourseCardProps): JSX.Element {
               onOpen={handleOpen}
               onDuplicate={() => duplicateCourse(course.id)}
               onExport={() => {/* TODO: export */}}
-              onDelete={() => removeCourse(course.id)}
+              onDelete={() => {
+                const wp = useAppStore.getState().workspacePath
+                if (wp) {
+                  deleteCourseFromWorkspace(wp, course.id).catch((err) =>
+                    console.error('Failed to delete from workspace:', err)
+                  )
+                }
+                removeCourse(course.id)
+              }}
             />
           </div>
         </div>

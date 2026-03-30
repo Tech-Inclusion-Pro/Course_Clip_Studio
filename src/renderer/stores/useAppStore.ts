@@ -8,6 +8,10 @@ interface AppState {
   theme: ThemeMode
   sidebarCollapsed: boolean
 
+  // Workspace
+  workspacePath: string | null
+  workspaceLoaded: boolean
+
   // Author settings
   authorName: string
   defaultLanguage: string
@@ -28,6 +32,10 @@ interface AppState {
   setTheme: (theme: ThemeMode) => void
   toggleSidebar: () => void
   setSidebarCollapsed: (collapsed: boolean) => void
+
+  // Workspace actions
+  setWorkspacePath: (path: string | null) => void
+  setWorkspaceLoaded: (loaded: boolean) => void
 
   // Author actions
   setAuthorName: (name: string) => void
@@ -52,6 +60,10 @@ export const useAppStore = create<AppState>((set) => ({
   // UI defaults
   theme: 'system',
   sidebarCollapsed: false,
+
+  // Workspace defaults
+  workspacePath: null,
+  workspaceLoaded: false,
 
   // Author defaults
   authorName: 'Course Author',
@@ -84,6 +96,10 @@ export const useAppStore = create<AppState>((set) => ({
   setTheme: (theme) => set({ theme }),
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
+
+  // Workspace actions
+  setWorkspacePath: (path) => set({ workspacePath: path }),
+  setWorkspaceLoaded: (loaded) => set({ workspaceLoaded: loaded }),
 
   // Author actions
   setAuthorName: (name) => set({ authorName: name }),

@@ -3,9 +3,13 @@ import { SkipLink } from '@/components/ui/SkipLink'
 import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
 import { useTheme } from '@/hooks/useTheme'
+import { useWorkspaceInit } from '@/hooks/useWorkspaceInit'
+import { useAutoSave } from '@/hooks/useAutoSave'
 
 export function AppShell(): JSX.Element {
   useTheme()
+  useWorkspaceInit()
+  useAutoSave()
 
   return (
     <>

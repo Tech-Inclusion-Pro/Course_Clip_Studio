@@ -208,7 +208,8 @@ export function renderLessonHtml(
   lesson: Lesson,
   moduleTitle: string,
   lessonIndex: number,
-  totalLessons: number
+  totalLessons: number,
+  options?: { inlineScript?: string }
 ): string {
   const theme = course.theme
   const settings = course.settings
@@ -260,8 +261,10 @@ export function renderLessonHtml(
     </nav>
   </footer>
 
-  <script src="scorm-api.js"></script>
-  <script src="player.js"></script>
+  ${options?.inlineScript
+    ? `<script>${options.inlineScript}</script>`
+    : `<script src="scorm-api.js"></script>
+  <script src="player.js"></script>`}
 </body>
 </html>`
 }

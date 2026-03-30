@@ -10,7 +10,9 @@ const api = {
     openFile: (options?: Record<string, unknown>) =>
       ipcRenderer.invoke('dialog:openFile', options),
     saveFile: (options?: Record<string, unknown>) =>
-      ipcRenderer.invoke('dialog:saveFile', options)
+      ipcRenderer.invoke('dialog:saveFile', options),
+    openDirectory: (): Promise<Electron.OpenDialogReturnValue> =>
+      ipcRenderer.invoke('dialog:openDirectory')
   },
   app: {
     getInfo: (): Promise<{ name: string; version: string; platform: string; arch: string }> =>
@@ -20,7 +22,23 @@ const api = {
     readFile: (filePath: string, encoding?: 'utf-8' | 'base64'): Promise<string> =>
       ipcRenderer.invoke('fs:readFile', filePath, encoding),
     readFileBuffer: (filePath: string): Promise<ArrayBuffer> =>
-      ipcRenderer.invoke('fs:readFileBuffer', filePath)
+      ipcRenderer.invoke('fs:readFileBuffer', filePath),
+    writeFile: (filePath: string, content: string): Promise<void> =>
+      ipcRenderer.invoke('fs:writeFile', filePath, content),
+    readDir: (dirPath: string): Promise<Array<{ name: string; isDirectory: boolean }>> =>
+      ipcRenderer.invoke('fs:readDir', dirPath),
+    mkdir: (dirPath: string): Promise<void> =>
+      ipcRenderer.invoke('fs:mkdir', dirPath),
+    exists: (filePath: string): Promise<boolean> =>
+      ipcRenderer.invoke('fs:exists', filePath),
+    removeDir: (dirPath: string): Promise<void> =>
+      ipcRenderer.invoke('fs:removeDir', dirPath)
+  },
+  settings: {
+    get: (key: string): Promise<unknown> =>
+      ipcRenderer.invoke('settings:get', key),
+    set: (key: string, value: unknown): Promise<void> =>
+      ipcRenderer.invoke('settings:set', key, value)
   },
   pdf: {
     generate: (

@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react'
-import { Plus, Upload, BookOpen, Search as SearchIcon } from 'lucide-react'
+import { Plus, Upload, BookOpen, Search as SearchIcon, FolderOpen } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useDashboardStore } from '@/stores/useDashboardStore'
-import { useMockDataInit } from '@/hooks/useMockDataInit'
+import { useAppStore } from '@/stores/useAppStore'
 import { COURSE_TEMPLATES } from '@/lib/constants'
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar'
 import { SearchBar } from '@/components/dashboard/SearchBar'
@@ -12,11 +12,14 @@ import { CourseCard } from '@/components/dashboard/CourseCard'
 import { TemplateCard } from '@/components/dashboard/TemplateCard'
 import { NewCourseDialog } from '@/components/dashboard/NewCourseDialog'
 import { ImportDialog } from '@/components/dashboard/ImportDialog'
+import { WorkspacePickerDialog } from '@/components/dashboard/WorkspacePickerDialog'
 import { createCourse } from '@/lib/mock-data'
+import { saveCourseToWorkspace } from '@/lib/workspace'
 import type { CourseTemplate } from '@/types/course'
 
 export function DashboardView(): JSX.Element {
-  useMockDataInit()
+  const workspacePath = useAppStore((s) => s.workspacePath)
+  const workspaceLoaded = useAppStore((s) => s.workspaceLoaded)
 
   const courses = useCourseStore((s) => s.courses)
   const addCourse = useCourseStore((s) => s.addCourse)
@@ -57,6 +60,25 @@ export function DashboardView(): JSX.Element {
     const base = template.factory()
     const course = createCourse(base)
     addCourse(course)
+    if (workspacePath) {
+      saveCourseToWorkspace(workspacePath, course).catch((err) =>
+        console.error('Failed to save new course:', err)
+      )
+    }
+  }
+
+  // Show loading state while workspace initializes
+  if (!workspaceLoaded) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-sm text-[var(--text-tertiary)]">Loading workspace...</p>
+      </div>
+    )
+  }
+
+  // Show workspace picker if no workspace set
+  if (!workspacePath) {
+    return <WorkspacePickerDialog />
   }
 
   return (
@@ -165,6 +187,14 @@ export function DashboardView(): JSX.Element {
 
         <NewCourseDialog open={dialogOpen} onClose={() => setDialogOpen(false)} />
         <ImportDialog open={importOpen} onClose={() => setImportOpen(false)} />
+
+        {/* Workspace path indicator */}
+        <div className="mt-8 pt-4 border-t border-[var(--border-default)]">
+          <p className="flex items-center gap-1.5 text-xs text-[var(--text-tertiary)]">
+            <FolderOpen size={12} />
+            {workspacePath}
+          </p>
+        </div>
       </div>
     </div>
   )

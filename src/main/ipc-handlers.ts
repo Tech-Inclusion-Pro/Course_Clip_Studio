@@ -1,6 +1,6 @@
 import { ipcMain, dialog, app, BrowserWindow } from 'electron'
-import { readFileSync, readFile, writeFileSync, existsSync, mkdirSync } from 'fs'
-import { join } from 'path'
+import { readFileSync, readFile, writeFileSync, existsSync, mkdirSync, readdirSync, statSync, rmSync } from 'fs'
+import { join, dirname } from 'path'
 
 function getConfigPath(): string {
   const configDir = join(app.getPath('userData'), 'config')
@@ -129,4 +129,60 @@ export function registerIpcHandlers(): void {
       }
     }
   )
+
+  // ─── File System Helpers ───
+
+  ipcMain.handle('fs:writeFile', async (_event, filePath: string, content: string) => {
+    const dir = dirname(filePath)
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true })
+    }
+    writeFileSync(filePath, content, 'utf-8')
+  })
+
+  ipcMain.handle('fs:readDir', async (_event, dirPath: string) => {
+    if (!existsSync(dirPath)) return []
+    const entries = readdirSync(dirPath)
+    return entries.map((name) => {
+      const fullPath = join(dirPath, name)
+      const stat = statSync(fullPath)
+      return { name, isDirectory: stat.isDirectory() }
+    })
+  })
+
+  ipcMain.handle('fs:mkdir', async (_event, dirPath: string) => {
+    mkdirSync(dirPath, { recursive: true })
+  })
+
+  ipcMain.handle('fs:exists', async (_event, filePath: string) => {
+    return existsSync(filePath)
+  })
+
+  ipcMain.handle('fs:removeDir', async (_event, dirPath: string) => {
+    if (existsSync(dirPath)) {
+      rmSync(dirPath, { recursive: true, force: true })
+    }
+  })
+
+  // ─── Directory Picker ───
+
+  ipcMain.handle('dialog:openDirectory', async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ['openDirectory', 'createDirectory']
+    })
+    return result
+  })
+
+  // ─── Settings Persistence ───
+
+  ipcMain.handle('settings:get', async (_event, key: string) => {
+    const config = readConfig()
+    return config[key] ?? null
+  })
+
+  ipcMain.handle('settings:set', async (_event, key: string, value: unknown) => {
+    const config = readConfig()
+    config[key] = value
+    writeConfig(config)
+  })
 }
