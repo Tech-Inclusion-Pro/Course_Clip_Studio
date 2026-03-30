@@ -16,7 +16,8 @@ import {
   Smartphone,
   SplitSquareHorizontal,
   Palette,
-  ShieldCheck
+  ShieldCheck,
+  Award
 } from 'lucide-react'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useEditorStore, type PreviewDevice } from '@/stores/useEditorStore'
@@ -49,6 +50,7 @@ export function EditorToolbar(): JSX.Element {
   const aiPanelOpen = useEditorStore((s) => s.aiPanelOpen)
   const themeEditorOpen = useEditorStore((s) => s.themeEditorOpen)
   const auditPanelOpen = useEditorStore((s) => s.auditPanelOpen)
+  const certificateDesignerOpen = useEditorStore((s) => s.certificateDesignerOpen)
   const splitPreviewOpen = useEditorStore((s) => s.splitPreviewOpen)
   const previewDevice = useEditorStore((s) => s.previewDevice)
   const toggleLeftPanel = useEditorStore((s) => s.toggleLeftPanel)
@@ -56,6 +58,7 @@ export function EditorToolbar(): JSX.Element {
   const toggleAIPanel = useEditorStore((s) => s.toggleAIPanel)
   const toggleThemeEditor = useEditorStore((s) => s.toggleThemeEditor)
   const toggleAuditPanel = useEditorStore((s) => s.toggleAuditPanel)
+  const toggleCertificateDesigner = useEditorStore((s) => s.toggleCertificateDesigner)
   const toggleSplitPreview = useEditorStore((s) => s.toggleSplitPreview)
   const setPreviewDevice = useEditorStore((s) => s.setPreviewDevice)
 
@@ -195,6 +198,12 @@ export function EditorToolbar(): JSX.Element {
           label="Theme Editor"
           active={themeEditorOpen}
           onClick={toggleThemeEditor}
+        />
+        <ToolbarButton
+          icon={Award}
+          label="Certificate Designer"
+          active={certificateDesignerOpen}
+          onClick={toggleCertificateDesigner}
         />
         <ToolbarButton
           icon={ShieldCheck}

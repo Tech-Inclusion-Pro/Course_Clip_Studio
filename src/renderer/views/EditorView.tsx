@@ -12,6 +12,7 @@ import { PropertiesPanel } from '@/components/editor/PropertiesPanel'
 import { ThemeEditor } from '@/components/editor/ThemeEditor'
 import { AIPanel } from '@/components/editor/AIPanel'
 import { AccessibilityAuditPanel } from '@/components/editor/AccessibilityAuditPanel'
+import { CertificateDesigner } from '@/components/editor/CertificateDesigner'
 
 export function EditorView(): JSX.Element {
   const navigate = useNavigate()
@@ -24,6 +25,8 @@ export function EditorView(): JSX.Element {
   const toggleThemeEditor = useEditorStore((s) => s.toggleThemeEditor)
   const toggleAIPanel = useEditorStore((s) => s.toggleAIPanel)
   const toggleAuditPanel = useEditorStore((s) => s.toggleAuditPanel)
+  const certificateDesignerOpen = useEditorStore((s) => s.certificateDesignerOpen)
+  const toggleCertificateDesigner = useEditorStore((s) => s.toggleCertificateDesigner)
   const pushSnapshot = useHistoryStore((s) => s.pushSnapshot)
   const shouldAutoSnapshot = useHistoryStore((s) => s.shouldAutoSnapshot)
   const markAutoSnapshot = useHistoryStore((s) => s.markAutoSnapshot)
@@ -115,6 +118,16 @@ export function EditorView(): JSX.Element {
             aria-label="Accessibility audit"
           >
             <AccessibilityAuditPanel onClose={toggleAuditPanel} />
+          </aside>
+        )}
+
+        {/* Certificate Designer Panel */}
+        {certificateDesignerOpen && (
+          <aside
+            className="w-80 shrink-0 border-l border-[var(--border-default)] bg-[var(--bg-surface)] overflow-y-auto"
+            aria-label="Certificate designer"
+          >
+            <CertificateDesigner onClose={toggleCertificateDesigner} />
           </aside>
         )}
 
