@@ -16,6 +16,16 @@ interface LuminaAPI {
     readFile(filePath: string, encoding?: 'utf-8' | 'base64'): Promise<string>
     readFileBuffer(filePath: string): Promise<ArrayBuffer>
   }
+  pdf: {
+    generate(
+      html: string,
+      options?: {
+        pageSize?: 'A4' | 'Letter'
+        printBackground?: boolean
+        margins?: { top: number; bottom: number; left: number; right: number }
+      }
+    ): Promise<ArrayBuffer>
+  }
 }
 
 declare global {

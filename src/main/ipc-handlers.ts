@@ -1,4 +1,4 @@
-import { ipcMain, dialog, app } from 'electron'
+import { ipcMain, dialog, app, BrowserWindow } from 'electron'
 import { readFileSync, readFile, writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join } from 'path'
 
@@ -84,4 +84,49 @@ export function registerIpcHandlers(): void {
       })
     })
   })
+
+  // Generate PDF from HTML using a hidden BrowserWindow
+  ipcMain.handle(
+    'pdf:generate',
+    async (
+      _event,
+      html: string,
+      options?: {
+        pageSize?: 'A4' | 'Letter'
+        printBackground?: boolean
+        margins?: { top: number; bottom: number; left: number; right: number }
+      }
+    ) => {
+      const win = new BrowserWindow({
+        show: false,
+        width: 800,
+        height: 600,
+        webPreferences: { offscreen: true }
+      })
+
+      try {
+        await win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
+        // Wait for content to render
+        await new Promise((resolve) => setTimeout(resolve, 500))
+
+        const pdfBuffer = await win.webContents.printToPDF({
+          pageSize: options?.pageSize ?? 'A4',
+          printBackground: options?.printBackground ?? true,
+          margins: options?.margins
+            ? {
+                marginType: 'custom',
+                top: options.margins.top / 25.4,
+                bottom: options.margins.bottom / 25.4,
+                left: options.margins.left / 25.4,
+                right: options.margins.right / 25.4
+              }
+            : { marginType: 'default' }
+        })
+
+        return pdfBuffer
+      } finally {
+        win.close()
+      }
+    }
+  )
 }

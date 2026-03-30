@@ -10,14 +10,16 @@ import {
   Package,
   FileDown,
   Loader2,
-  FolderOpen,
   X
 } from 'lucide-react'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { ROUTES } from '@/lib/constants'
 import { findMissingAltText, findMissingTranscripts, countLessons } from '@/lib/course-helpers'
 import { buildScormPackage, downloadBlob, type PackageProgress } from '@/lib/scorm'
-import type { Course, ExportFormat } from '@/types/course'
+import { buildScorm2004Package } from '@/lib/scorm'
+import { buildXapiPackage } from '@/lib/xapi'
+import { buildHtmlPackage, buildPdf, type PdfOptions } from '@/lib/export'
+import type { Course, ExportFormat, XAPIConfig } from '@/types/course'
 
 type WizardStep = 'preflight' | 'format' | 'settings' | 'build'
 
@@ -64,6 +66,18 @@ function PublishWizard({ course }: { course: Course }): JSX.Element {
     course.settings.scorm?.completionCriteria ?? 'complete'
   )
 
+  // xAPI settings
+  const [xapiEndpoint, setXapiEndpoint] = useState(course.settings.xapi?.endpoint ?? '')
+  const [xapiUsername, setXapiUsername] = useState(course.settings.xapi?.username ?? '')
+  const [xapiPassword, setXapiPassword] = useState(course.settings.xapi?.password ?? '')
+  const [xapiActorName, setXapiActorName] = useState(course.settings.xapi?.actorName ?? '')
+  const [xapiActorEmail, setXapiActorEmail] = useState(course.settings.xapi?.actorEmail ?? '')
+
+  // PDF settings
+  const [pdfPageSize, setPdfPageSize] = useState<'A4' | 'Letter'>('A4')
+  const [pdfIncludeAnswers, setPdfIncludeAnswers] = useState(false)
+  const [pdfIncludeUdl, setPdfIncludeUdl] = useState(false)
+
   // Build state
   const [building, setBuilding] = useState(false)
   const [progress, setProgress] = useState<PackageProgress | null>(null)
@@ -82,16 +96,46 @@ function PublishWizard({ course }: { course: Course }): JSX.Element {
     setBuildComplete(false)
 
     try {
-      const blob = await buildScormPackage(course, setProgress)
-      const fileName = `${course.meta.title.replace(/[^a-zA-Z0-9]/g, '_')}_SCORM12.zip`
-      downloadBlob(blob, fileName)
+      const safeName = course.meta.title.replace(/[^a-zA-Z0-9]/g, '_')
+
+      if (format === 'scorm-1.2') {
+        const blob = await buildScormPackage(course, setProgress)
+        downloadBlob(blob, `${safeName}_SCORM12.zip`)
+      } else if (format === 'scorm-2004') {
+        const blob = await buildScorm2004Package(course, setProgress)
+        downloadBlob(blob, `${safeName}_SCORM2004.zip`)
+      } else if (format === 'xapi') {
+        const xapiConfig: XAPIConfig = {
+          endpoint: xapiEndpoint,
+          authType: 'basic',
+          username: xapiUsername,
+          password: xapiPassword,
+          actorName: xapiActorName || course.meta.author,
+          actorEmail: xapiActorEmail || 'learner@example.com'
+        }
+        const blob = await buildXapiPackage(course, xapiConfig, setProgress)
+        downloadBlob(blob, `${safeName}_xAPI.zip`)
+      } else if (format === 'html5') {
+        const blob = await buildHtmlPackage(course, setProgress)
+        downloadBlob(blob, `${safeName}_HTML.zip`)
+      } else if (format === 'pdf') {
+        const pdfOptions: PdfOptions = {
+          pageSize: pdfPageSize,
+          includeQuizAnswers: pdfIncludeAnswers,
+          includeUdlNotes: pdfIncludeUdl
+        }
+        const blob = await buildPdf(course, pdfOptions, setProgress)
+        const ext = blob.type === 'application/pdf' ? 'pdf' : 'html'
+        downloadBlob(blob, `${safeName}.${ext}`)
+      }
+
       setBuildComplete(true)
     } catch (err) {
       setBuildError(err instanceof Error ? err.message : 'Build failed')
     } finally {
       setBuilding(false)
     }
-  }, [course])
+  }, [course, format, xapiEndpoint, xapiUsername, xapiPassword, xapiActorName, xapiActorEmail, pdfPageSize, pdfIncludeAnswers, pdfIncludeUdl])
 
   const steps: WizardStep[] = ['preflight', 'format', 'settings', 'build']
   const stepIndex = steps.indexOf(step)
@@ -186,6 +230,22 @@ function PublishWizard({ course }: { course: Course }): JSX.Element {
               onMasteryChange={setMasteryScore}
               onCompletionChange={setCompletionCriteria}
               lessonCount={lessonCount}
+              xapiEndpoint={xapiEndpoint}
+              xapiUsername={xapiUsername}
+              xapiPassword={xapiPassword}
+              xapiActorName={xapiActorName}
+              xapiActorEmail={xapiActorEmail}
+              onXapiEndpointChange={setXapiEndpoint}
+              onXapiUsernameChange={setXapiUsername}
+              onXapiPasswordChange={setXapiPassword}
+              onXapiActorNameChange={setXapiActorName}
+              onXapiActorEmailChange={setXapiActorEmail}
+              pdfPageSize={pdfPageSize}
+              pdfIncludeAnswers={pdfIncludeAnswers}
+              pdfIncludeUdl={pdfIncludeUdl}
+              onPdfPageSizeChange={setPdfPageSize}
+              onPdfIncludeAnswersChange={setPdfIncludeAnswers}
+              onPdfIncludeUdlChange={setPdfIncludeUdl}
             />
           )}
           {step === 'build' && (
@@ -196,6 +256,7 @@ function PublishWizard({ course }: { course: Course }): JSX.Element {
               buildComplete={buildComplete}
               onBuild={handleBuild}
               courseName={course.meta.title}
+              format={format}
             />
           )}
         </div>
@@ -382,13 +443,12 @@ const FORMAT_OPTIONS: Array<{
   id: ExportFormat
   label: string
   description: string
-  available: boolean
 }> = [
-  { id: 'scorm-1.2', label: 'SCORM 1.2', description: 'Most widely supported LMS format', available: true },
-  { id: 'scorm-2004', label: 'SCORM 2004', description: 'Advanced sequencing and navigation', available: false },
-  { id: 'xapi', label: 'xAPI / Tin Can', description: 'Modern learning analytics standard', available: false },
-  { id: 'html5', label: 'Standalone HTML', description: 'Self-contained, no LMS required', available: false },
-  { id: 'pdf', label: 'PDF Document', description: 'Printable course document', available: false }
+  { id: 'scorm-1.2', label: 'SCORM 1.2', description: 'Most widely supported LMS format' },
+  { id: 'scorm-2004', label: 'SCORM 2004', description: 'Advanced sequencing and navigation' },
+  { id: 'xapi', label: 'xAPI / Tin Can', description: 'Modern learning analytics standard' },
+  { id: 'html5', label: 'Standalone HTML', description: 'Self-contained, no LMS required' },
+  { id: 'pdf', label: 'PDF Document', description: 'Printable course document' }
 ]
 
 function FormatStep({
@@ -413,9 +473,8 @@ function FormatStep({
         {FORMAT_OPTIONS.map((opt) => (
           <button
             key={opt.id}
-            onClick={() => opt.available && onFormatChange(opt.id)}
-            disabled={!opt.available}
-            className={`flex items-center gap-3 p-4 rounded-lg border text-left transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+            onClick={() => onFormatChange(opt.id)}
+            className={`flex items-center gap-3 p-4 rounded-lg border text-left transition-colors cursor-pointer ${
               format === opt.id
                 ? 'border-[var(--brand-magenta)] bg-[var(--brand-magenta)]/5'
                 : 'border-[var(--border-default)] hover:border-[var(--brand-magenta)]/50'
@@ -429,16 +488,9 @@ function FormatStep({
               {format === opt.id && <div className="w-2 h-2 rounded-full bg-[var(--brand-magenta)]" />}
             </div>
             <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-primary)]">
-                  {opt.label}
-                </span>
-                {!opt.available && (
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--bg-panel)] text-[var(--text-tertiary)]">
-                    Coming soon
-                  </span>
-                )}
-              </div>
+              <span className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-primary)]">
+                {opt.label}
+              </span>
               <p className="text-xs text-[var(--text-secondary)] mt-0.5">{opt.description}</p>
             </div>
           </button>
@@ -456,6 +508,134 @@ function SettingsStep({
   completionCriteria,
   onMasteryChange,
   onCompletionChange,
+  lessonCount,
+  xapiEndpoint,
+  xapiUsername,
+  xapiPassword,
+  xapiActorName,
+  xapiActorEmail,
+  onXapiEndpointChange,
+  onXapiUsernameChange,
+  onXapiPasswordChange,
+  onXapiActorNameChange,
+  onXapiActorEmailChange,
+  pdfPageSize,
+  pdfIncludeAnswers,
+  pdfIncludeUdl,
+  onPdfPageSizeChange,
+  onPdfIncludeAnswersChange,
+  onPdfIncludeUdlChange
+}: {
+  format: ExportFormat
+  masteryScore: number
+  completionCriteria: 'launch' | 'complete' | 'passed'
+  onMasteryChange: (v: number) => void
+  onCompletionChange: (v: 'launch' | 'complete' | 'passed') => void
+  lessonCount: number
+  xapiEndpoint: string
+  xapiUsername: string
+  xapiPassword: string
+  xapiActorName: string
+  xapiActorEmail: string
+  onXapiEndpointChange: (v: string) => void
+  onXapiUsernameChange: (v: string) => void
+  onXapiPasswordChange: (v: string) => void
+  onXapiActorNameChange: (v: string) => void
+  onXapiActorEmailChange: (v: string) => void
+  pdfPageSize: 'A4' | 'Letter'
+  pdfIncludeAnswers: boolean
+  pdfIncludeUdl: boolean
+  onPdfPageSizeChange: (v: 'A4' | 'Letter') => void
+  onPdfIncludeAnswersChange: (v: boolean) => void
+  onPdfIncludeUdlChange: (v: boolean) => void
+}): JSX.Element {
+  if (format === 'scorm-1.2' || format === 'scorm-2004') {
+    return (
+      <ScormSettings
+        format={format}
+        masteryScore={masteryScore}
+        completionCriteria={completionCriteria}
+        onMasteryChange={onMasteryChange}
+        onCompletionChange={onCompletionChange}
+        lessonCount={lessonCount}
+      />
+    )
+  }
+
+  if (format === 'xapi') {
+    return (
+      <XapiSettings
+        endpoint={xapiEndpoint}
+        username={xapiUsername}
+        password={xapiPassword}
+        actorName={xapiActorName}
+        actorEmail={xapiActorEmail}
+        onEndpointChange={onXapiEndpointChange}
+        onUsernameChange={onXapiUsernameChange}
+        onPasswordChange={onXapiPasswordChange}
+        onActorNameChange={onXapiActorNameChange}
+        onActorEmailChange={onXapiActorEmailChange}
+        lessonCount={lessonCount}
+      />
+    )
+  }
+
+  if (format === 'pdf') {
+    return (
+      <PdfSettings
+        pageSize={pdfPageSize}
+        includeAnswers={pdfIncludeAnswers}
+        includeUdl={pdfIncludeUdl}
+        onPageSizeChange={onPdfPageSizeChange}
+        onIncludeAnswersChange={onPdfIncludeAnswersChange}
+        onIncludeUdlChange={onPdfIncludeUdlChange}
+      />
+    )
+  }
+
+  // HTML5 — minimal settings
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-[var(--font-weight-semibold)] text-[var(--text-primary)] mb-1">
+          Standalone HTML Settings
+        </h2>
+        <p className="text-sm text-[var(--text-secondary)]">
+          Your course will be packaged as a self-contained website.
+        </p>
+      </div>
+
+      <div className="p-3 rounded-lg bg-[var(--bg-panel)] border border-[var(--border-default)]">
+        <div className="flex items-center gap-2 mb-2">
+          <Package size={14} className="text-[var(--brand-indigo)]" />
+          <span className="text-xs font-[var(--font-weight-semibold)] text-[var(--text-primary)]">
+            Package Summary
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-xs text-[var(--text-secondary)]">
+          <div>Format: <strong>Standalone HTML</strong></div>
+          <div>Pages: <strong>{lessonCount}</strong> (one per lesson)</div>
+          <div>Server required: <strong>No</strong></div>
+          <div>Progress tracking: <strong>localStorage</strong></div>
+        </div>
+      </div>
+
+      <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
+        <div className="flex items-center gap-2 text-xs text-blue-700">
+          <AlertCircle size={14} className="shrink-0" />
+          <span>Open <strong>index.html</strong> in any modern browser to view the course. No internet connection or server required.</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ScormSettings({
+  format,
+  masteryScore,
+  completionCriteria,
+  onMasteryChange,
+  onCompletionChange,
   lessonCount
 }: {
   format: ExportFormat
@@ -465,11 +645,13 @@ function SettingsStep({
   onCompletionChange: (v: 'launch' | 'complete' | 'passed') => void
   lessonCount: number
 }): JSX.Element {
+  const label = format === 'scorm-2004' ? 'SCORM 2004' : 'SCORM 1.2'
+
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-lg font-[var(--font-weight-semibold)] text-[var(--text-primary)] mb-1">
-          SCORM 1.2 Settings
+          {label} Settings
         </h2>
         <p className="text-sm text-[var(--text-secondary)]">
           Configure how the LMS tracks completion and scoring.
@@ -485,7 +667,7 @@ function SettingsStep({
           </span>
         </div>
         <div className="grid grid-cols-2 gap-2 text-xs text-[var(--text-secondary)]">
-          <div>Format: <strong>SCORM 1.2</strong></div>
+          <div>Format: <strong>{label}</strong></div>
           <div>SCOs: <strong>{lessonCount}</strong> (one per lesson)</div>
           <div>Version: <strong>{format}</strong></div>
           <div>Lesson mode: <strong>Normal</strong></div>
@@ -548,8 +730,249 @@ function SettingsStep({
           </span>
         </div>
         <p className="text-[10px] text-[var(--text-tertiary)]">
-          The minimum quiz score required to pass. Sent to the LMS as cmi.core.score mastery.
+          {format === 'scorm-2004'
+            ? 'The minimum normalized measure (cmi.score.scaled) required to pass.'
+            : 'The minimum quiz score required to pass. Sent to the LMS as cmi.core.score mastery.'}
         </p>
+      </div>
+    </div>
+  )
+}
+
+function XapiSettings({
+  endpoint,
+  username,
+  password,
+  actorName,
+  actorEmail,
+  onEndpointChange,
+  onUsernameChange,
+  onPasswordChange,
+  onActorNameChange,
+  onActorEmailChange,
+  lessonCount
+}: {
+  endpoint: string
+  username: string
+  password: string
+  actorName: string
+  actorEmail: string
+  onEndpointChange: (v: string) => void
+  onUsernameChange: (v: string) => void
+  onPasswordChange: (v: string) => void
+  onActorNameChange: (v: string) => void
+  onActorEmailChange: (v: string) => void
+  lessonCount: number
+}): JSX.Element {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-[var(--font-weight-semibold)] text-[var(--text-primary)] mb-1">
+          xAPI / Tin Can Settings
+        </h2>
+        <p className="text-sm text-[var(--text-secondary)]">
+          Configure the Learning Record Store (LRS) endpoint for xAPI statements.
+        </p>
+      </div>
+
+      <div className="p-3 rounded-lg bg-[var(--bg-panel)] border border-[var(--border-default)]">
+        <div className="flex items-center gap-2 mb-2">
+          <Package size={14} className="text-[var(--brand-indigo)]" />
+          <span className="text-xs font-[var(--font-weight-semibold)] text-[var(--text-primary)]">
+            Package Summary
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-xs text-[var(--text-secondary)]">
+          <div>Format: <strong>xAPI / Tin Can</strong></div>
+          <div>Pages: <strong>{lessonCount}</strong></div>
+          <div>Includes: <strong>tincan.xml</strong></div>
+          <div>Statements: <strong>launched, completed, passed/failed, answered</strong></div>
+        </div>
+      </div>
+
+      {/* LRS Endpoint */}
+      <div className="space-y-1.5">
+        <label htmlFor="xapi-endpoint" className="text-xs font-[var(--font-weight-semibold)] text-[var(--text-secondary)]">
+          LRS Endpoint URL
+        </label>
+        <input
+          id="xapi-endpoint"
+          type="url"
+          value={endpoint}
+          onChange={(e) => onEndpointChange(e.target.value)}
+          placeholder="https://lrs.example.com/xapi"
+          className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+        />
+      </div>
+
+      {/* Auth credentials */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <label htmlFor="xapi-user" className="text-xs font-[var(--font-weight-semibold)] text-[var(--text-secondary)]">
+            Username / Key
+          </label>
+          <input
+            id="xapi-user"
+            type="text"
+            value={username}
+            onChange={(e) => onUsernameChange(e.target.value)}
+            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label htmlFor="xapi-pass" className="text-xs font-[var(--font-weight-semibold)] text-[var(--text-secondary)]">
+            Password / Secret
+          </label>
+          <input
+            id="xapi-pass"
+            type="password"
+            value={password}
+            onChange={(e) => onPasswordChange(e.target.value)}
+            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+          />
+        </div>
+      </div>
+
+      {/* Actor info */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <label htmlFor="xapi-actor-name" className="text-xs font-[var(--font-weight-semibold)] text-[var(--text-secondary)]">
+            Default Actor Name
+          </label>
+          <input
+            id="xapi-actor-name"
+            type="text"
+            value={actorName}
+            onChange={(e) => onActorNameChange(e.target.value)}
+            placeholder="Learner"
+            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label htmlFor="xapi-actor-email" className="text-xs font-[var(--font-weight-semibold)] text-[var(--text-secondary)]">
+            Default Actor Email
+          </label>
+          <input
+            id="xapi-actor-email"
+            type="email"
+            value={actorEmail}
+            onChange={(e) => onActorEmailChange(e.target.value)}
+            placeholder="learner@example.com"
+            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+          />
+        </div>
+      </div>
+
+      <p className="text-[10px] text-[var(--text-tertiary)]">
+        These credentials are embedded in the exported package. In production, the LMS typically provides actor info via launch parameters.
+      </p>
+    </div>
+  )
+}
+
+function PdfSettings({
+  pageSize,
+  includeAnswers,
+  includeUdl,
+  onPageSizeChange,
+  onIncludeAnswersChange,
+  onIncludeUdlChange
+}: {
+  pageSize: 'A4' | 'Letter'
+  includeAnswers: boolean
+  includeUdl: boolean
+  onPageSizeChange: (v: 'A4' | 'Letter') => void
+  onIncludeAnswersChange: (v: boolean) => void
+  onIncludeUdlChange: (v: boolean) => void
+}): JSX.Element {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-[var(--font-weight-semibold)] text-[var(--text-primary)] mb-1">
+          PDF Settings
+        </h2>
+        <p className="text-sm text-[var(--text-secondary)]">
+          Configure page layout and content options for the PDF export.
+        </p>
+      </div>
+
+      {/* Page size */}
+      <div className="space-y-2">
+        <label className="text-xs font-[var(--font-weight-semibold)] text-[var(--text-secondary)]">
+          Page Size
+        </label>
+        <div className="flex gap-2">
+          {(['A4', 'Letter'] as const).map((size) => (
+            <label
+              key={size}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-md border cursor-pointer transition-colors ${
+                pageSize === size
+                  ? 'border-[var(--brand-magenta)] bg-[var(--brand-magenta)]/5'
+                  : 'border-[var(--border-default)] hover:border-[var(--brand-magenta)]/50'
+              }`}
+            >
+              <input
+                type="radio"
+                name="pdf-page-size"
+                value={size}
+                checked={pageSize === size}
+                onChange={() => onPageSizeChange(size)}
+                className="accent-[var(--brand-magenta)] cursor-pointer"
+              />
+              <span className="text-xs font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+                {size} {size === 'A4' ? '(210 × 297mm)' : '(8.5 × 11in)'}
+              </span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Content options */}
+      <div className="space-y-2">
+        <label className="text-xs font-[var(--font-weight-semibold)] text-[var(--text-secondary)]">
+          Content Options
+        </label>
+        <div className="space-y-1.5">
+          <label className="flex items-center gap-2 p-2.5 rounded-md border border-[var(--border-default)] cursor-pointer hover:bg-[var(--bg-hover)] transition-colors">
+            <input
+              type="checkbox"
+              checked={includeAnswers}
+              onChange={(e) => onIncludeAnswersChange(e.target.checked)}
+              className="accent-[var(--brand-magenta)] cursor-pointer"
+            />
+            <div>
+              <span className="text-xs font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+                Include quiz answers
+              </span>
+              <p className="text-[10px] text-[var(--text-tertiary)]">
+                Show correct answers marked with a checkmark
+              </p>
+            </div>
+          </label>
+          <label className="flex items-center gap-2 p-2.5 rounded-md border border-[var(--border-default)] cursor-pointer hover:bg-[var(--bg-hover)] transition-colors">
+            <input
+              type="checkbox"
+              checked={includeUdl}
+              onChange={(e) => onIncludeUdlChange(e.target.checked)}
+              className="accent-[var(--brand-magenta)] cursor-pointer"
+            />
+            <div>
+              <span className="text-xs font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+                Include UDL notes
+              </span>
+              <p className="text-[10px] text-[var(--text-tertiary)]">
+                Append UDL checklist data and accessibility notes
+              </p>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
+        <div className="flex items-center gap-2 text-xs text-blue-700">
+          <AlertCircle size={14} className="shrink-0" />
+          <span>Video and audio blocks will show as placeholders with transcripts included.</span>
+        </div>
       </div>
     </div>
   )
@@ -557,13 +980,30 @@ function SettingsStep({
 
 // ─── Build Step ───
 
+const FORMAT_LABELS: Record<ExportFormat, string> = {
+  'scorm-1.2': 'SCORM 1.2',
+  'scorm-2004': 'SCORM 2004',
+  'xapi': 'xAPI',
+  'html5': 'Standalone HTML',
+  'pdf': 'PDF'
+}
+
+const FORMAT_EXTENSIONS: Record<ExportFormat, string> = {
+  'scorm-1.2': '_SCORM12.zip',
+  'scorm-2004': '_SCORM2004.zip',
+  'xapi': '_xAPI.zip',
+  'html5': '_HTML.zip',
+  'pdf': '.pdf'
+}
+
 function BuildStep({
   building,
   progress,
   buildError,
   buildComplete,
   onBuild,
-  courseName
+  courseName,
+  format
 }: {
   building: boolean
   progress: PackageProgress | null
@@ -571,8 +1011,11 @@ function BuildStep({
   buildComplete: boolean
   onBuild: () => void
   courseName: string
+  format: ExportFormat
 }): JSX.Element {
-  const fileName = `${courseName.replace(/[^a-zA-Z0-9]/g, '_')}_SCORM12.zip`
+  const safeName = courseName.replace(/[^a-zA-Z0-9]/g, '_')
+  const fileName = `${safeName}${FORMAT_EXTENSIONS[format]}`
+  const formatLabel = FORMAT_LABELS[format]
 
   return (
     <div className="space-y-6">
@@ -581,7 +1024,7 @@ function BuildStep({
           Build & Download
         </h2>
         <p className="text-sm text-[var(--text-secondary)]">
-          Generate your SCORM 1.2 package and download it as a ZIP file.
+          Generate your {formatLabel} package and download it.
         </p>
       </div>
 
@@ -600,7 +1043,7 @@ function BuildStep({
           className="w-full flex items-center justify-center gap-2 px-6 py-3 text-sm text-white rounded-lg bg-gradient-to-r from-[var(--brand-indigo)] to-[var(--brand-magenta)] hover:opacity-90 transition-opacity cursor-pointer font-[var(--font-weight-semibold)]"
         >
           <Package size={16} />
-          Build SCORM Package
+          Build {formatLabel} Package
         </button>
       )}
 
@@ -652,7 +1095,7 @@ function BuildStep({
                 Package Built Successfully
               </div>
               <p className="text-xs text-green-600/70 mt-0.5">
-                Your SCORM 1.2 package has been downloaded as {fileName}
+                Your {formatLabel} package has been downloaded as {fileName}
               </p>
             </div>
           </div>
@@ -667,9 +1110,26 @@ function BuildStep({
             </button>
           </div>
 
-          <p className="text-[10px] text-[var(--text-tertiary)] text-center">
-            Upload the ZIP file to your LMS (Moodle, Canvas, Blackboard, etc.) to deploy.
-          </p>
+          {(format === 'scorm-1.2' || format === 'scorm-2004') && (
+            <p className="text-[10px] text-[var(--text-tertiary)] text-center">
+              Upload the ZIP file to your LMS (Moodle, Canvas, Blackboard, etc.) to deploy.
+            </p>
+          )}
+          {format === 'xapi' && (
+            <p className="text-[10px] text-[var(--text-tertiary)] text-center">
+              Upload to an xAPI-compatible LMS or host on any web server. Includes tincan.xml for LRS integration.
+            </p>
+          )}
+          {format === 'html5' && (
+            <p className="text-[10px] text-[var(--text-tertiary)] text-center">
+              Extract the ZIP and open index.html in any browser. No server or LMS required.
+            </p>
+          )}
+          {format === 'pdf' && (
+            <p className="text-[10px] text-[var(--text-tertiary)] text-center">
+              Share the PDF as a printable course document.
+            </p>
+          )}
         </div>
       )}
     </div>

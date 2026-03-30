@@ -21,6 +21,16 @@ const api = {
       ipcRenderer.invoke('fs:readFile', filePath, encoding),
     readFileBuffer: (filePath: string): Promise<ArrayBuffer> =>
       ipcRenderer.invoke('fs:readFileBuffer', filePath)
+  },
+  pdf: {
+    generate: (
+      html: string,
+      options?: {
+        pageSize?: 'A4' | 'Letter'
+        printBackground?: boolean
+        margins?: { top: number; bottom: number; left: number; right: number }
+      }
+    ): Promise<ArrayBuffer> => ipcRenderer.invoke('pdf:generate', html, options)
   }
 }
 
