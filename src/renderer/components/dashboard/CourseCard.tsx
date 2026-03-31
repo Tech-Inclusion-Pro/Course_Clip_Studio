@@ -5,6 +5,7 @@ import { PUBLISH_STATUS_CONFIG, ROUTES } from '@/lib/constants'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useAppStore } from '@/stores/useAppStore'
 import { deleteCourseFromWorkspace } from '@/lib/workspace'
+import { saveLuminaFile } from '@/lib/lumina-format'
 import { CardActionsMenu } from './CardActionsMenu'
 
 interface CourseCardProps {
@@ -84,7 +85,20 @@ export function CourseCard({ course }: CourseCardProps): JSX.Element {
             <CardActionsMenu
               onOpen={handleOpen}
               onDuplicate={() => duplicateCourse(course.id)}
-              onExport={() => {/* TODO: export */}}
+              onExport={async () => {
+                try {
+                  const buffer = await saveLuminaFile(course)
+                  const result = await window.electronAPI.dialog.saveFile({
+                    title: 'Export Lumina Course',
+                    defaultPath: `${course.meta.title}.lumina`,
+                    filters: [{ name: 'Lumina Course', extensions: ['lumina'] }]
+                  })
+                  if (result.canceled || !result.filePath) return
+                  await window.electronAPI.fs.writeFileBuffer(result.filePath, buffer)
+                } catch (err) {
+                  console.error('Failed to export course:', err)
+                }
+              }}
               onDelete={() => {
                 const wp = useAppStore.getState().workspacePath
                 if (wp) {

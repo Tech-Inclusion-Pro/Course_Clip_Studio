@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/Button'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { createCourse, createModule, createLesson } from '@/lib/mock-data'
 import { parseMarkdown, parsePptx, parseScormPackage } from '@/lib/import'
+import { loadLuminaFile } from '@/lib/lumina-format'
 import type { ImportResult, ImportProgress, ParsedModule } from '@/lib/import'
 import type { Course } from '@/types/course'
 
@@ -65,16 +66,18 @@ export function ImportDialog({ open, onClose }: ImportDialogProps): JSX.Element 
     setProgress(p)
   }, [])
 
-  async function handleFileSelect(format: 'markdown' | 'pptx' | 'scorm') {
+  async function handleFileSelect(format: 'markdown' | 'pptx' | 'scorm' | 'lumina') {
     try {
       const filters =
         format === 'markdown'
           ? [{ name: 'Markdown', extensions: ['md', 'markdown'] }]
           : format === 'pptx'
             ? [{ name: 'PowerPoint', extensions: ['pptx'] }]
-            : [{ name: 'SCORM Package', extensions: ['zip'] }]
+            : format === 'lumina'
+              ? [{ name: 'Lumina Course', extensions: ['lumina', 'zip', 'json'] }]
+              : [{ name: 'SCORM Package', extensions: ['zip'] }]
 
-      const formatLabel = format === 'markdown' ? 'Markdown' : format === 'pptx' ? 'PowerPoint' : 'SCORM'
+      const formatLabel = format === 'markdown' ? 'Markdown' : format === 'pptx' ? 'PowerPoint' : format === 'lumina' ? 'Lumina' : 'SCORM'
 
       const dialogResult = await window.electronAPI.dialog.openFile({
         title: `Import ${formatLabel} File`,
@@ -89,6 +92,15 @@ export function ImportDialog({ open, onClose }: ImportDialogProps): JSX.Element 
 
       setStep('parsing')
       setError(null)
+
+      // Lumina files contain a complete course — import directly
+      if (format === 'lumina') {
+        const buffer = await window.electronAPI.fs.readFileBuffer(filePath)
+        const { course } = await loadLuminaFile(buffer)
+        addCourse(course)
+        onClose()
+        return
+      }
 
       let importResult: ImportResult
 
@@ -133,7 +145,7 @@ export function ImportDialog({ open, onClose }: ImportDialogProps): JSX.Element 
     const course: Course = createCourse({
       meta: {
         title: courseTitle.trim() || result.suggestedTitle,
-        description: `Imported from ${result.format === 'markdown' ? 'Markdown' : result.format === 'scorm' ? 'SCORM' : 'PowerPoint'} file`,
+        description: `Imported from ${result.format === 'markdown' ? 'Markdown' : result.format === 'scorm' ? 'SCORM' : result.format === 'lumina' ? 'Lumina' : 'PowerPoint'} file`,
         author: 'Course Author',
         language: 'en',
         estimatedDuration: 0,
@@ -197,7 +209,7 @@ export function ImportDialog({ open, onClose }: ImportDialogProps): JSX.Element 
               Import content from a Markdown, PowerPoint, or SCORM file to create a new course.
             </p>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <ImportFormatCard
                 icon={FileText}
                 title="Markdown"
@@ -218,6 +230,13 @@ export function ImportDialog({ open, onClose }: ImportDialogProps): JSX.Element 
                 description="Import SCORM .zip packages. Organization structure maps to modules and lessons."
                 extensions=".zip"
                 onClick={() => handleFileSelect('scorm')}
+              />
+              <ImportFormatCard
+                icon={FileCode2}
+                title="Lumina"
+                description="Import .lumina course packages with all content, settings, and media included."
+                extensions=".lumina"
+                onClick={() => handleFileSelect('lumina')}
               />
             </div>
           </>

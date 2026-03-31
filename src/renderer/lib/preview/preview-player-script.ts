@@ -163,6 +163,23 @@ export function getPreviewPlayerScript(): string {
       });
     });
   }
+  // Scroll sync
+  var _scrollSyncing = false;
+  window.addEventListener('message', function(e) {
+    if (e.data && e.data.type === 'lumina:scroll-sync') {
+      _scrollSyncing = true;
+      var el = document.documentElement;
+      el.scrollTop = e.data.fraction * (el.scrollHeight - el.clientHeight);
+      requestAnimationFrame(function() { _scrollSyncing = false; });
+    }
+  });
+  window.addEventListener('scroll', function() {
+    if (_scrollSyncing) return;
+    var el = document.documentElement;
+    var max = el.scrollHeight - el.clientHeight;
+    var fraction = max > 0 ? el.scrollTop / max : 0;
+    window.parent.postMessage({ type: 'lumina:scroll-sync', fraction: fraction }, '*');
+  }, { passive: true });
 })();
 `
 }

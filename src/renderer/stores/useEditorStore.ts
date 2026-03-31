@@ -21,6 +21,7 @@ interface EditorState {
   // Preview
   splitPreviewOpen: boolean
   previewDevice: PreviewDevice
+  scrollSyncEnabled: boolean
 
   // Panels
   leftPanelOpen: boolean
@@ -62,6 +63,7 @@ interface EditorState {
   // Preview
   toggleSplitPreview: () => void
   setPreviewDevice: (device: PreviewDevice) => void
+  toggleScrollSync: () => void
 
   // Panels
   toggleLeftPanel: () => void
@@ -99,6 +101,7 @@ const initialState = {
   slideAspectRatio: '16:9' as '16:9' | '4:3',
   splitPreviewOpen: false,
   previewDevice: 'desktop' as PreviewDevice,
+  scrollSyncEnabled: true,
   leftPanelOpen: true,
   rightPanelOpen: true,
   aiPanelOpen: false,
@@ -154,6 +157,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   // Preview
   toggleSplitPreview: () => set((s) => ({ splitPreviewOpen: !s.splitPreviewOpen })),
   setPreviewDevice: (device) => set({ previewDevice: device }),
+  toggleScrollSync: () => set((s) => ({ scrollSyncEnabled: !s.scrollSyncEnabled })),
 
   // Panels
   toggleLeftPanel: () => set((s) => ({ leftPanelOpen: !s.leftPanelOpen })),

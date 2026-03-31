@@ -21,6 +21,7 @@ import { useCourseStore } from '@/stores/useCourseStore'
 import { uid } from '@/lib/uid'
 import { persistWorkspacePath, loadWorkspace } from '@/lib/workspace'
 import type { BrandKit } from '@/types/course'
+import { GoogleFontPicker } from '@/components/editor/GoogleFontPicker'
 
 type SettingsTab = 'general' | 'brand' | 'ai' | 'accessibility'
 
@@ -420,20 +421,16 @@ function BrandKitSettings(): JSX.Element {
                     <ColorInput label="Secondary" value={editingKit.secondaryColor} onChange={(v) => updateBrandKit(kit.id, { secondaryColor: v })} />
                     <ColorInput label="Accent" value={editingKit.accentColor} onChange={(v) => updateBrandKit(kit.id, { accentColor: v })} />
                   </div>
-                  <div>
-                    <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">Body Font</label>
-                    <select
-                      value={editingKit.fontFamily}
-                      onChange={(e) => updateBrandKit(kit.id, { fontFamily: e.target.value })}
-                      className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
-                    >
-                      <option value="Arial, sans-serif">Arial</option>
-                      <option value="'Helvetica Neue', sans-serif">Helvetica</option>
-                      <option value="Georgia, serif">Georgia</option>
-                      <option value="Verdana, sans-serif">Verdana</option>
-                      <option value="system-ui, sans-serif">System UI</option>
-                    </select>
-                  </div>
+                  <GoogleFontPicker
+                    label="Body Font"
+                    value={editingKit.fontFamily}
+                    onChange={(fontFamily) => updateBrandKit(kit.id, { fontFamily })}
+                  />
+                  <GoogleFontPicker
+                    label="Heading Font"
+                    value={editingKit.fontFamilyHeading}
+                    onChange={(fontFamily) => updateBrandKit(kit.id, { fontFamilyHeading: fontFamily })}
+                  />
                 </div>
               )}
             </div>

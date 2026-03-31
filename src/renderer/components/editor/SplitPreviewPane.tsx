@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { Monitor, Tablet, Smartphone } from 'lucide-react'
+import { Monitor, Tablet, Smartphone, Link, Unlink } from 'lucide-react'
 import { useEditorStore, type PreviewDevice } from '@/stores/useEditorStore'
 import { renderPreviewHtml } from '@/lib/preview/render-preview-html'
 import type { Course, Lesson } from '@/types/course'
@@ -10,6 +10,7 @@ interface SplitPreviewPaneProps {
   moduleTitle: string
   lessonIndex: number
   totalLessons: number
+  iframeExternalRef?: React.RefObject<HTMLIFrameElement | null>
 }
 
 const DEVICE_WIDTHS: Record<PreviewDevice, string> = {
@@ -23,10 +24,13 @@ export function SplitPreviewPane({
   lesson,
   moduleTitle,
   lessonIndex,
-  totalLessons
+  totalLessons,
+  iframeExternalRef
 }: SplitPreviewPaneProps): JSX.Element {
   const previewDevice = useEditorStore((s) => s.previewDevice)
   const setPreviewDevice = useEditorStore((s) => s.setPreviewDevice)
+  const scrollSyncEnabled = useEditorStore((s) => s.scrollSyncEnabled)
+  const toggleScrollSync = useEditorStore((s) => s.toggleScrollSync)
   const [debouncedHtml, setDebouncedHtml] = useState('')
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
@@ -49,6 +53,18 @@ export function SplitPreviewPane({
           Preview
         </span>
         <div className="flex items-center gap-0.5">
+          <button
+            onClick={toggleScrollSync}
+            aria-pressed={scrollSyncEnabled}
+            title={scrollSyncEnabled ? 'Scroll sync on' : 'Scroll sync off'}
+            className={`p-1 rounded cursor-pointer transition-colors mr-1 ${
+              scrollSyncEnabled
+                ? 'bg-[var(--bg-active)] text-[var(--text-brand)]'
+                : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            {scrollSyncEnabled ? <Link size={12} /> : <Unlink size={12} />}
+          </button>
           {([
             { mode: 'desktop' as PreviewDevice, icon: Monitor },
             { mode: 'tablet' as PreviewDevice, icon: Tablet },
@@ -77,7 +93,10 @@ export function SplitPreviewPane({
           style={{ width: DEVICE_WIDTHS[previewDevice], maxWidth: '100%' }}
         >
           <iframe
-            ref={iframeRef}
+            ref={(el) => {
+              iframeRef.current = el
+              if (iframeExternalRef) (iframeExternalRef as React.MutableRefObject<HTMLIFrameElement | null>).current = el
+            }}
             srcDoc={debouncedHtml}
             title="Split preview"
             className="w-full h-full border-0"

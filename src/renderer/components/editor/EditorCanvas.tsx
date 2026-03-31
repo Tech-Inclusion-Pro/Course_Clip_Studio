@@ -43,7 +43,11 @@ import { BlockInserterButton } from './BlockInserter'
 import { SlideCanvas } from './SlideCanvas'
 import type { BlockType, ContentBlock } from '@/types/course'
 
-export function EditorCanvas(): JSX.Element {
+interface EditorCanvasProps {
+  scrollContainerRef?: React.RefObject<HTMLDivElement | null>
+}
+
+export function EditorCanvas({ scrollContainerRef }: EditorCanvasProps): JSX.Element {
   const activeCourseId = useCourseStore((s) => s.activeCourseId)
   const course = useCourseStore((s) => s.courses.find((c) => c.id === s.activeCourseId))
   const addBlock = useCourseStore((s) => s.addBlock)
@@ -232,7 +236,7 @@ export function EditorCanvas(): JSX.Element {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[var(--bg-app)]">
+    <div ref={scrollContainerRef} className="flex-1 overflow-y-auto bg-[var(--bg-app)]">
       {/* Lesson header */}
       <div className="max-w-3xl mx-auto px-6 pt-6 pb-2">
         <p className="text-xs text-[var(--text-tertiary)] mb-1">{module.title}</p>

@@ -23,7 +23,9 @@ import {
   LayoutGrid,
   GitBranch,
   Database,
-  Columns
+  Columns,
+  Grid3x3,
+  Magnet
 } from 'lucide-react'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useEditorStore, type PreviewDevice } from '@/stores/useEditorStore'
@@ -77,6 +79,10 @@ export function EditorToolbar(): JSX.Element {
   const toggleBranchingGraph = useEditorStore((s) => s.toggleBranchingGraph)
   const questionBankOpen = useEditorStore((s) => s.questionBankOpen)
   const toggleQuestionBank = useEditorStore((s) => s.toggleQuestionBank)
+  const showGrid = useEditorStore((s) => s.showGrid)
+  const toggleGrid = useEditorStore((s) => s.toggleGrid)
+  const showSmartGuides = useEditorStore((s) => s.showSmartGuides)
+  const toggleSmartGuides = useEditorStore((s) => s.toggleSmartGuides)
 
   const canUndo = useHistoryStore((s) => s.canUndo())
   const canRedo = useHistoryStore((s) => s.canRedo())
@@ -201,6 +207,18 @@ export function EditorToolbar(): JSX.Element {
           label={canvasMode === 'block' ? 'Switch to Slide view' : 'Switch to Block view'}
           active={canvasMode === 'slide'}
           onClick={() => setCanvasMode(canvasMode === 'block' ? 'slide' : 'block')}
+        />
+        <ToolbarButton
+          icon={Grid3x3}
+          label="Toggle Grid"
+          active={showGrid}
+          onClick={toggleGrid}
+        />
+        <ToolbarButton
+          icon={Magnet}
+          label="Smart Guides"
+          active={showSmartGuides}
+          onClick={toggleSmartGuides}
         />
 
         {/* Branching graph toggle */}
