@@ -115,7 +115,7 @@ export const useAIStore = create<AIState>((set) => ({
     set({ isGenerating: true, currentAction: action, lastError: null, lastResult: null }),
 
   finishGeneration: (result) =>
-    set({ isGenerating: false, currentAction: null, lastResult: result }),
+    set({ isGenerating: false, lastResult: result }),
 
   failGeneration: (error) =>
     set({ isGenerating: false, currentAction: null, lastError: error }),

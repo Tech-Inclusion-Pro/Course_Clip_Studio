@@ -1,4 +1,3 @@
-import { autoUpdater } from 'electron-updater'
 import { BrowserWindow, ipcMain } from 'electron'
 import { is } from '@electron-toolkit/utils'
 
@@ -9,6 +8,18 @@ export function initAutoUpdater(win: BrowserWindow): void {
 
   // Don't check for updates in dev mode
   if (is.dev) return
+
+  // electron-updater may not be available in packaged builds
+  // if node_modules is excluded from the asar bundle
+  let autoUpdater: typeof import('electron-updater').autoUpdater
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    autoUpdater = require('electron-updater').autoUpdater
+  } catch {
+    console.warn('electron-updater not available, auto-updates disabled')
+    registerNoopHandlers()
+    return
+  }
 
   autoUpdater.autoDownload = false
   autoUpdater.autoInstallOnAppQuit = true
@@ -49,7 +60,6 @@ export function initAutoUpdater(win: BrowserWindow): void {
 
   // IPC handlers for renderer to control updates
   ipcMain.handle('updater:check', async () => {
-    if (is.dev) return { updateAvailable: false }
     try {
       const result = await autoUpdater.checkForUpdates()
       return {
@@ -62,7 +72,6 @@ export function initAutoUpdater(win: BrowserWindow): void {
   })
 
   ipcMain.handle('updater:download', async () => {
-    if (is.dev) return
     await autoUpdater.downloadUpdate()
   })
 
@@ -76,6 +85,12 @@ export function initAutoUpdater(win: BrowserWindow): void {
       // Silently fail — no network or no releases
     })
   }, 5000)
+}
+
+function registerNoopHandlers(): void {
+  ipcMain.handle('updater:check', async () => ({ updateAvailable: false }))
+  ipcMain.handle('updater:download', async () => {})
+  ipcMain.handle('updater:install', () => {})
 }
 
 function sendToRenderer(channel: string, data?: unknown): void {

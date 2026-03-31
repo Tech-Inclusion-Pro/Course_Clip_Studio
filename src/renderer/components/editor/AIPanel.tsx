@@ -33,6 +33,8 @@ import {
   lessonContentPrompt,
   quizPrompt,
   narrationPrompt,
+  altTextPrompt,
+  translatePrompt,
   wcagReviewPrompt,
   udlSuggestionsPrompt
 } from '@/lib/ai'
@@ -532,11 +534,55 @@ function ResultView(): JSX.Element {
   const addModule = useCourseStore((s) => s.addModule)
   const addLesson = useCourseStore((s) => s.addLesson)
   const addBlock = useCourseStore((s) => s.addBlock)
+  const updateBlock = useCourseStore((s) => s.updateBlock)
+  const selectedBlockId = useEditorStore((s) => s.selectedBlockId)
 
   function handleApply() {
     if (!lastResult || !activeCourseId || applied) return
 
     try {
+      // Alt text: plain text result, no JSON parsing needed
+      if (currentAction === 'generate-alt-text') {
+        if (!activeModuleId || !activeLessonId || !selectedBlockId) return
+        updateBlock(activeCourseId, activeModuleId, activeLessonId, selectedBlockId, { altText: lastResult.trim() })
+        setApplied(true)
+        return
+      }
+
+      // Translate: JSON array of blocks with translated fields
+      if (currentAction === 'translate-lesson') {
+        if (!activeModuleId || !activeLessonId) return
+        const translated = JSON.parse(lastResult)
+        if (!Array.isArray(translated)) return
+        for (const block of translated) {
+          if (!block.id || !block.type) continue
+          const partial: Record<string, unknown> = {}
+          if (block.ariaLabel !== undefined) partial.ariaLabel = block.ariaLabel
+          if (block.type === 'text' && block.content !== undefined) partial.content = block.content
+          if (block.type === 'callout') {
+            if (block.content !== undefined) partial.content = block.content
+            if (block.title !== undefined) partial.title = block.title
+          }
+          if (block.type === 'media') {
+            if (block.caption !== undefined) partial.caption = block.caption
+            if (block.altText !== undefined) partial.altText = block.altText
+          }
+          if (block.type === 'quiz' && block.questions) partial.questions = block.questions
+          if (block.type === 'accordion' && block.items) partial.items = block.items
+          if (block.type === 'tabs' && block.tabs) partial.tabs = block.tabs
+          if (block.type === 'flashcard' && block.cards) partial.cards = block.cards
+          if (block.type === 'branching') {
+            if (block.scenario !== undefined) partial.scenario = block.scenario
+            if (block.choices) partial.choices = block.choices
+          }
+          if (Object.keys(partial).length > 0) {
+            updateBlock(activeCourseId, activeModuleId, activeLessonId, block.id, partial)
+          }
+        }
+        setApplied(true)
+        return
+      }
+
       const parsed = JSON.parse(lastResult)
 
       if (currentAction === 'generate-outline' && parsed.modules) {
@@ -687,7 +733,7 @@ function ResultView(): JSX.Element {
 // ─── Helpers ───
 
 function canApply(action: AIAction | null): boolean {
-  return action === 'generate-outline' || action === 'generate-quiz' || action === 'generate-lesson'
+  return action === 'generate-outline' || action === 'generate-quiz' || action === 'generate-lesson' || action === 'generate-alt-text' || action === 'translate-lesson'
 }
 
 function formatResult(raw: string): string {
@@ -769,11 +815,43 @@ async function runAction(action: AIAction): Promise<void> {
         break
       }
       case 'generate-alt-text': {
-        result = 'Alt text generation requires image analysis. Select an image block and try again.'
+        const selectedBlockId = editorStore.selectedBlockId
+        if (!selectedBlockId) throw new Error('No block selected. Select a media block first.')
+        const mod = course?.modules.find((m) => m.id === editorStore.activeModuleId)
+        const lesson = mod?.lessons.find((l) => l.id === editorStore.activeLessonId)
+        const block = lesson?.blocks.find((b) => b.id === selectedBlockId)
+        if (!block || block.type !== 'media') throw new Error('Selected block is not a media block. Select an image block to generate alt text.')
+        const contextParts: string[] = []
+        if (block.caption) contextParts.push(`Caption: ${block.caption}`)
+        if (block.assetPath) contextParts.push(`Filename: ${block.assetPath.split('/').pop()}`)
+        if (lesson?.title) contextParts.push(`Lesson: ${lesson.title}`)
+        if (lessonContent) contextParts.push(`Surrounding content: ${lessonContent.slice(0, 500)}`)
+        const imageContext = contextParts.join('\n') || 'No additional context available'
+        const prompt = altTextPrompt(imageContext)
+        result = await provider.generateText(prompt, SYSTEM_PROMPT)
         break
       }
       case 'translate-lesson': {
-        result = 'Translation feature coming soon. Select a target language in AI settings.'
+        const mod = course?.modules.find((m) => m.id === editorStore.activeModuleId)
+        const lesson = mod?.lessons.find((l) => l.id === editorStore.activeLessonId)
+        if (!lesson || lesson.blocks.length === 0) throw new Error('No lesson content to translate. Add some content blocks first.')
+        const langMap: Record<string, string> = { en: 'English', es: 'Spanish', fr: 'French', de: 'German', pt: 'Portuguese' }
+        const langCode = aiSettings.defaultAILanguage || 'es'
+        const languageName = langMap[langCode] || langCode
+        const translatableBlocks = lesson.blocks.map((b) => {
+          if (b.type === 'text') return { id: b.id, type: b.type, content: b.content, ariaLabel: b.ariaLabel }
+          if (b.type === 'callout') return { id: b.id, type: b.type, content: b.content, title: b.title, ariaLabel: b.ariaLabel }
+          if (b.type === 'media') return { id: b.id, type: b.type, caption: b.caption, altText: b.altText, ariaLabel: b.ariaLabel }
+          if (b.type === 'quiz') return { id: b.id, type: b.type, questions: b.questions.map((q) => ({ id: q.id, prompt: q.prompt, choices: q.choices.map((c) => ({ id: c.id, label: c.label })), feedbackCorrect: q.feedbackCorrect, feedbackIncorrect: q.feedbackIncorrect })) }
+          if (b.type === 'accordion') return { id: b.id, type: b.type, items: b.items, ariaLabel: b.ariaLabel }
+          if (b.type === 'tabs') return { id: b.id, type: b.type, tabs: b.tabs, ariaLabel: b.ariaLabel }
+          if (b.type === 'flashcard') return { id: b.id, type: b.type, cards: b.cards, ariaLabel: b.ariaLabel }
+          if (b.type === 'branching') return { id: b.id, type: b.type, scenario: b.scenario, choices: b.choices.map((c) => ({ id: c.id, label: c.label, consequence: c.consequence })), ariaLabel: b.ariaLabel }
+          return null
+        }).filter(Boolean)
+        const jsonContent = JSON.stringify(translatableBlocks, null, 2)
+        const prompt = translatePrompt(jsonContent, languageName)
+        result = await provider.generateText(prompt, SYSTEM_PROMPT)
         break
       }
       case 'wcag-review': {

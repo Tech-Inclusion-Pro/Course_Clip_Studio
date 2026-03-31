@@ -127,12 +127,16 @@ Return only the alt text string, no JSON.`
 }
 
 export function translatePrompt(content: string, targetLanguage: string): string {
-  return `Translate this educational content to ${targetLanguage}. Preserve all HTML formatting, block structure, and JSON structure exactly. Only translate the human-readable text content.
+  return `Translate this educational content to ${targetLanguage}.
 
-Content to translate:
+Content to translate (JSON array of content blocks):
 ${content}
 
-Return the translated content in the same format as the input.`
+Rules:
+- Translate only human-readable text fields (content, title, caption, altText, ariaLabel, prompt, label, feedbackCorrect, feedbackIncorrect, scenario, consequence, front, back)
+- Preserve the JSON structure, all keys, block IDs, and HTML tags exactly
+- Do not translate or modify "id", "type", or any structural keys
+- Return only a valid JSON array with no markdown fencing or extra text`
 }
 
 export function wcagReviewPrompt(lessonHtml: string): string {
