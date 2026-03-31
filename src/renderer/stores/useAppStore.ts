@@ -25,6 +25,7 @@ interface AppState {
 
   // AI settings
   ai: AISettings
+  aiSettingsLoaded: boolean
 
   // Accessibility settings
   accessibility: AccessibilitySettings
@@ -56,13 +57,14 @@ interface AppState {
   removeBrandKit: (id: string) => void
 
   // AI actions
+  loadAISettings: () => Promise<void>
   updateAISettings: (settings: Partial<AISettings>) => void
 
   // Accessibility actions
   updateAccessibilitySettings: (settings: Partial<AccessibilitySettings>) => void
 }
 
-export const useAppStore = create<AppState>((set) => ({
+export const useAppStore = create<AppState>((set, get) => ({
   // UI defaults
   theme: 'system',
   sidebarCollapsed: false,
@@ -91,6 +93,7 @@ export const useAppStore = create<AppState>((set) => ({
     ollamaModel: null,
     defaultAILanguage: 'en'
   },
+  aiSettingsLoaded: false,
 
   // Accessibility defaults
   accessibility: {
@@ -135,8 +138,53 @@ export const useAppStore = create<AppState>((set) => ({
     })),
 
   // AI actions
-  updateAISettings: (settings) =>
-    set((state) => ({ ai: { ...state.ai, ...settings } })),
+  loadAISettings: async () => {
+    try {
+      const saved = (await window.electronAPI.settings.get('ai')) as Partial<AISettings> | null
+      const anthropicApiKey = await window.electronAPI.secrets.get('anthropicApiKey')
+      const openaiApiKey = await window.electronAPI.secrets.get('openaiApiKey')
+
+      set((state) => ({
+        ai: {
+          ...state.ai,
+          ...(saved?.provider !== undefined && { provider: saved.provider }),
+          ...(saved?.ollamaEndpoint !== undefined && { ollamaEndpoint: saved.ollamaEndpoint }),
+          ...(saved?.ollamaModel !== undefined && { ollamaModel: saved.ollamaModel }),
+          ...(saved?.defaultAILanguage !== undefined && { defaultAILanguage: saved.defaultAILanguage }),
+          ...(anthropicApiKey !== null && { anthropicApiKey }),
+          ...(openaiApiKey !== null && { openaiApiKey })
+        },
+        aiSettingsLoaded: true
+      }))
+    } catch (err) {
+      console.error('Failed to load AI settings:', err)
+      set({ aiSettingsLoaded: true })
+    }
+  },
+
+  updateAISettings: (settings) => {
+    set((state) => ({ ai: { ...state.ai, ...settings } }))
+
+    // Persist secrets
+    if ('anthropicApiKey' in settings) {
+      if (settings.anthropicApiKey) {
+        window.electronAPI.secrets.set('anthropicApiKey', settings.anthropicApiKey)
+      } else {
+        window.electronAPI.secrets.delete('anthropicApiKey')
+      }
+    }
+    if ('openaiApiKey' in settings) {
+      if (settings.openaiApiKey) {
+        window.electronAPI.secrets.set('openaiApiKey', settings.openaiApiKey)
+      } else {
+        window.electronAPI.secrets.delete('openaiApiKey')
+      }
+    }
+
+    // Persist non-sensitive AI settings
+    const { anthropicApiKey: _a, openaiApiKey: _o, ...nonSensitive } = { ...get().ai, ...settings }
+    window.electronAPI.settings.set('ai', nonSensitive)
+  },
 
   // Accessibility actions
   updateAccessibilitySettings: (settings) =>

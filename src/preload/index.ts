@@ -42,6 +42,14 @@ const api = {
     set: (key: string, value: unknown): Promise<void> =>
       ipcRenderer.invoke('settings:set', key, value)
   },
+  secrets: {
+    get: (key: string): Promise<string | null> =>
+      ipcRenderer.invoke('secrets:get', key),
+    set: (key: string, value: string): Promise<void> =>
+      ipcRenderer.invoke('secrets:set', key, value),
+    delete: (key: string): Promise<void> =>
+      ipcRenderer.invoke('secrets:delete', key)
+  },
   pdf: {
     generate: (
       html: string,

@@ -18,7 +18,10 @@ export function useWorkspaceInit(): void {
 
     async function init() {
       try {
-        const path = await loadWorkspacePath()
+        const [path] = await Promise.all([
+          loadWorkspacePath(),
+          useAppStore.getState().loadAISettings()
+        ])
         if (path) {
           setWorkspacePath(path)
           const courses = await loadWorkspace(path)

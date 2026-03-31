@@ -1,4 +1,4 @@
-import { ipcMain, dialog, app, BrowserWindow, net } from 'electron'
+import { ipcMain, dialog, app, BrowserWindow, net, safeStorage } from 'electron'
 import { readFileSync, readFile, writeFileSync, existsSync, mkdirSync, readdirSync, statSync, rmSync } from 'fs'
 import { join, dirname } from 'path'
 
@@ -193,6 +193,61 @@ export function registerIpcHandlers(): void {
     config[key] = value
     writeConfig(config)
   })
+
+  // ─── Secrets (encrypted via OS keychain) ───
+
+  ipcMain.handle('secrets:set', async (_event, key: string, value: string) => {
+    const config = readConfig()
+    const secrets = (config.__secrets as Record<string, string>) ?? {}
+    const encrypted = safeStorage.encryptString(value)
+    secrets[key] = encrypted.toString('base64')
+    config.__secrets = secrets
+    writeConfig(config)
+  })
+
+  ipcMain.handle('secrets:get', async (_event, key: string) => {
+    const config = readConfig()
+    const secrets = (config.__secrets as Record<string, string>) ?? {}
+    const encoded = secrets[key]
+    if (!encoded) return null
+    try {
+      return safeStorage.decryptString(Buffer.from(encoded, 'base64'))
+    } catch {
+      return null
+    }
+  })
+
+  ipcMain.handle('secrets:delete', async (_event, key: string) => {
+    const config = readConfig()
+    const secrets = (config.__secrets as Record<string, string>) ?? {}
+    delete secrets[key]
+    config.__secrets = secrets
+    writeConfig(config)
+  })
+
+  // Migrate any plaintext API keys to encrypted storage
+  try {
+    const config = readConfig()
+    let migrated = false
+    const secretKeys = ['anthropicApiKey', 'openaiApiKey']
+    const secrets = (config.__secrets as Record<string, string>) ?? {}
+
+    for (const key of secretKeys) {
+      if (typeof config[key] === 'string' && config[key]) {
+        const encrypted = safeStorage.encryptString(config[key] as string)
+        secrets[key] = encrypted.toString('base64')
+        delete config[key]
+        migrated = true
+      }
+    }
+
+    if (migrated) {
+      config.__secrets = secrets
+      writeConfig(config)
+    }
+  } catch (err) {
+    console.error('Failed to migrate plaintext API keys:', err)
+  }
 
   // ─── HTTP Requests (for LMS API calls, bypasses CORS) ───
 
