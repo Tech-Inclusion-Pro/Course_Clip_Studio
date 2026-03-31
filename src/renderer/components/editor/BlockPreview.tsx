@@ -14,8 +14,10 @@ import {
   Info,
   CheckCircle2,
   XCircle,
-  Lightbulb
+  Lightbulb,
+  Puzzle
 } from 'lucide-react'
+import { FeedbackFormPreview } from './FeedbackFormPreview'
 import type { ContentBlock, CalloutBlock } from '@/types/course'
 
 const CALLOUT_ICONS: Record<CalloutBlock['variant'], typeof Info> = {
@@ -337,6 +339,22 @@ export function BlockPreview({ block }: BlockPreviewProps): JSX.Element {
             )}
           </div>
           <pre className="whitespace-pre-wrap">{block.code || '// Empty code block'}</pre>
+        </div>
+      )
+
+    case 'feedback-form':
+      return <FeedbackFormPreview block={block} />
+
+    case 'plugin':
+      return (
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--bg-muted)]">
+          <Puzzle size={24} className="text-[var(--text-tertiary)] shrink-0" />
+          <div className="min-w-0">
+            <p className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+              Plugin: {block.pluginType || 'Unconfigured'}
+            </p>
+            <p className="text-xs text-[var(--text-secondary)]">Plugin block content</p>
+          </div>
         </div>
       )
 

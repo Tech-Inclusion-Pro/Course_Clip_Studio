@@ -19,7 +19,11 @@ import {
   ShieldCheck,
   Award,
   History,
-  MessageSquare
+  MessageSquare,
+  LayoutGrid,
+  GitBranch,
+  Database,
+  Columns
 } from 'lucide-react'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useEditorStore, type PreviewDevice } from '@/stores/useEditorStore'
@@ -67,6 +71,12 @@ export function EditorToolbar(): JSX.Element {
   const toggleNotesPanel = useEditorStore((s) => s.toggleNotesPanel)
   const toggleSplitPreview = useEditorStore((s) => s.toggleSplitPreview)
   const setPreviewDevice = useEditorStore((s) => s.setPreviewDevice)
+  const canvasMode = useEditorStore((s) => s.canvasMode)
+  const setCanvasMode = useEditorStore((s) => s.setCanvasMode)
+  const branchingGraphOpen = useEditorStore((s) => s.branchingGraphOpen)
+  const toggleBranchingGraph = useEditorStore((s) => s.toggleBranchingGraph)
+  const questionBankOpen = useEditorStore((s) => s.questionBankOpen)
+  const toggleQuestionBank = useEditorStore((s) => s.toggleQuestionBank)
 
   const canUndo = useHistoryStore((s) => s.canUndo())
   const canRedo = useHistoryStore((s) => s.canRedo())
@@ -181,6 +191,32 @@ export function EditorToolbar(): JSX.Element {
             const idx = devices.indexOf(previewDevice)
             setPreviewDevice(devices[(idx + 1) % devices.length])
           }}
+        />
+
+        <div className="w-px h-5 bg-[var(--border-default)] mx-1" aria-hidden="true" />
+
+        {/* Canvas mode toggle */}
+        <ToolbarButton
+          icon={canvasMode === 'block' ? LayoutGrid : Columns}
+          label={canvasMode === 'block' ? 'Switch to Slide view' : 'Switch to Block view'}
+          active={canvasMode === 'slide'}
+          onClick={() => setCanvasMode(canvasMode === 'block' ? 'slide' : 'block')}
+        />
+
+        {/* Branching graph toggle */}
+        <ToolbarButton
+          icon={GitBranch}
+          label="Branching Graph"
+          active={branchingGraphOpen}
+          onClick={toggleBranchingGraph}
+        />
+
+        {/* Question bank toggle */}
+        <ToolbarButton
+          icon={Database}
+          label="Question Bank"
+          active={questionBankOpen}
+          onClick={toggleQuestionBank}
         />
 
         <div className="w-px h-5 bg-[var(--border-default)] mx-1" aria-hidden="true" />

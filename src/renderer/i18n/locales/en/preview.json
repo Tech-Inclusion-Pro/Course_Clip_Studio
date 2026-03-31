@@ -1,0 +1,38 @@
+{
+  "title": "Preview",
+  "player": {
+    "play": "Play",
+    "pause": "Pause",
+    "restart": "Restart",
+    "nextSlide": "Next Slide",
+    "previousSlide": "Previous Slide",
+    "progress": "Progress",
+    "slideOf": "Slide {{current}} of {{total}}",
+    "fullscreen": "Fullscreen",
+    "exitFullscreen": "Exit Fullscreen",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "volume": "Volume",
+    "captions": "Captions",
+    "captionsOn": "Captions On",
+    "captionsOff": "Captions Off",
+    "playbackSpeed": "Playback Speed",
+    "tableOfContents": "Table of Contents"
+  },
+  "device": {
+    "desktop": "Desktop",
+    "tablet": "Tablet",
+    "mobile": "Mobile",
+    "responsive": "Responsive"
+  },
+  "actions": {
+    "openInBrowser": "Open in Browser",
+    "sharePreviewLink": "Share Preview Link",
+    "refreshPreview": "Refresh Preview",
+    "toggleDeviceFrame": "Toggle Device Frame"
+  },
+  "empty": {
+    "title": "Nothing to preview",
+    "description": "Add some content to your lesson to see a preview."
+  }
+}

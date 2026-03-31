@@ -1,0 +1,54 @@
+{
+  "title": "My Courses",
+  "search": {
+    "placeholder": "Search courses...",
+    "noResults": "No courses found",
+    "noResultsDescription": "Try adjusting your search or filter criteria."
+  },
+  "filter": {
+    "all": "All",
+    "byStatus": "Filter by Status",
+    "byTemplate": "Filter by Template"
+  },
+  "status": {
+    "draft": "Draft",
+    "inReview": "In Review",
+    "published": "Published",
+    "archived": "Archived"
+  },
+  "card": {
+    "lessons": "Lessons",
+    "modules": "Modules",
+    "lastEdited": "Last edited",
+    "createdOn": "Created on",
+    "author": "Author",
+    "language": "Language",
+    "openCourse": "Open Course",
+    "editCourse": "Edit Course",
+    "duplicateCourse": "Duplicate Course",
+    "deleteCourse": "Delete Course",
+    "archiveCourse": "Archive Course"
+  },
+  "templates": {
+    "blank": "Blank Course",
+    "microlearning": "Microlearning",
+    "fullCourse": "Full Course",
+    "assessment": "Assessment Only",
+    "onboarding": "Onboarding",
+    "compliance": "Compliance Training"
+  },
+  "actions": {
+    "newCourse": "New Course",
+    "importCourse": "Import Course",
+    "sortBy": "Sort by",
+    "sortNewest": "Newest First",
+    "sortOldest": "Oldest First",
+    "sortAlphabetical": "A to Z",
+    "sortLastEdited": "Last Edited"
+  },
+  "empty": {
+    "title": "No courses yet",
+    "description": "Create your first course to get started.",
+    "createButton": "Create Course"
+  }
+}

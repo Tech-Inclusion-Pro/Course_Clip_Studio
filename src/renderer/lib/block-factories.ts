@@ -20,7 +20,9 @@ import type {
   DividerBlock,
   CalloutBlock,
   H5PBlock,
-  CustomHTMLBlock
+  CustomHTMLBlock,
+  PluginBlock,
+  FeedbackFormBlock
 } from '@/types/course'
 
 // ─── Individual Block Factories ───
@@ -237,6 +239,31 @@ export function createCustomHTMLBlock(overrides: Partial<CustomHTMLBlock> = {}):
   }
 }
 
+export function createPluginBlock(overrides: Partial<PluginBlock> = {}): PluginBlock {
+  return {
+    id: uid('block'),
+    type: 'plugin',
+    ariaLabel: 'Plugin content',
+    notes: '',
+    pluginType: '',
+    data: {},
+    ...overrides
+  }
+}
+
+export function createFeedbackFormBlock(overrides: Partial<FeedbackFormBlock> = {}): FeedbackFormBlock {
+  return {
+    id: uid('block'),
+    type: 'feedback-form',
+    ariaLabel: 'Feedback form',
+    notes: '',
+    questions: [],
+    submitLabel: 'Submit Feedback',
+    thankYouMessage: 'Thank you for your feedback!',
+    ...overrides
+  }
+}
+
 // ─── Quiz Helpers ───
 
 export function createQuizChoice(overrides: Partial<QuizChoice> = {}): QuizChoice {
@@ -320,7 +347,9 @@ const factories: Record<BlockType, (overrides?: Record<string, unknown>) => Cont
   'divider': createDividerBlock,
   'callout': createCalloutBlock,
   'h5p': createH5PBlock,
-  'custom-html': createCustomHTMLBlock
+  'custom-html': createCustomHTMLBlock,
+  'plugin': createPluginBlock,
+  'feedback-form': createFeedbackFormBlock
 }
 
 /**

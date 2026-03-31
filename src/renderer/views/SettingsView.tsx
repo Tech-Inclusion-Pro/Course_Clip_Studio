@@ -14,6 +14,8 @@ import {
   RefreshCw,
   Info
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import i18next from 'i18next'
 import { useAppStore, type ThemeMode } from '@/stores/useAppStore'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { uid } from '@/lib/uid'
@@ -79,6 +81,7 @@ export function SettingsView(): JSX.Element {
 // ─── General Settings ───
 
 function GeneralSettings(): JSX.Element {
+  const { t } = useTranslation('settings')
   const authorName = useAppStore((s) => s.authorName)
   const setAuthorName = useAppStore((s) => s.setAuthorName)
   const defaultLanguage = useAppStore((s) => s.defaultLanguage)
@@ -89,6 +92,8 @@ function GeneralSettings(): JSX.Element {
   const setDefaultExportFolder = useAppStore((s) => s.setDefaultExportFolder)
   const theme = useAppStore((s) => s.theme)
   const setTheme = useAppStore((s) => s.setTheme)
+  const uiLanguage = useAppStore((s) => s.uiLanguage)
+  const setUILanguage = useAppStore((s) => s.setUILanguage)
 
   return (
     <div className="space-y-6">
@@ -100,6 +105,23 @@ function GeneralSettings(): JSX.Element {
             onChange={(e) => setAuthorName(e.target.value)}
             className="w-64 px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
           />
+        </FieldRow>
+      </SettingsCard>
+
+      <SettingsCard title={t('general.uiLanguage')} icon={Globe}>
+        <FieldRow label={t('general.uiLanguage')} description={t('general.uiLanguageDescription')}>
+          <select
+            value={uiLanguage}
+            onChange={(e) => {
+              const lang = e.target.value
+              setUILanguage(lang)
+              i18next.changeLanguage(lang)
+            }}
+            className="w-40 px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+          >
+            <option value="en">English</option>
+            <option value="es">Espa&#241;ol</option>
+          </select>
         </FieldRow>
       </SettingsCard>
 

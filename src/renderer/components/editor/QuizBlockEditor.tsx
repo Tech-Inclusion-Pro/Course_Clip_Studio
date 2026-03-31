@@ -2,13 +2,14 @@ import {
   Plus,
   HelpCircle,
   Settings2,
-  ChevronDown,
-  ChevronUp
+  Library
 } from 'lucide-react'
 import { useState } from 'react'
 import { createQuizQuestion } from '@/lib/block-factories'
+import { uid } from '@/lib/uid'
 import { reorder } from '@/lib/course-helpers'
 import { QuestionEditor } from './QuestionEditor'
+import { QuestionBankPicker } from './QuestionBankPicker'
 import type { QuizBlock, QuizQuestion } from '@/types/course'
 
 interface QuizBlockEditorProps {
@@ -18,6 +19,7 @@ interface QuizBlockEditorProps {
 
 export function QuizBlockEditor({ block, onUpdate }: QuizBlockEditorProps): JSX.Element {
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [bankPickerOpen, setBankPickerOpen] = useState(false)
 
   function handleAddQuestion(type: QuizQuestion['type'] = 'multiple-choice') {
     const newQ = createQuizQuestion(type)
@@ -39,6 +41,11 @@ export function QuizBlockEditor({ block, onUpdate }: QuizBlockEditorProps): JSX.
   function handleMoveQuestion(fromIndex: number, direction: 'up' | 'down') {
     const toIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1
     onUpdate({ questions: reorder(block.questions, fromIndex, toIndex) })
+  }
+
+  function handleAddFromBank(question: QuizQuestion) {
+    const copy = { ...question, id: uid('question'), bankQuestionId: question.id }
+    onUpdate({ questions: [...block.questions, copy] })
   }
 
   const totalQuestions = block.questions.length
@@ -169,7 +176,25 @@ export function QuizBlockEditor({ block, onUpdate }: QuizBlockEditorProps): JSX.
           <AddQuestionButton label="True / False" onClick={() => handleAddQuestion('true-false')} />
           <AddQuestionButton label="Short Answer" onClick={() => handleAddQuestion('short-answer')} />
           <AddQuestionButton label="Likert Scale" onClick={() => handleAddQuestion('likert')} />
+          <button
+            onClick={() => setBankPickerOpen(!bankPickerOpen)}
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-[var(--font-weight-medium)] text-[var(--brand-magenta)] hover:text-[var(--text-primary)] bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] border border-[var(--brand-magenta)]/30 rounded-md transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+            aria-label="Add question from bank"
+          >
+            <Library size={12} />
+            From Bank
+          </button>
         </div>
+
+        {/* Bank picker */}
+        {bankPickerOpen && (
+          <div className="mt-2">
+            <QuestionBankPicker
+              onSelect={handleAddFromBank}
+              onClose={() => setBankPickerOpen(false)}
+            />
+          </div>
+        )}
       </div>
 
       {/* Quiz summary footer */}

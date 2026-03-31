@@ -7,6 +7,7 @@ interface AppState {
   // UI
   theme: ThemeMode
   sidebarCollapsed: boolean
+  uiLanguage: string
 
   // Workspace
   workspacePath: string | null
@@ -28,10 +29,15 @@ interface AppState {
   // Accessibility settings
   accessibility: AccessibilitySettings
 
+  // Plugins
+  pluginsPath: string | null
+  setPluginsPath: (path: string | null) => void
+
   // UI actions
   setTheme: (theme: ThemeMode) => void
   toggleSidebar: () => void
   setSidebarCollapsed: (collapsed: boolean) => void
+  setUILanguage: (lang: string) => void
 
   // Workspace actions
   setWorkspacePath: (path: string | null) => void
@@ -60,6 +66,7 @@ export const useAppStore = create<AppState>((set) => ({
   // UI defaults
   theme: 'system',
   sidebarCollapsed: false,
+  uiLanguage: 'en',
 
   // Workspace defaults
   workspacePath: null,
@@ -92,10 +99,15 @@ export const useAppStore = create<AppState>((set) => ({
     reducedMotion: false
   },
 
+  // Plugins defaults
+  pluginsPath: null,
+  setPluginsPath: (path) => set({ pluginsPath: path }),
+
   // UI actions
   setTheme: (theme) => set({ theme }),
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
+  setUILanguage: (lang) => set({ uiLanguage: lang }),
 
   // Workspace actions
   setWorkspacePath: (path) => set({ workspacePath: path }),

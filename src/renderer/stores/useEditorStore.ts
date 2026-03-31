@@ -16,6 +16,7 @@ interface EditorState {
   canvasMode: CanvasMode
   showGrid: boolean
   showSmartGuides: boolean
+  slideAspectRatio: '16:9' | '4:3'
 
   // Preview
   splitPreviewOpen: boolean
@@ -30,6 +31,8 @@ interface EditorState {
   certificateDesignerOpen: boolean
   versionHistoryOpen: boolean
   notesPanelOpen: boolean
+  branchingGraphOpen: boolean
+  questionBankOpen: boolean
 
   // Dirty state
   isDirty: boolean
@@ -54,6 +57,7 @@ interface EditorState {
   setCanvasMode: (mode: CanvasMode) => void
   toggleGrid: () => void
   toggleSmartGuides: () => void
+  setSlideAspectRatio: (ratio: '16:9' | '4:3') => void
 
   // Preview
   toggleSplitPreview: () => void
@@ -68,6 +72,8 @@ interface EditorState {
   toggleCertificateDesigner: () => void
   toggleVersionHistory: () => void
   toggleNotesPanel: () => void
+  toggleBranchingGraph: () => void
+  toggleQuestionBank: () => void
 
   // Dirty
   markDirty: () => void
@@ -90,6 +96,7 @@ const initialState = {
   canvasMode: 'block' as CanvasMode,
   showGrid: false,
   showSmartGuides: true,
+  slideAspectRatio: '16:9' as '16:9' | '4:3',
   splitPreviewOpen: false,
   previewDevice: 'desktop' as PreviewDevice,
   leftPanelOpen: true,
@@ -100,6 +107,8 @@ const initialState = {
   certificateDesignerOpen: false,
   versionHistoryOpen: false,
   notesPanelOpen: false,
+  branchingGraphOpen: false,
+  questionBankOpen: false,
   isDirty: false,
   clipboardBlockIds: [] as string[],
   clipboardOperation: null as 'copy' | 'cut' | null
@@ -140,6 +149,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   setCanvasMode: (mode) => set({ canvasMode: mode }),
   toggleGrid: () => set((s) => ({ showGrid: !s.showGrid })),
   toggleSmartGuides: () => set((s) => ({ showSmartGuides: !s.showSmartGuides })),
+  setSlideAspectRatio: (ratio) => set({ slideAspectRatio: ratio }),
 
   // Preview
   toggleSplitPreview: () => set((s) => ({ splitPreviewOpen: !s.splitPreviewOpen })),
@@ -154,6 +164,8 @@ export const useEditorStore = create<EditorState>((set) => ({
   toggleCertificateDesigner: () => set((s) => ({ certificateDesignerOpen: !s.certificateDesignerOpen })),
   toggleVersionHistory: () => set((s) => ({ versionHistoryOpen: !s.versionHistoryOpen })),
   toggleNotesPanel: () => set((s) => ({ notesPanelOpen: !s.notesPanelOpen })),
+  toggleBranchingGraph: () => set((s) => ({ branchingGraphOpen: !s.branchingGraphOpen })),
+  toggleQuestionBank: () => set((s) => ({ questionBankOpen: !s.questionBankOpen })),
 
   // Dirty
   markDirty: () => set({ isDirty: true }),

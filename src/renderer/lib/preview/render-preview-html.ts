@@ -18,6 +18,11 @@ export function renderPreviewHtml(
     inlineScript: getPreviewPlayerScript()
   })
 
+  // Inject Google Font URL if configured
+  if (course.theme.googleFontUrl) {
+    html = html.replace('</head>', `<link rel="stylesheet" href="${course.theme.googleFontUrl}" />\n</head>`)
+  }
+
   // Inject accessibility CSS overrides if enabled
   if (a11yCSS) {
     html = html.replace('</head>', `<style>${a11yCSS}</style>\n</head>`)

@@ -38,7 +38,9 @@ import { CodeBlockEditor } from './CodeBlockEditor'
 import { CalloutBlockEditor } from './CalloutBlockEditor'
 import { H5PBlockEditor } from './H5PBlockEditor'
 import { CustomHTMLBlockEditor } from './CustomHTMLBlockEditor'
+import { FeedbackFormBlockEditor } from './FeedbackFormBlockEditor'
 import { BlockInserterButton } from './BlockInserter'
+import { SlideCanvas } from './SlideCanvas'
 import type { BlockType, ContentBlock } from '@/types/course'
 
 export function EditorCanvas(): JSX.Element {
@@ -57,6 +59,7 @@ export function EditorCanvas(): JSX.Element {
   const setSelectedBlock = useEditorStore((s) => s.setSelectedBlock)
   const toggleNotesPanel = useEditorStore((s) => s.toggleNotesPanel)
   const notesPanelOpen = useEditorStore((s) => s.notesPanelOpen)
+  const canvasMode = useEditorStore((s) => s.canvasMode)
 
   const authorName = useAppStore((s) => s.authorName)
 
@@ -151,6 +154,11 @@ export function EditorCanvas(): JSX.Element {
     }
   }
 
+  // Slide canvas mode
+  if (canvasMode === 'slide') {
+    return <SlideCanvas />
+  }
+
   // No lesson selected
   if (!lessonData) {
     return (
@@ -213,6 +221,8 @@ export function EditorCanvas(): JSX.Element {
         return <H5PBlockEditor block={block} onUpdate={updateFn} />
       case 'custom-html':
         return <CustomHTMLBlockEditor block={block} onUpdate={updateFn} />
+      case 'feedback-form':
+        return <FeedbackFormBlockEditor block={block} onUpdate={updateFn} />
       case 'divider':
         // Divider is simple enough to just show preview even when selected
         return <BlockPreview block={block} />

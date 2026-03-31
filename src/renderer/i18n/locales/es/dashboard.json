@@ -1,0 +1,54 @@
+{
+  "title": "Mis Cursos",
+  "search": {
+    "placeholder": "Buscar cursos...",
+    "noResults": "No se encontraron cursos",
+    "noResultsDescription": "Intenta ajustar tu b\u00fasqueda o criterios de filtro."
+  },
+  "filter": {
+    "all": "Todos",
+    "byStatus": "Filtrar por estado",
+    "byTemplate": "Filtrar por plantilla"
+  },
+  "status": {
+    "draft": "Borrador",
+    "inReview": "En revisi\u00f3n",
+    "published": "Publicado",
+    "archived": "Archivado"
+  },
+  "card": {
+    "lessons": "Lecciones",
+    "modules": "M\u00f3dulos",
+    "lastEdited": "\u00daltima edici\u00f3n",
+    "createdOn": "Creado el",
+    "author": "Autor",
+    "language": "Idioma",
+    "openCourse": "Abrir curso",
+    "editCourse": "Editar curso",
+    "duplicateCourse": "Duplicar curso",
+    "deleteCourse": "Eliminar curso",
+    "archiveCourse": "Archivar curso"
+  },
+  "templates": {
+    "blank": "Curso en blanco",
+    "microlearning": "Microaprendizaje",
+    "fullCourse": "Curso completo",
+    "assessment": "Solo evaluaci\u00f3n",
+    "onboarding": "Incorporaci\u00f3n",
+    "compliance": "Capacitaci\u00f3n de cumplimiento"
+  },
+  "actions": {
+    "newCourse": "Nuevo curso",
+    "importCourse": "Importar curso",
+    "sortBy": "Ordenar por",
+    "sortNewest": "M\u00e1s recientes",
+    "sortOldest": "M\u00e1s antiguos",
+    "sortAlphabetical": "A a Z",
+    "sortLastEdited": "\u00daltima edici\u00f3n"
+  },
+  "empty": {
+    "title": "A\u00fan no hay cursos",
+    "description": "Crea tu primer curso para comenzar.",
+    "createButton": "Crear curso"
+  }
+}

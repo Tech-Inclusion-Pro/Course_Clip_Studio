@@ -38,6 +38,7 @@ function defaultTheme(): CourseTheme {
     textColor: '#1e293b',
     fontFamily: 'Inter, sans-serif',
     fontFamilyHeading: 'Inter, sans-serif',
+    googleFontUrl: null,
     logoPath: null,
     customCSS: '',
     darkMode: false,

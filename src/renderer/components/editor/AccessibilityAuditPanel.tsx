@@ -12,7 +12,8 @@ import {
   ChevronDown,
   ChevronUp,
   RefreshCw,
-  Sparkles
+  Sparkles,
+  FileDown
 } from 'lucide-react'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useEditorStore } from '@/stores/useEditorStore'
@@ -26,6 +27,7 @@ import {
   type AuditIssue,
   type AuditSeverity
 } from '@/lib/accessibility'
+import { renderAuditPdfHtml } from '@/lib/accessibility/audit-pdf-renderer'
 import { udlChecklistScore, udlPillarScores } from '@/lib/course-helpers'
 import type { UDLChecklist } from '@/types/course'
 
@@ -44,6 +46,23 @@ export function AccessibilityAuditPanel({ onClose }: AccessibilityAuditPanelProp
     if (!course) return
     const result = runAccessibilityAudit(course)
     setReport(result)
+  }
+
+  async function handleExportPdf() {
+    if (!course || !report) return
+    try {
+      const html = renderAuditPdfHtml(course, report)
+      const buffer = await window.electronAPI.pdf.generate(html)
+      const result = await window.electronAPI.dialog.saveFile({
+        defaultPath: 'accessibility-audit.pdf',
+        filters: [{ name: 'PDF', extensions: ['pdf'] }]
+      })
+      if (!result.canceled && result.filePath) {
+        await window.electronAPI.fs.writeFileBuffer(result.filePath, buffer)
+      }
+    } catch (err) {
+      console.error('Failed to export audit PDF:', err)
+    }
   }
 
   if (!course) {
@@ -97,6 +116,14 @@ export function AccessibilityAuditPanel({ onClose }: AccessibilityAuditPanelProp
                 )}
               </div>
             </div>
+            <button
+              onClick={handleExportPdf}
+              className="p-1.5 rounded-md text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
+              aria-label="Export PDF"
+              title="Export PDF"
+            >
+              <FileDown size={14} />
+            </button>
             <button
               onClick={handleRunAudit}
               className="p-1.5 rounded-md text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"

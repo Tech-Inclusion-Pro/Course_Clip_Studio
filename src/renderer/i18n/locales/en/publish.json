@@ -1,0 +1,56 @@
+{
+  "title": "Publish",
+  "wizard": {
+    "step": "Step {{current}} of {{total}}",
+    "back": "Back",
+    "next": "Next",
+    "publish": "Publish",
+    "publishing": "Publishing...",
+    "cancel": "Cancel"
+  },
+  "steps": {
+    "format": "Export Format",
+    "formatDescription": "Choose how your course will be packaged",
+    "settings": "Settings",
+    "settingsDescription": "Configure export settings",
+    "review": "Review",
+    "reviewDescription": "Review and confirm before publishing",
+    "complete": "Complete",
+    "completeDescription": "Your course has been published"
+  },
+  "formats": {
+    "scorm12": "SCORM 1.2",
+    "scorm2004": "SCORM 2004",
+    "xapi": "xAPI (Tin Can)",
+    "html5": "HTML5 (Standalone)",
+    "pdf": "PDF",
+    "lti": "LTI Package"
+  },
+  "settings": {
+    "courseName": "Course Name",
+    "courseDescription": "Course Description",
+    "outputFolder": "Output Folder",
+    "includeAssets": "Include Assets",
+    "optimizeImages": "Optimize Images",
+    "compressPackage": "Compress Package",
+    "completionCriteria": "Completion Criteria",
+    "passingScore": "Passing Score",
+    "trackingMethod": "Tracking Method"
+  },
+  "review": {
+    "summary": "Export Summary",
+    "format": "Format",
+    "totalSlides": "Total Slides",
+    "totalAssets": "Total Assets",
+    "estimatedSize": "Estimated Size",
+    "warnings": "Warnings",
+    "noWarnings": "No warnings found",
+    "readyToPublish": "Ready to publish"
+  },
+  "complete": {
+    "success": "Course published successfully!",
+    "openFolder": "Open Folder",
+    "publishAnother": "Publish Another",
+    "backToDashboard": "Back to Dashboard"
+  }
+}

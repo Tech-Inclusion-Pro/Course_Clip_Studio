@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { contrastRatio, formatRatio, contrastLabel } from '@/lib/contrast'
+import { GoogleFontPicker } from './GoogleFontPicker'
 import type { CourseTheme, PlayerShellConfig } from '@/types/course'
 
 interface ThemeEditorProps {
@@ -177,42 +178,20 @@ export function ThemeEditor({ onClose }: ThemeEditorProps): JSX.Element {
           onToggle={() => toggleSection('typography')}
         >
           <div className="space-y-3">
-            <div>
-              <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
-                Body Font
-              </label>
-              <select
-                value={theme.fontFamily}
-                onChange={(e) => handleUpdate({ fontFamily: e.target.value })}
-                className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
-              >
-                <option value="Arial, sans-serif">Arial (Default)</option>
-                <option value="'Helvetica Neue', Helvetica, sans-serif">Helvetica</option>
-                <option value="Georgia, serif">Georgia</option>
-                <option value="'Times New Roman', serif">Times New Roman</option>
-                <option value="Verdana, sans-serif">Verdana</option>
-                <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
-                <option value="system-ui, sans-serif">System UI</option>
-                <option value="'Segoe UI', sans-serif">Segoe UI</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
-                Heading Font
-              </label>
-              <select
-                value={theme.fontFamilyHeading}
-                onChange={(e) => handleUpdate({ fontFamilyHeading: e.target.value })}
-                className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
-              >
-                <option value="Arial, sans-serif">Arial (Default)</option>
-                <option value="'Helvetica Neue', Helvetica, sans-serif">Helvetica</option>
-                <option value="Georgia, serif">Georgia</option>
-                <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
-                <option value="Impact, sans-serif">Impact</option>
-                <option value="system-ui, sans-serif">System UI</option>
-              </select>
-            </div>
+            <GoogleFontPicker
+              label="Body Font"
+              value={theme.fontFamily}
+              onChange={(fontFamily, cssUrl) => {
+                handleUpdate({ fontFamily, googleFontUrl: cssUrl })
+              }}
+            />
+            <GoogleFontPicker
+              label="Heading Font"
+              value={theme.fontFamilyHeading}
+              onChange={(fontFamily, cssUrl) => {
+                handleUpdate({ fontFamilyHeading: fontFamily, googleFontUrl: cssUrl })
+              }}
+            />
           </div>
         </ThemeSection>
 

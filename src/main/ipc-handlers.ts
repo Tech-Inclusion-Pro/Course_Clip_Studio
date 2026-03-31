@@ -140,6 +140,14 @@ export function registerIpcHandlers(): void {
     writeFileSync(filePath, content, 'utf-8')
   })
 
+  ipcMain.handle('fs:writeFileBuffer', async (_event, filePath: string, data: ArrayBuffer) => {
+    const dir = dirname(filePath)
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true })
+    }
+    writeFileSync(filePath, Buffer.from(data))
+  })
+
   ipcMain.handle('fs:readDir', async (_event, dirPath: string) => {
     if (!existsSync(dirPath)) return []
     const entries = readdirSync(dirPath)

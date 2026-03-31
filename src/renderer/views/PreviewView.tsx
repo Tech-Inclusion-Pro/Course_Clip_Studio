@@ -11,11 +11,15 @@ import {
   Eye,
   Accessibility,
   CheckCircle2,
-  Trophy
+  Trophy,
+  StickyNote
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useCourseStore } from '@/stores/useCourseStore'
+import { usePreviewStore } from '@/stores/usePreviewStore'
 import { renderPreviewHtml } from '@/lib/preview/render-preview-html'
+import { LearnerNotesSidebar } from '@/components/preview/LearnerNotesSidebar'
+import { uid } from '@/lib/uid'
 import { ROUTES } from '@/lib/constants'
 import type { Course, Lesson } from '@/types/course'
 
@@ -67,9 +71,13 @@ export function PreviewView(): JSX.Element {
   const [visitedLessons, setVisitedLessons] = useState<Set<string>>(new Set())
   const [quizScores, setQuizScores] = useState<Record<string, { score: number; passed: boolean }>>({})
   const [outlineOpen, setOutlineOpen] = useState(true)
+  const [notesSidebarOpen, setNotesSidebarOpen] = useState(false)
   const [device, setDevice] = useState<DeviceMode>('desktop')
   const [a11yMode, setA11yMode] = useState(false)
   const iframeRef = useRef<HTMLIFrameElement>(null)
+
+  const addNote = usePreviewStore((s) => s.addNote)
+  const addBookmark = usePreviewStore((s) => s.addBookmark)
 
   const flatLessons = useMemo(() => (course ? flattenLessons(course) : []), [course])
   const totalLessons = flatLessons.length
@@ -106,9 +114,26 @@ export function PreviewView(): JSX.Element {
           ...prev,
           [current.lesson.id]: { score: data.score, passed: data.passed }
         }))
+      } else if (data.type === 'lumina:bookmark' && current) {
+        addBookmark({
+          id: uid('bookmark'),
+          lessonId: current.lesson.id,
+          title: current.lesson.title,
+          timestamp: new Date().toISOString()
+        })
+        if (!notesSidebarOpen) setNotesSidebarOpen(true)
+      } else if (data.type === 'lumina:note' && current) {
+        addNote({
+          id: uid('note'),
+          lessonId: current.lesson.id,
+          blockId: data.blockId,
+          content: data.content || '',
+          timestamp: new Date().toISOString()
+        })
+        if (!notesSidebarOpen) setNotesSidebarOpen(true)
       }
     },
-    [currentIdx, totalLessons, current]
+    [currentIdx, totalLessons, current, addBookmark, addNote, notesSidebarOpen]
   )
 
   useEffect(() => {
@@ -225,6 +250,20 @@ export function PreviewView(): JSX.Element {
           <Accessibility size={16} />
         </button>
 
+        {/* Notes sidebar toggle */}
+        <button
+          onClick={() => setNotesSidebarOpen(!notesSidebarOpen)}
+          aria-label={notesSidebarOpen ? 'Close notes' : 'Open notes'}
+          aria-pressed={notesSidebarOpen}
+          className={`p-1.5 rounded cursor-pointer transition-colors ${
+            notesSidebarOpen
+              ? 'bg-[var(--bg-active)] text-[var(--text-brand)]'
+              : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
+          }`}
+        >
+          <StickyNote size={16} />
+        </button>
+
         {/* Outline toggle */}
         <button
           onClick={() => setOutlineOpen(!outlineOpen)}
@@ -321,6 +360,19 @@ export function PreviewView(): JSX.Element {
             />
           </div>
         </div>
+
+        {/* Learner Notes Sidebar */}
+        {notesSidebarOpen && current && (
+          <LearnerNotesSidebar
+            currentLessonId={current.lesson.id}
+            currentLessonTitle={current.lesson.title}
+            onNavigateToLesson={(lessonId) => {
+              const target = flatLessons.find((f) => f.lesson.id === lessonId)
+              if (target) setCurrentIdx(target.globalIdx)
+            }}
+            onClose={() => setNotesSidebarOpen(false)}
+          />
+        )}
       </div>
 
       {/* Bottom nav bar */}

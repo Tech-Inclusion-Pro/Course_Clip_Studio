@@ -1,0 +1,45 @@
+{
+  "nav": {
+    "dashboard": "Panel",
+    "editor": "Editor",
+    "preview": "Vista previa",
+    "settings": "Configuraci\u00f3n",
+    "publish": "Publicar"
+  },
+  "actions": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "close": "Cerrar",
+    "confirm": "Confirmar",
+    "create": "Crear",
+    "ok": "Aceptar",
+    "add": "A\u00f1adir",
+    "remove": "Quitar",
+    "edit": "Editar",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "back": "Atr\u00e1s",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "done": "Listo",
+    "open": "Abrir",
+    "export": "Exportar",
+    "import": "Importar",
+    "duplicate": "Duplicar",
+    "rename": "Renombrar"
+  },
+  "status": {
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "\u00c9xito",
+    "warning": "Advertencia",
+    "info": "Informaci\u00f3n"
+  },
+  "dialog": {
+    "confirmDelete": "Confirmar eliminaci\u00f3n",
+    "unsavedChanges": "Cambios sin guardar",
+    "areYouSure": "\u00bfEst\u00e1 seguro?",
+    "discardChanges": "Descartar cambios"
+  }
+}

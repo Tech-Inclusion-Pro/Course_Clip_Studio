@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   X,
-  Upload,
   FileText,
   Presentation,
+  Archive,
   AlertTriangle,
   CheckCircle2,
   Loader2,
@@ -14,7 +14,7 @@ import {
 import { Button } from '@/components/ui/Button'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { createCourse, createModule, createLesson } from '@/lib/mock-data'
-import { parseMarkdown, parsePptx } from '@/lib/import'
+import { parseMarkdown, parsePptx, parseScormPackage } from '@/lib/import'
 import type { ImportResult, ImportProgress, ParsedModule } from '@/lib/import'
 import type { Course } from '@/types/course'
 
@@ -65,15 +65,19 @@ export function ImportDialog({ open, onClose }: ImportDialogProps): JSX.Element 
     setProgress(p)
   }, [])
 
-  async function handleFileSelect(format: 'markdown' | 'pptx') {
+  async function handleFileSelect(format: 'markdown' | 'pptx' | 'scorm') {
     try {
       const filters =
         format === 'markdown'
           ? [{ name: 'Markdown', extensions: ['md', 'markdown'] }]
-          : [{ name: 'PowerPoint', extensions: ['pptx'] }]
+          : format === 'pptx'
+            ? [{ name: 'PowerPoint', extensions: ['pptx'] }]
+            : [{ name: 'SCORM Package', extensions: ['zip'] }]
+
+      const formatLabel = format === 'markdown' ? 'Markdown' : format === 'pptx' ? 'PowerPoint' : 'SCORM'
 
       const dialogResult = await window.electronAPI.dialog.openFile({
-        title: `Import ${format === 'markdown' ? 'Markdown' : 'PowerPoint'} File`,
+        title: `Import ${formatLabel} File`,
         filters,
         properties: ['openFile']
       })
@@ -91,6 +95,9 @@ export function ImportDialog({ open, onClose }: ImportDialogProps): JSX.Element 
       if (format === 'markdown') {
         const content = await window.electronAPI.fs.readFile(filePath)
         importResult = await parseMarkdown(content, fileName, handleProgressUpdate)
+      } else if (format === 'scorm') {
+        const buffer = await window.electronAPI.fs.readFileBuffer(filePath)
+        importResult = await parseScormPackage(buffer)
       } else {
         const buffer = await window.electronAPI.fs.readFileBuffer(filePath)
         importResult = await parsePptx(buffer, fileName, handleProgressUpdate)
@@ -126,7 +133,7 @@ export function ImportDialog({ open, onClose }: ImportDialogProps): JSX.Element 
     const course: Course = createCourse({
       meta: {
         title: courseTitle.trim() || result.suggestedTitle,
-        description: `Imported from ${result.format === 'markdown' ? 'Markdown' : 'PowerPoint'} file`,
+        description: `Imported from ${result.format === 'markdown' ? 'Markdown' : result.format === 'scorm' ? 'SCORM' : 'PowerPoint'} file`,
         author: 'Course Author',
         language: 'en',
         estimatedDuration: 0,
@@ -187,10 +194,10 @@ export function ImportDialog({ open, onClose }: ImportDialogProps): JSX.Element 
               Import Course
             </h2>
             <p className="text-sm text-[var(--text-secondary)] mb-6">
-              Import content from a Markdown or PowerPoint file to create a new course.
+              Import content from a Markdown, PowerPoint, or SCORM file to create a new course.
             </p>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <ImportFormatCard
                 icon={FileText}
                 title="Markdown"
@@ -204,6 +211,13 @@ export function ImportDialog({ open, onClose }: ImportDialogProps): JSX.Element 
                 description="Import .pptx files. Each slide becomes a lesson with extracted text and images."
                 extensions=".pptx"
                 onClick={() => handleFileSelect('pptx')}
+              />
+              <ImportFormatCard
+                icon={Archive}
+                title="SCORM"
+                description="Import SCORM .zip packages. Organization structure maps to modules and lessons."
+                extensions=".zip"
+                onClick={() => handleFileSelect('scorm')}
               />
             </div>
           </>
@@ -286,7 +300,7 @@ export function ImportDialog({ open, onClose }: ImportDialogProps): JSX.Element 
               <div className="flex items-center gap-1.5">
                 <FileCode2 size={14} className="text-[var(--text-tertiary)]" />
                 <span className="text-xs text-[var(--text-secondary)]">
-                  {result.format === 'markdown' ? 'Markdown' : 'PowerPoint'}
+                  {result.format === 'markdown' ? 'Markdown' : result.format === 'scorm' ? 'SCORM' : 'PowerPoint'}
                 </span>
               </div>
               <span className="text-xs text-[var(--text-tertiary)]">|</span>

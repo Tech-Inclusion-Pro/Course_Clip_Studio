@@ -13,6 +13,7 @@ export interface Course {
   settings: CourseSettings
   history: VersionSnapshot[]
   publishStatus: PublishStatus
+  questionBank?: QuizQuestion[]
   createdAt: string
   updatedAt: string
 }
@@ -77,6 +78,8 @@ export type ContentBlock =
   | CalloutBlock
   | H5PBlock
   | CustomHTMLBlock
+  | PluginBlock
+  | FeedbackFormBlock
 
 // ─── Base Block ───
 
@@ -152,6 +155,7 @@ export interface QuizQuestion {
   correctId: string | string[]
   feedbackCorrect: string
   feedbackIncorrect: string
+  bankQuestionId?: string
 }
 
 export interface QuizChoice {
@@ -259,6 +263,31 @@ export interface CustomHTMLBlock extends BaseBlock {
   js: string
 }
 
+export interface PluginBlock extends BaseBlock {
+  type: 'plugin'
+  pluginType: string
+  data: Record<string, unknown>
+}
+
+export interface FeedbackFormBlock extends BaseBlock {
+  type: 'feedback-form'
+  questions: FeedbackQuestion[]
+  submitLabel: string
+  thankYouMessage: string
+}
+
+export type FeedbackQuestionType = 'likert' | 'free-text' | 'rating' | 'multiple-choice'
+
+export interface FeedbackQuestion {
+  id: string
+  type: FeedbackQuestionType
+  prompt: string
+  required: boolean
+  options?: string[] // for multiple-choice
+  maxRating?: number // for rating (default 5)
+  scale?: string[] // for likert
+}
+
 // ─── UDL ───
 
 export interface UDLChecklist {
@@ -295,6 +324,7 @@ export interface CourseTheme {
   textColor: string
   fontFamily: string
   fontFamilyHeading: string
+  googleFontUrl: string | null
   logoPath: string | null
   customCSS: string
   darkMode: boolean
@@ -406,7 +436,9 @@ export const BLOCK_TYPES: readonly BlockType[] = [
   'divider',
   'callout',
   'h5p',
-  'custom-html'
+  'custom-html',
+  'plugin',
+  'feedback-form'
 ] as const
 
 export const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
@@ -426,7 +458,9 @@ export const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
   'divider': 'Divider',
   'callout': 'Callout',
   'h5p': 'H5P',
-  'custom-html': 'Custom HTML'
+  'custom-html': 'Custom HTML',
+  'plugin': 'Plugin',
+  'feedback-form': 'Feedback Form'
 }
 
 // ─── Brand Kit ───

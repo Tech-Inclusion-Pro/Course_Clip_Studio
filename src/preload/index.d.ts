@@ -17,6 +17,7 @@ interface LuminaAPI {
     readFile(filePath: string, encoding?: 'utf-8' | 'base64'): Promise<string>
     readFileBuffer(filePath: string): Promise<ArrayBuffer>
     writeFile(filePath: string, content: string): Promise<void>
+    writeFileBuffer(filePath: string, data: ArrayBuffer): Promise<void>
     readDir(dirPath: string): Promise<Array<{ name: string; isDirectory: boolean }>>
     mkdir(dirPath: string): Promise<void>
     exists(filePath: string): Promise<boolean>

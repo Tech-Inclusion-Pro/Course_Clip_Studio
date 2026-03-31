@@ -1,0 +1,59 @@
+{
+  "audit": {
+    "title": "Accessibility Audit",
+    "runAudit": "Run Audit",
+    "rerunAudit": "Re-run Audit",
+    "score": "Accessibility Score",
+    "passed": "Passed",
+    "failed": "Failed",
+    "warnings": "Warnings",
+    "totalChecks": "Total Checks",
+    "passRate": "Pass Rate",
+    "noIssues": "No accessibility issues found.",
+    "issuesFound": "{{count}} issue found",
+    "issuesFound_plural": "{{count}} issues found",
+    "fixSuggestion": "Suggested Fix",
+    "autoFix": "Auto-fix",
+    "dismiss": "Dismiss",
+    "severity": {
+      "critical": "Critical",
+      "major": "Major",
+      "minor": "Minor",
+      "info": "Info"
+    },
+    "categories": {
+      "images": "Images & Media",
+      "text": "Text & Readability",
+      "navigation": "Navigation",
+      "interaction": "Interactive Elements",
+      "color": "Color & Contrast",
+      "structure": "Document Structure"
+    }
+  },
+  "udl": {
+    "title": "UDL Checklist",
+    "description": "Universal Design for Learning guidelines to ensure inclusive content.",
+    "principles": {
+      "engagement": "Engagement",
+      "representation": "Representation",
+      "actionExpression": "Action & Expression"
+    },
+    "checklist": {
+      "multipleMediaTypes": "Content is presented in multiple media types (text, audio, video)",
+      "altTextProvided": "All images and media have descriptive alt text",
+      "captionsProvided": "All video and audio content has captions or transcripts",
+      "readingLevel": "Text is written at an appropriate reading level",
+      "vocabularySupport": "Key vocabulary is defined or supported with glossary",
+      "colorNotOnly": "Color is not the only means of conveying information",
+      "contrastRatio": "Text meets minimum contrast ratio (4.5:1 for normal text)",
+      "keyboardAccessible": "All interactive elements are keyboard accessible",
+      "clearNavigation": "Navigation is clear and consistent",
+      "multipleAssessment": "Multiple means of assessment are provided",
+      "choiceInExpression": "Learners have choice in how they express understanding",
+      "feedbackProvided": "Timely and specific feedback is provided",
+      "goalsVisible": "Learning goals are clearly stated and visible",
+      "selfReflection": "Opportunities for self-reflection are included",
+      "scaffolding": "Scaffolding supports are available for complex tasks"
+    }
+  }
+}

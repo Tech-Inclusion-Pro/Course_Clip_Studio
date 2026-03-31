@@ -1,9 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useEditorStore } from '@/stores/useEditorStore'
 import { useHistoryStore } from '@/stores/useHistoryStore'
-import { serializeCourse } from '@/lib/course-helpers'
+import { serializeCourse, findLesson } from '@/lib/course-helpers'
 import { ROUTES } from '@/lib/constants'
 import { EditorToolbar } from '@/components/editor/EditorToolbar'
 import { CourseTreePanel } from '@/components/editor/CourseTreePanel'
@@ -15,6 +15,8 @@ import { AccessibilityAuditPanel } from '@/components/editor/AccessibilityAuditP
 import { CertificateDesigner } from '@/components/editor/CertificateDesigner'
 import { VersionHistoryPanel } from '@/components/editor/VersionHistoryPanel'
 import { CollaboratorNotesPanel } from '@/components/editor/CollaboratorNotesPanel'
+import { SplitPreviewPane } from '@/components/editor/SplitPreviewPane'
+import { BranchingGraphView } from '@/components/editor/BranchingGraphView'
 
 export function EditorView(): JSX.Element {
   const navigate = useNavigate()
@@ -33,6 +35,9 @@ export function EditorView(): JSX.Element {
   const toggleVersionHistory = useEditorStore((s) => s.toggleVersionHistory)
   const notesPanelOpen = useEditorStore((s) => s.notesPanelOpen)
   const toggleNotesPanel = useEditorStore((s) => s.toggleNotesPanel)
+  const splitPreviewOpen = useEditorStore((s) => s.splitPreviewOpen)
+  const activeLessonId = useEditorStore((s) => s.activeLessonId)
+  const branchingGraphOpen = useEditorStore((s) => s.branchingGraphOpen)
   const pushSnapshot = useHistoryStore((s) => s.pushSnapshot)
   const shouldAutoSnapshot = useHistoryStore((s) => s.shouldAutoSnapshot)
   const markAutoSnapshot = useHistoryStore((s) => s.markAutoSnapshot)
@@ -75,6 +80,21 @@ export function EditorView(): JSX.Element {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [])
 
+  // Compute lesson data for split preview
+  const splitPreviewData = useMemo(() => {
+    if (!course || !activeLessonId || !splitPreviewOpen) return null
+    const result = findLesson(course, activeLessonId)
+    if (!result) return null
+    const allLessons = course.modules.flatMap((m) => m.lessons)
+    const lessonIndex = allLessons.findIndex((l) => l.id === activeLessonId)
+    return {
+      lesson: result.lesson,
+      moduleTitle: result.module.title,
+      lessonIndex,
+      totalLessons: allLessons.length
+    }
+  }, [course, activeLessonId, splitPreviewOpen])
+
   if (!course) return <div />
 
   return (
@@ -94,8 +114,27 @@ export function EditorView(): JSX.Element {
           </aside>
         )}
 
-        {/* Center: Canvas */}
-        <EditorCanvas />
+        {/* Center: Canvas or Branching Graph */}
+        {branchingGraphOpen ? (
+          <BranchingGraphView />
+        ) : (
+          <div className="flex flex-1 min-w-0">
+            <div className="flex-1 min-w-0">
+              <EditorCanvas />
+            </div>
+            {splitPreviewOpen && splitPreviewData && (
+              <div className="w-[40%] shrink-0">
+                <SplitPreviewPane
+                  course={course}
+                  lesson={splitPreviewData.lesson}
+                  moduleTitle={splitPreviewData.moduleTitle}
+                  lessonIndex={splitPreviewData.lessonIndex}
+                  totalLessons={splitPreviewData.totalLessons}
+                />
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Right Panel: Properties */}
         {rightPanelOpen && (

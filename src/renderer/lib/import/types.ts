@@ -1,7 +1,7 @@
 import type { ContentBlock } from '@/types/course'
 
 /** The type of file being imported. */
-export type ImportFormat = 'markdown' | 'pptx'
+export type ImportFormat = 'markdown' | 'pptx' | 'scorm'
 
 /** A single parsed lesson from import, before user review. */
 export interface ParsedLesson {

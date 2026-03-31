@@ -25,6 +25,8 @@ const api = {
       ipcRenderer.invoke('fs:readFileBuffer', filePath),
     writeFile: (filePath: string, content: string): Promise<void> =>
       ipcRenderer.invoke('fs:writeFile', filePath, content),
+    writeFileBuffer: (filePath: string, data: ArrayBuffer): Promise<void> =>
+      ipcRenderer.invoke('fs:writeFileBuffer', filePath, data),
     readDir: (dirPath: string): Promise<Array<{ name: string; isDirectory: boolean }>> =>
       ipcRenderer.invoke('fs:readDir', dirPath),
     mkdir: (dirPath: string): Promise<void> =>
