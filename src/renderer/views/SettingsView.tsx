@@ -12,16 +12,23 @@ import {
   TestTube,
   FolderOpen,
   RefreshCw,
-  Info
+  Info,
+  Lock,
+  Image
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import i18next from 'i18next'
 import { useAppStore, type ThemeMode } from '@/stores/useAppStore'
+import { useAuthStore } from '@/stores/useAuthStore'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { uid } from '@/lib/uid'
 import { persistWorkspacePath, loadWorkspace } from '@/lib/workspace'
 import type { BrandKit } from '@/types/course'
 import { GoogleFontPicker } from '@/components/editor/GoogleFontPicker'
+import { SettingsCard } from '@/components/ui/SettingsCard'
+import { FieldRow } from '@/components/ui/FieldRow'
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch'
+import { ColorInput } from '@/components/ui/ColorInput'
 
 type SettingsTab = 'general' | 'brand' | 'ai' | 'accessibility'
 
@@ -99,6 +106,8 @@ function GeneralSettings(): JSX.Element {
 
   return (
     <div className="space-y-6">
+      <SessionCard />
+
       <SettingsCard title="Author" icon={User}>
         <FieldRow label="Author Name" description="Used in collaborator notes and certificates">
           <input
@@ -320,6 +329,43 @@ function WorkspaceFolderSettings(): JSX.Element {
           </button>
         </div>
       </FieldRow>
+    </SettingsCard>
+  )
+}
+
+// ─── Session Card ───
+
+function SessionCard(): JSX.Element {
+  const userProfile = useAuthStore((s) => s.userProfile)
+  const staySignedIn = useAuthStore((s) => s.staySignedIn)
+  const setStaySignedIn = useAuthStore((s) => s.setStaySignedIn)
+  const signOut = useAuthStore((s) => s.signOut)
+
+  if (!userProfile) return <></>
+
+  return (
+    <SettingsCard title="Session" icon={Lock}>
+      <FieldRow label="Signed in as" description={userProfile.email}>
+        <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+          {userProfile.name}
+        </span>
+      </FieldRow>
+      <FieldRow label="Stay Signed In" description="Skip PIN entry on app launch">
+        <ToggleSwitch
+          checked={staySignedIn}
+          onChange={setStaySignedIn}
+          label="Stay signed in"
+        />
+      </FieldRow>
+      <div className="flex justify-end">
+        <button
+          onClick={() => signOut()}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-[var(--font-weight-medium)] text-[var(--color-danger-600)] border border-[var(--color-danger-600)] rounded-md hover:bg-[var(--color-danger-100,#fee2e2)] transition-colors cursor-pointer"
+        >
+          <Lock size={14} />
+          Sign Out
+        </button>
+      </div>
     </SettingsCard>
   )
 }
@@ -589,7 +635,128 @@ function AISettingsPanel(): JSX.Element {
           </select>
         </FieldRow>
       </SettingsCard>
+
+      <VisualApisSection />
     </div>
+  )
+}
+
+// ─── Visual APIs Section ───
+
+function VisualApisSection(): JSX.Element {
+  const providers = useAppStore((s) => s.visualApis.providers)
+  const updateProvider = useAppStore((s) => s.updateVisualApiProvider)
+  const addCustom = useAppStore((s) => s.addCustomVisualApi)
+  const removeApi = useAppStore((s) => s.removeVisualApi)
+
+  return (
+    <SettingsCard title="Visual / Image APIs" icon={Image}>
+      <div className="space-y-3">
+        {providers.map((provider) => (
+          <div
+            key={provider.id}
+            className="p-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] space-y-3"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+                  {provider.name}
+                </span>
+                {provider.type !== 'custom' && (
+                  <span className="px-1.5 py-0.5 text-[10px] font-[var(--font-weight-medium)] text-emerald-700 bg-emerald-100 rounded">
+                    Free
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {provider.type === 'custom' && (
+                  <button
+                    onClick={() => removeApi(provider.id)}
+                    className="p-1 rounded cursor-pointer text-[var(--text-tertiary)] hover:text-[var(--color-danger-600)] hover:bg-[var(--color-danger-100,#fee2e2)]"
+                    aria-label="Delete custom API"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
+                <ToggleSwitch
+                  checked={provider.enabled}
+                  onChange={(v) => updateProvider(provider.id, { enabled: v })}
+                  label={`Enable ${provider.name}`}
+                />
+              </div>
+            </div>
+
+            {provider.enabled && (
+              <div className="space-y-2">
+                <div>
+                  <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                    API Key
+                  </label>
+                  <input
+                    type="password"
+                    value={provider.apiKey ?? ''}
+                    onChange={(e) => updateProvider(provider.id, { apiKey: e.target.value || null })}
+                    className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                    placeholder="Enter API key..."
+                  />
+                </div>
+
+                {provider.type === 'custom' && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                        Provider Name
+                      </label>
+                      <input
+                        type="text"
+                        value={provider.name}
+                        onChange={(e) => updateProvider(provider.id, { name: e.target.value })}
+                        className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                        placeholder="My Image API"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                        Endpoint URL
+                      </label>
+                      <input
+                        type="text"
+                        value={provider.endpoint ?? ''}
+                        onChange={(e) => updateProvider(provider.id, { endpoint: e.target.value })}
+                        className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                        placeholder="https://api.example.com/v1/search"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                        Auth Header Name
+                      </label>
+                      <input
+                        type="text"
+                        value={provider.headerName ?? ''}
+                        onChange={(e) => updateProvider(provider.id, { headerName: e.target.value })}
+                        className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                        placeholder="Authorization"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="pt-2">
+        <button
+          onClick={addCustom}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] border border-[var(--border-default)] rounded-md hover:bg-[var(--bg-hover)] cursor-pointer"
+        >
+          <Plus size={14} />
+          Add Custom API
+        </button>
+      </div>
+    </SettingsCard>
   )
 }
 
@@ -736,100 +903,3 @@ function AccessibilitySettingsPanel(): JSX.Element {
   )
 }
 
-// ─── Shared Components ───
-
-function SettingsCard({
-  title,
-  icon: Icon,
-  children
-}: {
-  title: string
-  icon: typeof Settings
-  children: React.ReactNode
-}): JSX.Element {
-  return (
-    <div className="rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] overflow-hidden">
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border-default)] bg-[var(--bg-muted)]">
-        <Icon size={16} className="text-[var(--text-tertiary)]" />
-        <h3 className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-primary)]">{title}</h3>
-      </div>
-      <div className="p-4 space-y-4">{children}</div>
-    </div>
-  )
-}
-
-function FieldRow({
-  label,
-  description,
-  children
-}: {
-  label: string
-  description: string
-  children: React.ReactNode
-}): JSX.Element {
-  return (
-    <div className="flex items-start justify-between gap-4">
-      <div className="min-w-0">
-        <p className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">{label}</p>
-        <p className="text-xs text-[var(--text-tertiary)]">{description}</p>
-      </div>
-      <div className="shrink-0">{children}</div>
-    </div>
-  )
-}
-
-function ToggleSwitch({
-  checked,
-  onChange,
-  label
-}: {
-  checked: boolean
-  onChange: (value: boolean) => void
-  label: string
-}): JSX.Element {
-  return (
-    <button
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      onClick={() => onChange(!checked)}
-      className={`
-        relative inline-flex h-6 w-11 items-center rounded-full cursor-pointer transition-colors
-        focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)] focus:ring-offset-2
-        ${checked ? 'bg-[var(--brand-magenta)]' : 'bg-[var(--border-default)]'}
-      `}
-    >
-      <span
-        className={`
-          inline-block h-4 w-4 transform rounded-full bg-white transition-transform
-          ${checked ? 'translate-x-6' : 'translate-x-1'}
-        `}
-      />
-    </button>
-  )
-}
-
-function ColorInput({
-  label,
-  value,
-  onChange
-}: {
-  label: string
-  value: string
-  onChange: (value: string) => void
-}): JSX.Element {
-  return (
-    <div>
-      <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">{label}</label>
-      <div className="flex items-center gap-2">
-        <input
-          type="color"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-8 h-8 rounded border border-[var(--border-default)] cursor-pointer p-0.5"
-        />
-        <span className="text-[10px] text-[var(--text-tertiary)] font-mono">{value}</span>
-      </div>
-    </div>
-  )
-}

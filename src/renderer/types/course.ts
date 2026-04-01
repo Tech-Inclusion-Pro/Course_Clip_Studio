@@ -501,6 +501,19 @@ export interface AISettings {
   defaultAILanguage: string
 }
 
+// ─── Visual API Provider ───
+
+export interface VisualApiProvider {
+  id: string
+  name: string
+  type: 'pexels' | 'unsplash' | 'pixabay' | 'custom'
+  enabled: boolean
+  apiKey: string | null
+  endpoint?: string
+  headerName?: string
+  headerValuePrefix?: string
+}
+
 export type ColorBlindMode = 'none' | 'protanopia' | 'deuteranopia' | 'tritanopia' | 'achromatopsia'
 export type CursorStyle = 'default' | 'large' | 'crosshair' | 'high-contrast'
 

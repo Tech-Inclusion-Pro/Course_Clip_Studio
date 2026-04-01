@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import type { AISettings, AccessibilitySettings, BrandKit } from '@/types/course'
+import type { AISettings, AccessibilitySettings, BrandKit, VisualApiProvider } from '@/types/course'
+import { uid } from '@/lib/uid'
 
 export type ThemeMode = 'light' | 'dark' | 'system' | 'sepia' | 'midnight' | 'forest' | 'ocean' | `brand-${string}`
 
@@ -29,6 +30,9 @@ interface AppState {
 
   // Accessibility settings
   accessibility: AccessibilitySettings
+
+  // Visual API settings
+  visualApis: { providers: VisualApiProvider[] }
 
   // Plugins
   pluginsPath: string | null
@@ -63,6 +67,12 @@ interface AppState {
   // Accessibility actions
   loadAccessibilitySettings: () => Promise<void>
   updateAccessibilitySettings: (settings: Partial<AccessibilitySettings>) => void
+
+  // Visual API actions
+  loadVisualApiSettings: () => Promise<void>
+  updateVisualApiProvider: (id: string, updates: Partial<VisualApiProvider>) => void
+  addCustomVisualApi: () => void
+  removeVisualApi: (id: string) => void
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -108,6 +118,15 @@ export const useAppStore = create<AppState>((set, get) => ({
     bionicReading: false,
     enhancedTextSpacing: false,
     enhancedFocusIndicators: false
+  },
+
+  // Visual API defaults
+  visualApis: {
+    providers: [
+      { id: 'pexels', name: 'Pexels', type: 'pexels' as const, enabled: false, apiKey: null },
+      { id: 'unsplash', name: 'Unsplash', type: 'unsplash' as const, enabled: false, apiKey: null },
+      { id: 'pixabay', name: 'Pixabay', type: 'pixabay' as const, enabled: false, apiKey: null }
+    ]
   },
 
   // Plugins defaults
@@ -218,6 +237,76 @@ export const useAppStore = create<AppState>((set, get) => ({
       const updated = { ...state.accessibility, ...settings }
       window.electronAPI.settings.set('accessibility', updated)
       return { accessibility: updated }
+    })
+  },
+
+  // Visual API actions
+  loadVisualApiSettings: async () => {
+    try {
+      const saved = (await window.electronAPI.settings.get('visualApis')) as { providers: Omit<VisualApiProvider, 'apiKey'>[] } | null
+      if (saved?.providers) {
+        const providers = await Promise.all(
+          saved.providers.map(async (p) => {
+            const apiKey = await window.electronAPI.secrets.get(`visualApi_${p.id}`)
+            return { ...p, apiKey } as VisualApiProvider
+          })
+        )
+        set({ visualApis: { providers } })
+      }
+    } catch (err) {
+      console.error('Failed to load visual API settings:', err)
+    }
+  },
+
+  updateVisualApiProvider: (id, updates) => {
+    set((state) => {
+      const providers = state.visualApis.providers.map((p) =>
+        p.id === id ? { ...p, ...updates } : p
+      )
+
+      // Persist API key to secrets
+      if ('apiKey' in updates) {
+        if (updates.apiKey) {
+          window.electronAPI.secrets.set(`visualApi_${id}`, updates.apiKey)
+        } else {
+          window.electronAPI.secrets.delete(`visualApi_${id}`)
+        }
+      }
+
+      // Persist non-sensitive config to settings
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('visualApis', { providers: nonSensitive })
+
+      return { visualApis: { providers } }
+    })
+  },
+
+  addCustomVisualApi: () => {
+    set((state) => {
+      const newProvider: VisualApiProvider = {
+        id: uid('vapi'),
+        name: 'Custom API',
+        type: 'custom',
+        enabled: false,
+        apiKey: null,
+        endpoint: '',
+        headerName: 'Authorization',
+        headerValuePrefix: 'Bearer '
+      }
+      const providers = [...state.visualApis.providers, newProvider]
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('visualApis', { providers: nonSensitive })
+      return { visualApis: { providers } }
+    })
+  },
+
+  removeVisualApi: (id) => {
+    set((state) => {
+      const providers = state.visualApis.providers.filter((p) => p.id !== id)
+      window.electronAPI.secrets.delete(`visualApi_${id}`)
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('visualApis', { providers: nonSensitive })
+      return { visualApis: { providers } }
     })
   }
 }))

@@ -29,6 +29,32 @@ Course Clip Studio is a professional-grade desktop application for creating acce
 
 ## Features
 
+### Sign-In & User Profiles
+
+Course Clip Studio includes a local authentication system — no server or internet required.
+
+| Feature | Description |
+|---|---|
+| Local User Profiles | Register with name and email, stored in the app's settings |
+| PIN Authentication | Set a 4-, 5-, or 6-digit PIN for quick sign-in |
+| Stay Signed In | Toggle to skip PIN entry on subsequent app launches |
+| Session Management | Sign out from Settings > General > Session card |
+| Secure PIN Storage | PINs encrypted via Electron's `safeStorage` API (OS keychain) |
+
+### First-Launch Onboarding Wizard
+
+New users are guided through a 7-step setup wizard on their first login:
+
+1. **Welcome** — Introduction and overview
+2. **General** — Author name, default language, auto-save interval, theme selection
+3. **AI / LLM** — Connect an AI provider (Anthropic, OpenAI, or Ollama) and set API keys
+4. **Visual APIs** — Enable stock image providers (Pexels, Unsplash, Pixabay) or add custom APIs
+5. **Branding** — Create a brand kit with custom colors and fonts
+6. **Accessibility** — Configure high contrast, font size, reduced motion, color blind mode, and reading aids
+7. **Complete** — Summary and "Get Started" button
+
+Each step is optional and can be skipped. All settings can be changed later from the Settings page.
+
 ### Course Authoring
 
 - **19 content block types** — Text, Image/Media, Video, Audio, Quiz, Drag & Drop, Matching, Accordion, Tabs, Flashcard, Branching Scenario, Embed, Code, Divider, Callout, H5P, Custom HTML, Plugin, and Feedback Form
@@ -74,6 +100,19 @@ Supports **Anthropic (Claude)**, **OpenAI (GPT-4)**, and **Ollama (local models)
 | WCAG Review | Analyze lessons for WCAG 2.1 AA issues with severity levels |
 | UDL Suggestions | Recommendations across Representation, Action & Expression, and Engagement pillars |
 | Master Key Upload | Load reference materials for context-aware generation |
+
+### Visual / Image API Integration
+
+Connect stock image providers to search and insert photos directly into courses.
+
+| Provider | Type | Description |
+|---|---|---|
+| Pexels | Built-in | Free stock photos with API key |
+| Unsplash | Built-in | Free high-resolution photos with API key |
+| Pixabay | Built-in | Free images, videos, and vectors with API key |
+| Custom | User-defined | Any image API with configurable endpoint, auth header, and key |
+
+API keys are encrypted via Electron's `safeStorage` API. Provider settings are managed in Settings > AI/LLM > Visual / Image APIs.
 
 ### Export Formats
 
@@ -291,9 +330,11 @@ lumina-udl/
 │       │   ├── editor/         # Block editors, AI panel, tree navigator
 │       │   ├── dashboard/      # Course cards, import dialog, templates
 │       │   ├── publish/        # Export wizard, LMS upload
-│       │   └── ui/             # Button, ThemeToggle, AccessibilityWidget
-│       ├── views/              # Dashboard, Editor, Preview, Settings, Publish
-│       ├── stores/             # Zustand stores (app, course, editor)
+│       │   ├── auth/           # PinInput component
+│       │   ├── onboarding/     # First-launch setup wizard
+│       │   └── ui/             # Button, ThemeToggle, SettingsCard, FieldRow, ToggleSwitch, ColorInput
+│       ├── views/              # Dashboard, Editor, Preview, Settings, SignIn, Publish
+│       ├── stores/             # Zustand stores (app, auth, course, editor)
 │       ├── hooks/              # useTheme, useAccessibility, useWorkspaceInit
 │       ├── lib/
 │       │   ├── export/         # HTML packager, PDF renderer
