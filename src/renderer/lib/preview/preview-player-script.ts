@@ -43,11 +43,42 @@ export function getPreviewPlayerScript(): string {
     }, '*');
   };
 
-  window.addEventListener('load', function() {
+  // Initialize immediately if DOM is ready, otherwise wait for DOMContentLoaded.
+  // NOTE: We avoid 'load' because srcDoc iframes may miss the load event.
+  function _initAll() {
+    initEnrollment();
     initTabs();
     initFlashcards();
     initQuiz();
-  });
+    initDragDrop();
+    initMatching();
+    initBranching();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _initAll);
+  } else {
+    _initAll();
+  }
+
+  // Enrollment overlay
+  function initEnrollment() {
+    var form = document.getElementById('enrollment-form');
+    var overlay = document.getElementById('enrollment-overlay');
+    if (!form || !overlay) return;
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var nameInput = document.getElementById('enrollment-name');
+      var name = nameInput ? nameInput.value.trim() : '';
+      if (!name) return;
+      // Store learner name for certificate
+      try { sessionStorage.setItem('lumina_learner_name', name); } catch(ex) {}
+      // Report to parent
+      window.parent.postMessage({ type: 'lumina:enrollment', learnerName: name, timestamp: new Date().toISOString() }, '*');
+      // Hide overlay
+      overlay.style.display = 'none';
+    });
+  }
 
   // Tab switching
   function initTabs() {
@@ -70,7 +101,7 @@ export function getPreviewPlayerScript(): string {
     });
   }
 
-  // Flashcards
+  // Flashcards — 3D flip
   function initFlashcards() {
     document.querySelectorAll('.flashcard-deck').forEach(function(deck) {
       var cards = deck.querySelectorAll('.flashcard');
@@ -79,29 +110,152 @@ export function getPreviewPlayerScript(): string {
       var nextBtn = deck.querySelector('.next-btn');
       var current = 0;
 
-      deck.querySelectorAll('.flip-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-          var card = btn.closest('.flashcard');
-          var back = card.querySelector('.flashcard-back');
-          var front = card.querySelector('.flashcard-front');
-          if (back.hidden) { back.hidden = false; front.hidden = true; }
-          else { back.hidden = true; front.hidden = false; }
+      // Click to flip
+      cards.forEach(function(card) {
+        card.addEventListener('click', function() {
+          card.classList.toggle('flipped');
         });
       });
 
       function showCard(idx) {
-        cards.forEach(function(c, i) { c.hidden = i !== idx; });
+        cards.forEach(function(c, i) {
+          if (i !== idx) { c.classList.add('fc-hidden'); } else { c.classList.remove('fc-hidden'); }
+        });
         current = idx;
         counter.textContent = (idx + 1) + ' / ' + cards.length;
         prevBtn.disabled = idx === 0;
         nextBtn.disabled = idx === cards.length - 1;
-        var card = cards[idx];
-        card.querySelector('.flashcard-front').hidden = false;
-        card.querySelector('.flashcard-back').hidden = true;
+        // Reset flip state
+        cards[idx].classList.remove('flipped');
       }
 
-      if (prevBtn) prevBtn.addEventListener('click', function() { if (current > 0) showCard(current - 1); });
-      if (nextBtn) nextBtn.addEventListener('click', function() { if (current < cards.length - 1) showCard(current + 1); });
+      if (prevBtn) prevBtn.addEventListener('click', function(e) { e.stopPropagation(); if (current > 0) showCard(current - 1); });
+      if (nextBtn) nextBtn.addEventListener('click', function(e) { e.stopPropagation(); if (current < cards.length - 1) showCard(current + 1); });
+    });
+  }
+
+  // Drag & Drop
+  function initDragDrop() {
+    document.querySelectorAll('.block-dragdrop').forEach(function(block) {
+      var items = block.querySelectorAll('.dd-item[draggable]');
+      var zones = block.querySelectorAll('.dd-zone');
+
+      items.forEach(function(item) {
+        item.addEventListener('dragstart', function(e) {
+          e.dataTransfer.setData('text/plain', item.dataset.pair);
+          e.dataTransfer.setData('application/x-item-id', item.dataset.id);
+          item.style.opacity = '0.5';
+        });
+        item.addEventListener('dragend', function() {
+          item.style.opacity = '';
+        });
+      });
+
+      zones.forEach(function(zone) {
+        zone.addEventListener('dragover', function(e) {
+          e.preventDefault();
+          zone.classList.add('drag-over');
+        });
+        zone.addEventListener('dragleave', function() {
+          zone.classList.remove('drag-over');
+        });
+        zone.addEventListener('drop', function(e) {
+          e.preventDefault();
+          zone.classList.remove('drag-over');
+          var pair = e.dataTransfer.getData('text/plain');
+          var itemId = e.dataTransfer.getData('application/x-item-id');
+          var correct = pair === zone.dataset.pair;
+          zone.classList.add(correct ? 'dd-correct' : 'dd-incorrect');
+
+          if (correct) {
+            // Move item into zone visually
+            var draggedItem = block.querySelector('.dd-item[data-id="' + itemId + '"]');
+            if (draggedItem) {
+              draggedItem.classList.add('placed');
+              draggedItem.setAttribute('draggable', 'false');
+              zone.appendChild(draggedItem);
+            }
+          } else {
+            setTimeout(function() { zone.classList.remove('dd-incorrect'); }, 1500);
+          }
+        });
+      });
+    });
+  }
+
+  // Matching — click-to-select
+  function initMatching() {
+    document.querySelectorAll('.block-matching').forEach(function(block) {
+      var selectedLeft = null;
+
+      block.querySelectorAll('.match-left').forEach(function(item) {
+        item.addEventListener('click', function() {
+          if (item.classList.contains('matched-correct')) return;
+          // Deselect previous
+          if (selectedLeft) selectedLeft.classList.remove('selected');
+          selectedLeft = item;
+          item.classList.add('selected');
+        });
+      });
+
+      block.querySelectorAll('.match-right').forEach(function(item) {
+        item.addEventListener('click', function() {
+          if (!selectedLeft || item.classList.contains('matched-correct')) return;
+          var correct = selectedLeft.dataset.pair === item.dataset.id;
+          if (correct) {
+            selectedLeft.classList.remove('selected');
+            selectedLeft.classList.add('matched-correct');
+            item.classList.add('matched-correct');
+          } else {
+            selectedLeft.classList.add('matched-incorrect');
+            item.classList.add('matched-incorrect');
+            var left = selectedLeft;
+            setTimeout(function() {
+              left.classList.remove('matched-incorrect', 'selected');
+              item.classList.remove('matched-incorrect');
+            }, 1200);
+          }
+          selectedLeft = null;
+        });
+      });
+    });
+  }
+
+  // Branching — choice buttons
+  function initBranching() {
+    document.querySelectorAll('.block-branching').forEach(function(block) {
+      var choices = block.querySelectorAll('.branch-choice');
+      var consequenceDiv = block.querySelector('.branch-consequence');
+      var continueBtn = block.querySelector('.branch-continue');
+
+      choices.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          // Mark chosen
+          choices.forEach(function(c) { c.classList.remove('chosen'); });
+          btn.classList.add('chosen');
+
+          // Show consequence
+          var consequence = btn.dataset.consequence;
+          if (consequence && consequenceDiv) {
+            consequenceDiv.textContent = consequence;
+            consequenceDiv.hidden = false;
+          }
+
+          // Show continue button
+          if (continueBtn) {
+            continueBtn.hidden = false;
+            var nextId = btn.dataset.next;
+            var action = btn.dataset.action || 'navigate';
+            continueBtn.onclick = function() {
+              if (action === 'restart') {
+                window.parent.postMessage({ type: 'lumina:restart' }, '*');
+              } else if (nextId) {
+                window.parent.postMessage({ type: 'lumina:nav', direction: 'next' }, '*');
+              }
+            };
+          }
+        });
+      });
     });
   }
 

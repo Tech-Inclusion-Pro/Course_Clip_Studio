@@ -18,7 +18,9 @@ import {
   Mic,
   ImageIcon,
   Trash2,
-  Settings
+  Settings,
+  ToggleLeft,
+  ToggleRight
 } from 'lucide-react'
 import { useAppStore } from '@/stores/useAppStore'
 import { useCourseStore } from '@/stores/useCourseStore'
@@ -36,7 +38,8 @@ import {
   altTextPrompt,
   translatePrompt,
   wcagReviewPrompt,
-  udlSuggestionsPrompt
+  udlSuggestionsPrompt,
+  baseBrainContext
 } from '@/lib/ai'
 import type {
   InterviewAnswers,
@@ -138,7 +141,14 @@ function HomeView(): JSX.Element {
   const masterKeyFileName = useAIStore((s) => s.masterKeyFileName)
   const setMasterKey = useAIStore((s) => s.setMasterKey)
   const clearMasterKey = useAIStore((s) => s.clearMasterKey)
+  const useMasterKey = useAIStore((s) => s.useMasterKey)
+  const setUseMasterKey = useAIStore((s) => s.setUseMasterKey)
+  const referenceFiles = useAIStore((s) => s.referenceFiles)
+  const addReferenceFile = useAIStore((s) => s.addReferenceFile)
+  const removeReferenceFile = useAIStore((s) => s.removeReferenceFile)
+  const updateReferenceFileNotes = useAIStore((s) => s.updateReferenceFileNotes)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const refFileInputRef = useRef<HTMLInputElement>(null)
 
   function handleMasterKeyUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -148,6 +158,20 @@ function HomeView(): JSX.Element {
       setMasterKey(reader.result as string, file.name)
     }
     reader.readAsText(file)
+    e.target.value = ''
+  }
+
+  function handleReferenceFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files
+    if (!files) return
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      const reader = new FileReader()
+      reader.onload = () => {
+        addReferenceFile(file.name, reader.result as string)
+      }
+      reader.readAsText(file)
+    }
     e.target.value = ''
   }
 
@@ -211,6 +235,76 @@ function HomeView(): JSX.Element {
         <p className="text-[10px] text-[var(--text-tertiary)]">
           Upload a reference document that AI will use as context for all generation tasks.
         </p>
+
+        {/* Master Key Toggle */}
+        {masterKeyFileName && (
+          <button
+            onClick={() => setUseMasterKey(!useMasterKey)}
+            className={`w-full flex items-center gap-2 p-2 rounded-md border text-left text-xs transition-colors cursor-pointer ${
+              useMasterKey
+                ? 'border-[var(--brand-magenta)] bg-[var(--brand-magenta)]/10 text-[var(--text-primary)]'
+                : 'border-[var(--border-default)] text-[var(--text-secondary)]'
+            }`}
+          >
+            {useMasterKey
+              ? <ToggleRight size={16} className="text-[var(--brand-magenta)] shrink-0" />
+              : <ToggleLeft size={16} className="text-[var(--text-tertiary)] shrink-0" />
+            }
+            <span>Use your Design Master Key?</span>
+          </button>
+        )}
+      </div>
+
+      {/* Reference Files */}
+      <div className="space-y-2">
+        <label className="text-xs font-[var(--font-weight-semibold)] text-[var(--text-secondary)] uppercase tracking-wide">
+          Reference Files
+        </label>
+        <p className="text-[10px] text-[var(--text-tertiary)]">
+          Upload files the AI should reference. Add notes about what you like or how to use each.
+        </p>
+        {referenceFiles.length > 0 && (
+          <div className="space-y-2">
+            {referenceFiles.map((file) => (
+              <div key={file.id} className="p-2 rounded-md bg-[var(--bg-panel)] border border-[var(--border-default)] space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <FileText size={12} className="text-[var(--brand-magenta)] shrink-0" />
+                  <span className="text-[11px] text-[var(--text-primary)] flex-1 truncate">{file.name}</span>
+                  <button
+                    onClick={() => removeReferenceFile(file.id)}
+                    className="p-0.5 rounded text-[var(--text-tertiary)] hover:text-red-500 cursor-pointer"
+                    aria-label={`Remove ${file.name}`}
+                  >
+                    <Trash2 size={10} />
+                  </button>
+                </div>
+                <textarea
+                  value={file.notes}
+                  onChange={(e) => updateReferenceFileNotes(file.id, e.target.value)}
+                  placeholder="Notes: what you like about this, how AI should use it..."
+                  rows={2}
+                  className="w-full px-2 py-1 text-[10px] rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:ring-1 focus:ring-[var(--ring-brand)] resize-y"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+        <button
+          onClick={() => refFileInputRef.current?.click()}
+          className="w-full flex items-center justify-center gap-2 p-2 rounded-md border border-dashed border-[var(--border-default)] text-xs text-[var(--text-secondary)] hover:border-[var(--brand-magenta)] hover:text-[var(--brand-magenta)] transition-colors cursor-pointer"
+        >
+          <Upload size={14} />
+          <span>Add reference file{referenceFiles.length > 0 ? 's' : ''}</span>
+        </button>
+        <input
+          ref={refFileInputRef}
+          type="file"
+          accept=".md,.markdown,.txt,.html,.css,.json,.pdf,.docx"
+          multiple
+          onChange={handleReferenceFileUpload}
+          className="hidden"
+          aria-label="Upload reference files"
+        />
       </div>
 
       {/* Quick Actions */}
@@ -759,6 +853,12 @@ async function runAction(action: AIAction): Promise<void> {
   const { ai: aiSettings } = appStore
   const course = courseStore.courses.find((c) => c.id === courseStore.activeCourseId)
 
+  // Build effective interview answers — conditionally include master key
+  const effectiveAnswers = { ...aiStore.interviewAnswers }
+  if (!aiStore.useMasterKey) {
+    effectiveAnswers.masterKeyContent = null
+  }
+
   // Get current lesson content for context
   let lessonContent = ''
   if (course && editorStore.activeModuleId && editorStore.activeLessonId) {
@@ -782,13 +882,23 @@ async function runAction(action: AIAction): Promise<void> {
 
   try {
     const provider = getProvider(aiSettings)
+    const bbContext = baseBrainContext(appStore.baseBrain)
+    // Include reference files context
+    let refFilesContext = ''
+    if (aiStore.referenceFiles.length > 0) {
+      refFilesContext = '\n\n## Reference Files\nThe user has uploaded the following reference files. Use them as context:\n'
+      for (const rf of aiStore.referenceFiles) {
+        refFilesContext += `\n### ${rf.name}${rf.notes ? `\nUser notes: ${rf.notes}` : ''}\n\`\`\`\n${rf.content.slice(0, 5000)}\n\`\`\`\n`
+      }
+    }
+    const systemPrompt = SYSTEM_PROMPT + bbContext + refFilesContext
     let result: string
 
     switch (action) {
       case 'generate-outline': {
         const topic = course?.meta.title || 'Course'
-        const prompt = outlinePrompt(topic, aiStore.interviewAnswers)
-        result = await provider.generateText(prompt, SYSTEM_PROMPT)
+        const prompt = outlinePrompt(topic, effectiveAnswers)
+        result = await provider.generateText(prompt, systemPrompt)
         break
       }
       case 'generate-lesson': {
@@ -797,21 +907,21 @@ async function runAction(action: AIAction): Promise<void> {
         const prompt = lessonContentPrompt(
           lesson?.title || 'Lesson',
           '',
-          aiStore.interviewAnswers
+          effectiveAnswers
         )
-        result = await provider.generateText(prompt, SYSTEM_PROMPT)
+        result = await provider.generateText(prompt, systemPrompt)
         break
       }
       case 'generate-quiz': {
         if (!lessonContent) throw new Error('No lesson content to generate quiz from. Add some text blocks first.')
         const prompt = quizPrompt(lessonContent)
-        result = await provider.generateText(prompt, SYSTEM_PROMPT)
+        result = await provider.generateText(prompt, systemPrompt)
         break
       }
       case 'write-narration': {
         if (!lessonContent) throw new Error('No lesson content to write narration for. Add some text blocks first.')
         const prompt = narrationPrompt(lessonContent)
-        result = await provider.generateText(prompt, SYSTEM_PROMPT)
+        result = await provider.generateText(prompt, systemPrompt)
         break
       }
       case 'generate-alt-text': {
@@ -828,7 +938,7 @@ async function runAction(action: AIAction): Promise<void> {
         if (lessonContent) contextParts.push(`Surrounding content: ${lessonContent.slice(0, 500)}`)
         const imageContext = contextParts.join('\n') || 'No additional context available'
         const prompt = altTextPrompt(imageContext)
-        result = await provider.generateText(prompt, SYSTEM_PROMPT)
+        result = await provider.generateText(prompt, systemPrompt)
         break
       }
       case 'translate-lesson': {
@@ -851,19 +961,19 @@ async function runAction(action: AIAction): Promise<void> {
         }).filter(Boolean)
         const jsonContent = JSON.stringify(translatableBlocks, null, 2)
         const prompt = translatePrompt(jsonContent, languageName)
-        result = await provider.generateText(prompt, SYSTEM_PROMPT)
+        result = await provider.generateText(prompt, systemPrompt)
         break
       }
       case 'wcag-review': {
         if (!lessonContent) throw new Error('No lesson content to review. Add some content blocks first.')
         const prompt = wcagReviewPrompt(lessonContent)
-        result = await provider.generateText(prompt, SYSTEM_PROMPT)
+        result = await provider.generateText(prompt, systemPrompt)
         break
       }
       case 'udl-suggestions': {
         if (!lessonContent) throw new Error('No lesson content to analyze. Add some content blocks first.')
         const prompt = udlSuggestionsPrompt(lessonContent)
-        result = await provider.generateText(prompt, SYSTEM_PROMPT)
+        result = await provider.generateText(prompt, systemPrompt)
         break
       }
       default:

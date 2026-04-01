@@ -12,6 +12,13 @@ export interface AIMessage {
   action?: AIAction
 }
 
+export interface AIReferenceFile {
+  id: string
+  name: string
+  content: string
+  notes: string
+}
+
 interface AIState {
   // View state
   view: AIView
@@ -23,6 +30,10 @@ interface AIState {
 
   // Master key
   masterKeyFileName: string | null
+  useMasterKey: boolean
+
+  // Reference files
+  referenceFiles: AIReferenceFile[]
 
   // Generation
   isGenerating: boolean
@@ -47,6 +58,12 @@ interface AIState {
   // Master key
   setMasterKey: (content: string, fileName: string) => void
   clearMasterKey: () => void
+  setUseMasterKey: (v: boolean) => void
+
+  // Reference files
+  addReferenceFile: (name: string, content: string) => void
+  removeReferenceFile: (id: string) => void
+  updateReferenceFileNotes: (id: string, notes: string) => void
 
   // Generation
   startGeneration: (action: AIAction) => void
@@ -70,6 +87,8 @@ export const useAIStore = create<AIState>((set) => ({
   interviewAnswers: { ...EMPTY_INTERVIEW },
   interviewComplete: false,
   masterKeyFileName: null,
+  useMasterKey: true,
+  referenceFiles: [],
   isGenerating: false,
   currentAction: null,
   lastResult: null,
@@ -110,6 +129,27 @@ export const useAIStore = create<AIState>((set) => ({
       interviewAnswers: { ...s.interviewAnswers, masterKeyContent: null }
     })),
 
+  setUseMasterKey: (v) => set({ useMasterKey: v }),
+
+  // Reference files
+  addReferenceFile: (name, content) =>
+    set((s) => ({
+      referenceFiles: [
+        ...s.referenceFiles,
+        { id: `ref-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, name, content, notes: '' }
+      ]
+    })),
+
+  removeReferenceFile: (id) =>
+    set((s) => ({
+      referenceFiles: s.referenceFiles.filter((f) => f.id !== id)
+    })),
+
+  updateReferenceFileNotes: (id, notes) =>
+    set((s) => ({
+      referenceFiles: s.referenceFiles.map((f) => (f.id === id ? { ...f, notes } : f))
+    })),
+
   // Generation
   startGeneration: (action) =>
     set({ isGenerating: true, currentAction: action, lastError: null, lastResult: null }),
@@ -143,6 +183,8 @@ export const useAIStore = create<AIState>((set) => ({
       interviewAnswers: { ...EMPTY_INTERVIEW },
       interviewComplete: false,
       masterKeyFileName: null,
+      useMasterKey: true,
+      referenceFiles: [],
       isGenerating: false,
       currentAction: null,
       lastResult: null,

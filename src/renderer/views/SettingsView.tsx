@@ -14,7 +14,12 @@ import {
   RefreshCw,
   Info,
   Lock,
-  Image
+  Image,
+  ChevronDown,
+  ChevronUp,
+  Upload,
+  FileText,
+  X
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import i18next from 'i18next'
@@ -525,15 +530,25 @@ function AISettingsPanel(): JSX.Element {
     setTestStatus('testing')
     try {
       if (ai.provider === 'ollama') {
-        const res = await fetch(`${ai.ollamaEndpoint}/api/tags`)
-        if (res.ok) {
-          setTestStatus('success')
-        } else {
-          setTestStatus('error')
-        }
+        const res = await window.electronAPI.net.request({ url: `${ai.ollamaEndpoint}/api/tags`, method: 'GET' })
+        setTestStatus(res.status >= 200 && res.status < 300 ? 'success' : 'error')
+      } else if (ai.provider === 'anthropic' && ai.anthropicApiKey) {
+        const res = await window.electronAPI.net.request({
+          url: 'https://api.anthropic.com/v1/messages',
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': ai.anthropicApiKey, 'anthropic-version': '2023-06-01' },
+          body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 10, messages: [{ role: 'user', content: 'Hi' }] })
+        })
+        setTestStatus(res.status >= 200 && res.status < 300 ? 'success' : 'error')
+      } else if (ai.provider === 'openai' && ai.openaiApiKey) {
+        const res = await window.electronAPI.net.request({
+          url: 'https://api.openai.com/v1/models',
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${ai.openaiApiKey}` }
+        })
+        setTestStatus(res.status >= 200 && res.status < 300 ? 'success' : 'error')
       } else {
-        const hasKey = ai.provider === 'anthropic' ? !!ai.anthropicApiKey : !!ai.openaiApiKey
-        setTestStatus(hasKey ? 'success' : 'error')
+        setTestStatus('error')
       }
     } catch {
       setTestStatus('error')
@@ -636,8 +651,152 @@ function AISettingsPanel(): JSX.Element {
         </FieldRow>
       </SettingsCard>
 
+      <BaseBrainSection />
+
       <VisualApisSection />
     </div>
+  )
+}
+
+// ─── Base Brain Section ───
+
+function BaseBrainSection(): JSX.Element {
+  const [expanded, setExpanded] = useState(false)
+  const baseBrain = useAppStore((s) => s.baseBrain)
+  const updateBaseBrain = useAppStore((s) => s.updateBaseBrain)
+  const addBaseBrainFile = useAppStore((s) => s.addBaseBrainFile)
+  const removeBaseBrainFile = useAppStore((s) => s.removeBaseBrainFile)
+
+  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      addBaseBrainFile(file.name, reader.result as string)
+    }
+    reader.readAsText(file)
+    e.target.value = ''
+  }
+
+  return (
+    <SettingsCard title="Base Brain" icon={Brain}>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-[var(--text-secondary)]">
+            Define your design DNA — assumptions, tone, preferences, and reference docs that AI always uses.
+          </p>
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="p-1 rounded-md text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] cursor-pointer"
+            aria-label={expanded ? 'Collapse Base Brain' : 'Expand Base Brain'}
+          >
+            {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+        </div>
+
+        <FieldRow label="Enable Base Brain" description="Include Base Brain context in all AI prompts">
+          <ToggleSwitch
+            checked={baseBrain.enabled}
+            onChange={(v) => updateBaseBrain({ enabled: v })}
+            label="Enable Base Brain"
+          />
+        </FieldRow>
+
+        {expanded && (
+          <div className="space-y-4 pt-2">
+            {/* Reference Files */}
+            <div>
+              <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-2">
+                Reference Files
+              </label>
+              {baseBrain.referenceFiles.length > 0 && (
+                <div className="space-y-1 mb-2">
+                  {baseBrain.referenceFiles.map((file, i) => (
+                    <div key={i} className="flex items-center gap-2 p-2 rounded-md bg-[var(--bg-panel)] border border-[var(--border-default)]">
+                      <FileText size={14} className="text-[var(--brand-magenta)] shrink-0" />
+                      <span className="text-xs text-[var(--text-primary)] flex-1 truncate">{file.name}</span>
+                      <button
+                        onClick={() => removeBaseBrainFile(i)}
+                        className="p-1 rounded text-[var(--text-tertiary)] hover:text-red-500 cursor-pointer"
+                        aria-label={`Remove ${file.name}`}
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <label className="w-full flex items-center justify-center gap-2 p-2.5 rounded-md border border-dashed border-[var(--border-default)] text-xs text-[var(--text-secondary)] hover:border-[var(--brand-magenta)] hover:text-[var(--brand-magenta)] transition-colors cursor-pointer">
+                <Upload size={14} />
+                <span>Upload .md or .docx file</span>
+                <input
+                  type="file"
+                  accept=".md,.markdown,.txt,.docx"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            {/* Text Areas */}
+            <div>
+              <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">Design Assumptions</label>
+              <textarea
+                value={baseBrain.designAssumptions}
+                onChange={(e) => updateBaseBrain({ designAssumptions: e.target.value })}
+                rows={3}
+                className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)] resize-none"
+                placeholder="e.g., All courses use scenario-based learning, 5-10 minutes per lesson..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">Tone & Voice</label>
+              <textarea
+                value={baseBrain.toneAndVoice}
+                onChange={(e) => updateBaseBrain({ toneAndVoice: e.target.value })}
+                rows={3}
+                className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)] resize-none"
+                placeholder="e.g., Professional but approachable, use active voice, avoid jargon..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">Visual Preferences</label>
+              <textarea
+                value={baseBrain.visualPreferences}
+                onChange={(e) => updateBaseBrain({ visualPreferences: e.target.value })}
+                rows={3}
+                className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)] resize-none"
+                placeholder="e.g., Clean layouts, generous whitespace, brand colors for accents..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">Goals</label>
+              <textarea
+                value={baseBrain.goals}
+                onChange={(e) => updateBaseBrain({ goals: e.target.value })}
+                rows={3}
+                className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)] resize-none"
+                placeholder="e.g., Increase learner engagement, meet WCAG AA compliance, reduce time-to-completion..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">Design Considerations</label>
+              <textarea
+                value={baseBrain.designConsiderations}
+                onChange={(e) => updateBaseBrain({ designConsiderations: e.target.value })}
+                rows={4}
+                className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)] resize-none"
+                placeholder="e.g., Target mobile-first design, support offline learners, include knowledge checks every 3 slides..."
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    </SettingsCard>
   )
 }
 

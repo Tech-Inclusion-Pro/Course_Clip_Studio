@@ -69,6 +69,7 @@ function defaultSettings(): CourseSettings {
     feedbackFormsEnabled: false,
     accessibilityModeToggle: true,
     completionCriteria: 'visit-all',
+    enrollmentPage: false,
     xapi: null,
     scorm: null
   }

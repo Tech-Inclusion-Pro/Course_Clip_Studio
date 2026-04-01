@@ -100,7 +100,7 @@ export function SplitPreviewPane({
             srcDoc={debouncedHtml}
             title="Split preview"
             className="w-full h-full border-0"
-            sandbox="allow-scripts"
+            sandbox="allow-scripts allow-same-origin"
           />
         </div>
       </div>

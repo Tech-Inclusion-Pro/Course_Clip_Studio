@@ -2,7 +2,8 @@ import type { AIProvider } from './types'
 
 export function createOpenAIProvider(apiKey: string): AIProvider {
   async function generate(prompt: string, systemPrompt: string): Promise<string> {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const res = await window.electronAPI.net.request({
+      url: 'https://api.openai.com/v1/chat/completions',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -19,12 +20,11 @@ export function createOpenAIProvider(apiKey: string): AIProvider {
       })
     })
 
-    if (!res.ok) {
-      const text = await res.text().catch(() => 'Unknown error')
-      throw new Error(`OpenAI API error (${res.status}): ${text}`)
+    if (res.status < 200 || res.status >= 300) {
+      throw new Error(`OpenAI API error (${res.status}): ${res.body}`)
     }
 
-    const data = await res.json()
+    const data = JSON.parse(res.body)
     return data.choices?.[0]?.message?.content ?? ''
   }
 
@@ -44,11 +44,12 @@ export function createOpenAIProvider(apiKey: string): AIProvider {
 
     async testConnection() {
       try {
-        const res = await fetch('https://api.openai.com/v1/models', {
-          headers: { 'Authorization': `Bearer ${apiKey}` },
-          signal: AbortSignal.timeout(10000)
+        const res = await window.electronAPI.net.request({
+          url: 'https://api.openai.com/v1/models',
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${apiKey}` }
         })
-        return res.ok
+        return res.status >= 200 && res.status < 300
       } catch {
         return false
       }

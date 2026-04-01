@@ -49,7 +49,7 @@ export function Sidebar(): JSX.Element {
         )}
       </div>
 
-      <nav className="flex flex-col gap-1 p-2 flex-1">
+      <nav className="flex flex-col gap-1 p-2 flex-1 min-h-0 overflow-y-auto">
         {NAV_ITEMS.map((item) => {
           const Icon = iconMap[item.icon]
           return (
@@ -77,7 +77,7 @@ export function Sidebar(): JSX.Element {
         })}
       </nav>
 
-      <div className="p-2 border-t border-[var(--border-default)]">
+      <div className="p-2 border-t border-[var(--border-default)] shrink-0">
         <button
           onClick={toggleSidebar}
           className="

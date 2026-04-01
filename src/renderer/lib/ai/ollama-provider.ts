@@ -2,7 +2,8 @@ import type { AIProvider } from './types'
 
 export function createOllamaProvider(endpoint: string, model: string): AIProvider {
   async function generate(prompt: string, systemPrompt: string): Promise<string> {
-    const res = await fetch(`${endpoint}/api/generate`, {
+    const res = await window.electronAPI.net.request({
+      url: `${endpoint}/api/generate`,
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -14,12 +15,11 @@ export function createOllamaProvider(endpoint: string, model: string): AIProvide
       })
     })
 
-    if (!res.ok) {
-      const text = await res.text().catch(() => 'Unknown error')
-      throw new Error(`Ollama error (${res.status}): ${text}`)
+    if (res.status < 200 || res.status >= 300) {
+      throw new Error(`Ollama error (${res.status}): ${res.body}`)
     }
 
-    const data = await res.json()
+    const data = JSON.parse(res.body)
     return data.response ?? ''
   }
 
@@ -40,8 +40,11 @@ export function createOllamaProvider(endpoint: string, model: string): AIProvide
 
     async testConnection() {
       try {
-        const res = await fetch(`${endpoint}/api/tags`, { signal: AbortSignal.timeout(5000) })
-        return res.ok
+        const res = await window.electronAPI.net.request({
+          url: `${endpoint}/api/tags`,
+          method: 'GET'
+        })
+        return res.status >= 200 && res.status < 300
       } catch {
         return false
       }

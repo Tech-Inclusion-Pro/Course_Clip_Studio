@@ -112,7 +112,7 @@ export function EditorView(): JSX.Element {
   if (!course) return <div />
 
   return (
-    <div className="flex flex-col h-full -m-6">
+    <div className="flex flex-col h-full -m-6 overflow-hidden">
       {/* Toolbar */}
       <EditorToolbar />
 

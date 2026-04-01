@@ -356,7 +356,7 @@ export function PreviewView(): JSX.Element {
               srcDoc={lessonHtml}
               title={`Preview: ${current.lesson.title}`}
               className="w-full h-full border-0"
-              sandbox="allow-scripts"
+              sandbox="allow-scripts allow-same-origin"
             />
           </div>
         </div>

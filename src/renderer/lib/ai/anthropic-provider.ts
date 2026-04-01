@@ -2,13 +2,13 @@ import type { AIProvider } from './types'
 
 export function createAnthropicProvider(apiKey: string): AIProvider {
   async function generate(prompt: string, systemPrompt: string): Promise<string> {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await window.electronAPI.net.request({
+      url: 'https://api.anthropic.com/v1/messages',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
+        'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
@@ -18,12 +18,11 @@ export function createAnthropicProvider(apiKey: string): AIProvider {
       })
     })
 
-    if (!res.ok) {
-      const text = await res.text().catch(() => 'Unknown error')
-      throw new Error(`Anthropic API error (${res.status}): ${text}`)
+    if (res.status < 200 || res.status >= 300) {
+      throw new Error(`Anthropic API error (${res.status}): ${res.body}`)
     }
 
-    const data = await res.json()
+    const data = JSON.parse(res.body)
     const textBlock = data.content?.find((b: { type: string }) => b.type === 'text')
     return textBlock?.text ?? ''
   }
@@ -44,22 +43,21 @@ export function createAnthropicProvider(apiKey: string): AIProvider {
 
     async testConnection() {
       try {
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
+        const res = await window.electronAPI.net.request({
+          url: 'https://api.anthropic.com/v1/messages',
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
-            'anthropic-dangerous-direct-browser-access': 'true'
+            'anthropic-version': '2023-06-01'
           },
           body: JSON.stringify({
             model: 'claude-sonnet-4-20250514',
             max_tokens: 10,
             messages: [{ role: 'user', content: 'Hi' }]
-          }),
-          signal: AbortSignal.timeout(10000)
+          })
         })
-        return res.ok
+        return res.status >= 200 && res.status < 300
       } catch {
         return false
       }

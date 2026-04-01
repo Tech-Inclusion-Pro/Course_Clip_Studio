@@ -1,41 +1,211 @@
 import { useMemo } from 'react'
-import { SlidersHorizontal } from 'lucide-react'
+import { SlidersHorizontal, Clock, CheckSquare, Target, UserPlus } from 'lucide-react'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useEditorStore } from '@/stores/useEditorStore'
-import { findBlock } from '@/lib/course-helpers'
+import { findBlock, findLesson } from '@/lib/course-helpers'
 import { BLOCK_TYPE_LABELS } from '@/types/course'
-import type { ContentBlock } from '@/types/course'
+import type { ContentBlock, LessonCompletionCriteria } from '@/types/course'
 
 export function PropertiesPanel(): JSX.Element {
   const course = useCourseStore((s) => s.courses.find((c) => c.id === s.activeCourseId))
   const activeCourseId = useCourseStore((s) => s.activeCourseId)
   const updateBlock = useCourseStore((s) => s.updateBlock)
+  const updateCourse = useCourseStore((s) => s.updateCourse)
+  const updateLesson = useCourseStore((s) => s.updateLesson)
   const selectedBlockId = useEditorStore((s) => s.selectedBlockId)
+  const activeLessonId = useEditorStore((s) => s.activeLessonId)
 
   const blockData = useMemo(() => {
     if (!course || !selectedBlockId) return null
     return findBlock(course, selectedBlockId)
   }, [course, selectedBlockId])
 
+  const lessonData = useMemo(() => {
+    if (!course || !activeLessonId) return null
+    return findLesson(course, activeLessonId)
+  }, [course, activeLessonId])
+
   function handleUpdate(partial: Partial<ContentBlock>) {
     if (!activeCourseId || !blockData) return
     updateBlock(activeCourseId, blockData.module.id, blockData.lesson.id, blockData.block.id, partial)
   }
 
+  function handleUpdateCompletionCriteria(partial: Partial<LessonCompletionCriteria>) {
+    if (!activeCourseId || !lessonData) return
+    const current: LessonCompletionCriteria = lessonData.lesson.completionCriteria ?? {
+      quizPassRequired: false,
+      quizPassScore: 70,
+      interactiveRequired: false,
+      minimumTimeSeconds: 0
+    }
+    updateLesson(activeCourseId, lessonData.module.id, lessonData.lesson.id, {
+      completionCriteria: { ...current, ...partial }
+    })
+  }
+
+  // Show lesson settings when no block selected but lesson is active
   if (!blockData) {
     return (
       <div className="flex flex-col h-full">
         <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border-default)]">
           <SlidersHorizontal size={16} className="text-[var(--icon-default)]" />
           <h2 className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-primary)]">
-            Properties
+            {lessonData ? 'Lesson Settings' : 'Properties'}
           </h2>
         </div>
-        <div className="flex-1 flex items-center justify-center p-4">
-          <p className="text-sm text-[var(--text-tertiary)] text-center">
-            Select a block to view its properties
-          </p>
-        </div>
+        {lessonData ? (
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div>
+              <h3 className="text-xs font-[var(--font-weight-semibold)] text-[var(--text-primary)] mb-1">
+                {lessonData.lesson.title}
+              </h3>
+              <p className="text-[10px] text-[var(--text-tertiary)]">
+                {lessonData.lesson.blocks.length} block{lessonData.lesson.blocks.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+
+            {/* Enrollment Page toggle (course-level) */}
+            <div className="p-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)]">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <UserPlus size={14} className="text-[var(--brand-magenta)]" />
+                  <div>
+                    <span className="text-xs font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+                      Enrollment Page
+                    </span>
+                    <p className="text-[9px] text-[var(--text-tertiary)]">
+                      Capture learner name before course starts
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    if (!activeCourseId || !course) return
+                    updateCourse(activeCourseId, {
+                      settings: { ...course.settings, enrollmentPage: !course.settings.enrollmentPage }
+                    })
+                  }}
+                  role="switch"
+                  aria-checked={course?.settings.enrollmentPage ?? false}
+                  className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer shrink-0 ${
+                    course?.settings.enrollmentPage
+                      ? 'bg-[var(--brand-magenta)]'
+                      : 'bg-[var(--border-default)]'
+                  }`}
+                >
+                  <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                    course?.settings.enrollmentPage ? 'translate-x-[18px]' : 'translate-x-0.5'
+                  }`} />
+                </button>
+              </div>
+            </div>
+
+            <div className="border-t border-[var(--border-default)] pt-4">
+              <div className="flex items-center gap-1.5 mb-3">
+                <Target size={14} className="text-[var(--brand-magenta)]" />
+                <h3 className="text-xs font-[var(--font-weight-semibold)] text-[var(--text-primary)]">
+                  Completion Criteria
+                </h3>
+              </div>
+
+              <div className="space-y-3">
+                {/* Quiz pass required */}
+                <div className="p-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={lessonData.lesson.completionCriteria?.quizPassRequired ?? false}
+                      onChange={(e) => handleUpdateCompletionCriteria({ quizPassRequired: e.target.checked })}
+                      className="rounded border-[var(--border-default)] text-[var(--brand-magenta)] focus:ring-[var(--ring-brand)]"
+                    />
+                    <div>
+                      <span className="text-xs font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+                        Require quiz pass
+                      </span>
+                      <p className="text-[9px] text-[var(--text-tertiary)]">
+                        Learner must pass quiz(es) in this lesson
+                      </p>
+                    </div>
+                  </label>
+                  {(lessonData.lesson.completionCriteria?.quizPassRequired) && (
+                    <div className="flex items-center gap-2 pl-6">
+                      <label className="text-[10px] text-[var(--text-secondary)]">Min score:</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        value={lessonData.lesson.completionCriteria?.quizPassScore ?? 70}
+                        onChange={(e) => handleUpdateCompletionCriteria({ quizPassScore: parseInt(e.target.value) || 70 })}
+                        className="w-16 px-2 py-1 text-xs rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)]"
+                      />
+                      <span className="text-[10px] text-[var(--text-tertiary)]">%</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Interactive completion required */}
+                <div className="p-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)]">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={lessonData.lesson.completionCriteria?.interactiveRequired ?? false}
+                      onChange={(e) => handleUpdateCompletionCriteria({ interactiveRequired: e.target.checked })}
+                      className="rounded border-[var(--border-default)] text-[var(--brand-magenta)] focus:ring-[var(--ring-brand)]"
+                    />
+                    <div>
+                      <span className="text-xs font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+                        Complete all interactive blocks
+                      </span>
+                      <p className="text-[9px] text-[var(--text-tertiary)]">
+                        Must interact with all drag-drop, matching, flashcard, and branching blocks
+                      </p>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Minimum time */}
+                <div className="p-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <Clock size={14} className="text-[var(--text-tertiary)]" />
+                    <div>
+                      <span className="text-xs font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+                        Minimum time on page
+                      </span>
+                      <p className="text-[9px] text-[var(--text-tertiary)]">
+                        Learner must spend at least this long before marking complete
+                      </p>
+                    </div>
+                  </label>
+                  <div className="flex items-center gap-2 pl-6">
+                    <input
+                      type="number"
+                      min={0}
+                      value={lessonData.lesson.completionCriteria?.minimumTimeSeconds ?? 0}
+                      onChange={(e) => handleUpdateCompletionCriteria({ minimumTimeSeconds: parseInt(e.target.value) || 0 })}
+                      className="w-20 px-2 py-1 text-xs rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)]"
+                    />
+                    <span className="text-[10px] text-[var(--text-tertiary)]">seconds</span>
+                    {(lessonData.lesson.completionCriteria?.minimumTimeSeconds ?? 0) > 0 && (
+                      <span className="text-[10px] text-[var(--text-secondary)]">
+                        ({Math.floor((lessonData.lesson.completionCriteria?.minimumTimeSeconds ?? 0) / 60)}m {(lessonData.lesson.completionCriteria?.minimumTimeSeconds ?? 0) % 60}s)
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-[9px] text-[var(--text-tertiary)] pt-2">
+              Select a block to view block-level properties. These settings control when this lesson is considered complete.
+            </p>
+          </div>
+        ) : (
+          <div className="flex-1 flex items-center justify-center p-4">
+            <p className="text-sm text-[var(--text-tertiary)] text-center">
+              Select a block to view its properties
+            </p>
+          </div>
+        )}
       </div>
     )
   }
@@ -583,7 +753,7 @@ function TypeSpecificFields({
           </FieldGroup>
           <div className="p-2 rounded-md bg-[var(--bg-muted)]">
             <p className="text-xs font-[var(--font-weight-medium)] text-[var(--text-primary)]">
-              {block.choices.length} choice{block.choices.length !== 1 ? 's' : ''} (max 4)
+              {block.choices.length} branch{block.choices.length !== 1 ? 'es' : ''}
             </p>
             {block.choices.length > 0 && (
               <div className="mt-1 space-y-0.5">

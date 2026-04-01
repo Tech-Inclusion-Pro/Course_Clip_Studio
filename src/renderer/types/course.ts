@@ -14,6 +14,8 @@ export interface Course {
   history: VersionSnapshot[]
   publishStatus: PublishStatus
   questionBank?: QuizQuestion[]
+  masterKeyContent?: string | null
+  masterKeyFileName?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -56,6 +58,14 @@ export interface Lesson {
   notes: CollaboratorNote[]
   accessibilityScore: number | null
   readingLevel: number | null
+  completionCriteria?: LessonCompletionCriteria
+}
+
+export interface LessonCompletionCriteria {
+  quizPassRequired: boolean
+  quizPassScore: number
+  interactiveRequired: boolean
+  minimumTimeSeconds: number
 }
 
 // ─── Content Block Union ───
@@ -215,6 +225,7 @@ export interface BranchingBlock extends BaseBlock {
   type: 'branching'
   scenario: string
   choices: BranchChoice[]
+  mode: 'user-choice' | 'criteria-based'
 }
 
 export interface BranchChoice {
@@ -222,6 +233,15 @@ export interface BranchChoice {
   label: string
   consequence: string
   nextLessonId: string | null
+  criteria?: BranchCriteria | null
+  action?: 'navigate' | 'restart' | null
+}
+
+export interface BranchCriteria {
+  type: 'quiz-score' | 'lesson-completed' | 'time-spent'
+  operator: 'gte' | 'lte' | 'eq'
+  value: number
+  lessonId?: string
 }
 
 export interface EmbedBlock extends BaseBlock {
@@ -357,6 +377,20 @@ export interface CertificateConfig {
   logoPath: string | null
   signatureLine: string
   brandColors: boolean
+  backgroundImage?: string | null
+  fields?: CertificateField[]
+}
+
+export interface CertificateField {
+  id: string
+  label: string
+  variable: string
+  x: number
+  y: number
+  fontSize: number
+  fontWeight: 'normal' | 'bold'
+  color: string
+  textAlign: 'left' | 'center' | 'right'
 }
 
 // ─── Course Settings ───
@@ -371,6 +405,7 @@ export interface CourseSettings {
   feedbackFormsEnabled: boolean
   accessibilityModeToggle: boolean
   completionCriteria: 'visit-all' | 'quiz-pass' | 'both'
+  enrollmentPage: boolean
   xapi: XAPIConfig | null
   scorm: SCORMConfig | null
 }
@@ -458,7 +493,7 @@ export const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
   'divider': 'Divider',
   'callout': 'Callout',
   'h5p': 'H5P',
-  'custom-html': 'Custom HTML',
+  'custom-html': 'HTML / Rich Text',
   'plugin': 'Plugin',
   'feedback-form': 'Feedback Form'
 }
@@ -528,4 +563,16 @@ export interface AccessibilitySettings {
   bionicReading: boolean
   enhancedTextSpacing: boolean
   enhancedFocusIndicators: boolean
+}
+
+// ─── Base Brain ───
+
+export interface BaseBrainSettings {
+  enabled: boolean
+  referenceFiles: { name: string; content: string }[]
+  designAssumptions: string
+  toneAndVoice: string
+  visualPreferences: string
+  goals: string
+  designConsiderations: string
 }

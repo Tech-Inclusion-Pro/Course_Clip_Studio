@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { AISettings, AccessibilitySettings, BrandKit, VisualApiProvider } from '@/types/course'
+import type { AISettings, AccessibilitySettings, BrandKit, VisualApiProvider, BaseBrainSettings } from '@/types/course'
 import { uid } from '@/lib/uid'
 
 export type ThemeMode = 'light' | 'dark' | 'system' | 'sepia' | 'midnight' | 'forest' | 'ocean' | `brand-${string}`
@@ -34,6 +34,9 @@ interface AppState {
   // Visual API settings
   visualApis: { providers: VisualApiProvider[] }
 
+  // Base Brain
+  baseBrain: BaseBrainSettings
+
   // Plugins
   pluginsPath: string | null
   setPluginsPath: (path: string | null) => void
@@ -67,6 +70,12 @@ interface AppState {
   // Accessibility actions
   loadAccessibilitySettings: () => Promise<void>
   updateAccessibilitySettings: (settings: Partial<AccessibilitySettings>) => void
+
+  // Base Brain actions
+  loadBaseBrainSettings: () => Promise<void>
+  updateBaseBrain: (partial: Partial<BaseBrainSettings>) => void
+  addBaseBrainFile: (name: string, content: string) => void
+  removeBaseBrainFile: (index: number) => void
 
   // Visual API actions
   loadVisualApiSettings: () => Promise<void>
@@ -118,6 +127,17 @@ export const useAppStore = create<AppState>((set, get) => ({
     bionicReading: false,
     enhancedTextSpacing: false,
     enhancedFocusIndicators: false
+  },
+
+  // Base Brain defaults
+  baseBrain: {
+    enabled: false,
+    referenceFiles: [],
+    designAssumptions: '',
+    toneAndVoice: '',
+    visualPreferences: '',
+    goals: '',
+    designConsiderations: ''
   },
 
   // Visual API defaults
@@ -237,6 +257,48 @@ export const useAppStore = create<AppState>((set, get) => ({
       const updated = { ...state.accessibility, ...settings }
       window.electronAPI.settings.set('accessibility', updated)
       return { accessibility: updated }
+    })
+  },
+
+  // Base Brain actions
+  loadBaseBrainSettings: async () => {
+    try {
+      const saved = (await window.electronAPI.settings.get('baseBrain')) as Partial<BaseBrainSettings> | null
+      if (saved) {
+        set((state) => ({ baseBrain: { ...state.baseBrain, ...saved } }))
+      }
+    } catch (err) {
+      console.error('Failed to load Base Brain settings:', err)
+    }
+  },
+
+  updateBaseBrain: (partial) => {
+    set((state) => {
+      const updated = { ...state.baseBrain, ...partial }
+      window.electronAPI.settings.set('baseBrain', updated)
+      return { baseBrain: updated }
+    })
+  },
+
+  addBaseBrainFile: (name, content) => {
+    set((state) => {
+      const updated = {
+        ...state.baseBrain,
+        referenceFiles: [...state.baseBrain.referenceFiles, { name, content }]
+      }
+      window.electronAPI.settings.set('baseBrain', updated)
+      return { baseBrain: updated }
+    })
+  },
+
+  removeBaseBrainFile: (index) => {
+    set((state) => {
+      const updated = {
+        ...state.baseBrain,
+        referenceFiles: state.baseBrain.referenceFiles.filter((_, i) => i !== index)
+      }
+      window.electronAPI.settings.set('baseBrain', updated)
+      return { baseBrain: updated }
     })
   },
 

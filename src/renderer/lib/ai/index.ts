@@ -20,5 +20,6 @@ export {
   altTextPrompt,
   translatePrompt,
   wcagReviewPrompt,
-  udlSuggestionsPrompt
+  udlSuggestionsPrompt,
+  baseBrainContext
 } from './prompts'

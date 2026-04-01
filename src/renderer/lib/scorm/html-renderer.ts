@@ -74,10 +74,11 @@ function renderBlock(block: ContentBlock): string {
     case 'flashcard':
       return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-flashcard">
   <div class="flashcard-deck" data-total="${block.cards.length}">
-    ${block.cards.map((card, i) => `<div class="flashcard" data-index="${i}"${i > 0 ? ' hidden' : ''}>
-      <div class="flashcard-front">${escapeHtml(card.front)}</div>
-      <div class="flashcard-back" hidden>${escapeHtml(card.back)}</div>
-      <button class="flip-btn" aria-label="Flip card">Flip</button>
+    ${block.cards.map((card, i) => `<div class="flashcard${i > 0 ? ' fc-hidden' : ''}" data-index="${i}">
+      <div class="flashcard-inner">
+        <div class="flashcard-front">${escapeHtml(card.front)}</div>
+        <div class="flashcard-back">${escapeHtml(card.back)}</div>
+      </div>
     </div>`).join('\n    ')}
     <div class="flashcard-nav">
       <button class="prev-btn" disabled>Previous</button>
@@ -114,8 +115,10 @@ function renderBlock(block: ContentBlock): string {
       return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-branching">
   <div class="scenario">${block.scenario}</div>
   <div class="choices" role="group" aria-label="Choose an option">
-    ${block.choices.map((c) => `<button class="branch-choice" data-next="${c.nextLessonId ?? ''}">${escapeHtml(c.label)}</button>`).join('\n    ')}
+    ${block.choices.map((c) => `<button class="branch-choice" data-next="${c.nextLessonId ?? ''}" data-consequence="${escapeHtml(c.consequence)}" data-action="${c.action ?? 'navigate'}">${escapeHtml(c.label)}${c.action === 'restart' ? ' ↺' : ''}</button>`).join('\n    ')}
   </div>
+  <div class="branch-consequence" hidden></div>
+  <button class="branch-continue" hidden>Continue</button>
 </section>`
 
     case 'custom-html':
@@ -129,29 +132,56 @@ function renderBlock(block: ContentBlock): string {
       return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-dragdrop">
   <p class="instruction">${escapeHtml(block.instruction)}</p>
   <div class="drag-items" role="group" aria-label="Draggable items">
-    ${block.items.map((item) => `<div class="drag-item" draggable="true" data-id="${item.id}">${escapeHtml(item.label)}</div>`).join('\n    ')}
+    ${block.items.map((item) => `<div class="dd-item" draggable="true" data-id="${item.id}" data-pair="${item.correctZoneId}">${escapeHtml(item.label)}</div>`).join('\n    ')}
   </div>
   <div class="drop-zones" role="group" aria-label="Drop zones">
-    ${block.zones.map((zone) => `<div class="drop-zone" data-id="${zone.id}" aria-label="${escapeHtml(zone.label)}">${escapeHtml(zone.label)}</div>`).join('\n    ')}
+    ${block.zones.map((zone) => `<div class="dd-zone" data-id="${zone.id}" data-pair="${zone.id}" aria-label="${escapeHtml(zone.label)}">${escapeHtml(zone.label)}</div>`).join('\n    ')}
   </div>
 </section>`
 
-    case 'matching':
-      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-matching">
+    case 'matching': {
+      const pairMap = new Map<string, string>()
+      for (const p of block.correctPairs) {
+        pairMap.set(p.leftId, p.rightId)
+        pairMap.set(p.rightId, p.leftId)
+      }
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-matching" data-pairs='${escapeHtml(JSON.stringify(block.correctPairs))}'>
   <p class="instruction">${escapeHtml(block.instruction)}</p>
   <div class="matching-columns">
     <div class="left-column" role="list" aria-label="Items to match">
-      ${block.leftItems.map((item) => `<div class="match-item" role="listitem" data-id="${item.id}">${escapeHtml(item.label)}</div>`).join('\n      ')}
+      ${block.leftItems.map((item) => `<div class="match-item match-left" role="listitem" data-id="${item.id}" data-pair="${pairMap.get(item.id) ?? ''}">${escapeHtml(item.label)}</div>`).join('\n      ')}
     </div>
     <div class="right-column" role="list" aria-label="Match targets">
-      ${block.rightItems.map((item) => `<div class="match-item" role="listitem" data-id="${item.id}">${escapeHtml(item.label)}</div>`).join('\n      ')}
+      ${block.rightItems.map((item) => `<div class="match-item match-right" role="listitem" data-id="${item.id}" data-pair="${pairMap.get(item.id) ?? ''}">${escapeHtml(item.label)}</div>`).join('\n      ')}
     </div>
   </div>
 </section>`
+    }
 
     default:
       return `<!-- Unknown block type: ${(block as ContentBlock).type} -->`
   }
+}
+
+function renderCompletionCriteria(lesson: Lesson): string {
+  const c = lesson.completionCriteria
+  if (!c) return ''
+  const items: string[] = []
+  if (c.quizPassRequired) items.push(`Pass the quiz with a score of ${c.quizPassScore}% or higher`)
+  if (c.interactiveRequired) items.push('Complete all interactive activities')
+  if (c.minimumTimeSeconds > 0) {
+    const mins = Math.floor(c.minimumTimeSeconds / 60)
+    const secs = c.minimumTimeSeconds % 60
+    items.push(`Spend at least ${mins > 0 ? `${mins} minute${mins !== 1 ? 's' : ''}` : ''}${mins > 0 && secs > 0 ? ' and ' : ''}${secs > 0 ? `${secs} second${secs !== 1 ? 's' : ''}` : ''} on this lesson`)
+  }
+  if (items.length === 0) return ''
+  return `<aside class="completion-criteria" role="note" aria-label="Completion requirements">
+  <div class="criteria-header">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    <strong>To complete this lesson:</strong>
+  </div>
+  <ul>${items.map((i) => `<li>${i}</li>`).join('')}</ul>
+</aside>`
 }
 
 function renderQuiz(block: ContentBlock & { type: 'quiz' }): string {
@@ -226,8 +256,22 @@ export function renderLessonHtml(
     ${theme.customCSS || ''}
   </style>
 </head>
-<body>
+<body data-course-id="${course.id}" data-lesson-id="${lesson.id}">
   <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  ${settings.enrollmentPage && lessonIndex === 0 ? `<!-- Enrollment Overlay -->
+  <div id="enrollment-overlay" style="position:fixed;inset:0;z-index:9999;background:${theme.backgroundColor};display:flex;align-items:center;justify-content:center;">
+    <div style="max-width:420px;width:90%;padding:40px;background:${theme.surfaceColor};border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.12);text-align:center;">
+      ${theme.logoPath ? `<img src="${escapeHtml(theme.logoPath)}" alt="Logo" style="max-height:60px;margin-bottom:20px;" />` : ''}
+      <h1 style="font-family:${theme.fontFamilyHeading || theme.fontFamily};font-size:22px;color:${theme.textColor};margin-bottom:8px;">${escapeHtml(course.meta.title)}</h1>
+      <p style="font-size:14px;color:${theme.textColor}aa;margin-bottom:24px;">${escapeHtml(course.meta.description || 'Welcome! Please enter your name to begin.')}</p>
+      <form id="enrollment-form" style="text-align:left;">
+        <label style="display:block;font-size:13px;font-weight:600;color:${theme.textColor};margin-bottom:6px;">Your Name</label>
+        <input id="enrollment-name" type="text" required placeholder="Enter your full name" style="width:100%;padding:10px 14px;font-size:15px;border:2px solid ${theme.textColor}20;border-radius:8px;background:${theme.backgroundColor};color:${theme.textColor};outline:none;box-sizing:border-box;margin-bottom:16px;" />
+        <button type="submit" style="width:100%;padding:12px;font-size:15px;font-weight:600;background:${theme.primaryColor};color:#fff;border:none;border-radius:8px;cursor:pointer;">Begin Course</button>
+      </form>
+    </div>
+  </div>` : ''}
 
   <!-- Player Shell Header -->
   <header class="player-header" style="background:${theme.playerShell.headerColor}">
@@ -248,6 +292,8 @@ export function renderLessonHtml(
     </div>
 
     ${blocks}
+
+    ${renderCompletionCriteria(lesson)}
   </main>
 
   <!-- Navigation Footer -->
@@ -387,20 +433,52 @@ function getPlayerStyles(theme: CourseTheme): string {
     .nav-finish { background: ${theme.accentColor}; }
     .lesson-counter { font-size: 12px; color: ${theme.textColor}80; }
 
-    .block-flashcard .flashcard { text-align: center; padding: 32px; min-height: 200px; border: 1px solid ${theme.textColor}20; border-radius: 12px; }
-    .flip-btn { margin-top: 16px; padding: 6px 16px; border: 1px solid ${theme.primaryColor}; color: ${theme.primaryColor}; background: none; border-radius: ${btnRadius}; cursor: pointer; }
+    /* Flashcard 3D flip */
+    .block-flashcard .flashcard { perspective: 1000px; cursor: pointer; min-height: 200px; margin-bottom: 8px; }
+    .flashcard-inner { transition: transform 0.6s; transform-style: preserve-3d; position: relative; min-height: 200px; width: 100%; }
+    .flashcard.flipped .flashcard-inner { transform: rotateY(180deg); }
+    .flashcard-front, .flashcard-back { backface-visibility: hidden; display: flex; align-items: center; justify-content: center; padding: 32px; border: 1px solid ${theme.textColor}20; border-radius: 12px; text-align: center; min-height: 200px; width: 100%; }
+    .flashcard-front { position: relative; z-index: 2; }
+    .flashcard-back { transform: rotateY(180deg); position: absolute; inset: 0; background: ${theme.surfaceColor}; z-index: 1; }
+    .flashcard.fc-hidden { display: none; }
     .flashcard-nav { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 12px; }
     .flashcard-nav button { padding: 4px 12px; border: 1px solid ${theme.textColor}30; border-radius: ${btnRadius}; background: none; cursor: pointer; }
 
+    /* Matching — click-to-select */
     .block-matching .matching-columns { display: flex; gap: 24px; }
     .matching-columns > div { flex: 1; }
-    .match-item { padding: 8px 12px; margin: 4px 0; border: 1px solid ${theme.textColor}20; border-radius: 6px; cursor: pointer; }
+    .match-item { padding: 8px 12px; margin: 4px 0; border: 2px solid ${theme.textColor}20; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
     .match-item:hover { background: ${theme.primaryColor}10; }
+    .match-item.selected { border-color: ${theme.primaryColor}; background: ${theme.primaryColor}15; box-shadow: 0 0 0 2px ${theme.primaryColor}30; }
+    .match-item.matched-correct { border-color: #22c55e; background: #dcfce7; cursor: default; }
+    .match-item.matched-incorrect { border-color: #ef4444; background: #fee2e2; }
 
+    /* Drag & Drop */
     .block-dragdrop .instruction { margin-bottom: 12px; font-weight: 600; }
     .drag-items { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-    .drag-item { padding: 8px 16px; background: ${theme.surfaceColor}; border: 1px solid ${theme.textColor}20; border-radius: 6px; cursor: grab; }
-    .drop-zone { min-height: 60px; padding: 12px; border: 2px dashed ${theme.textColor}30; border-radius: 8px; margin-bottom: 8px; text-align: center; }
+    .dd-item { padding: 8px 16px; background: ${theme.surfaceColor}; border: 2px solid ${theme.textColor}20; border-radius: 6px; cursor: grab; transition: all 0.2s; }
+    .dd-item:active { cursor: grabbing; }
+    .dd-item.placed { opacity: 0.4; cursor: default; }
+    .dd-zone { min-height: 60px; padding: 12px; border: 2px dashed ${theme.textColor}30; border-radius: 8px; margin-bottom: 8px; text-align: center; transition: all 0.2s; }
+    .dd-zone.drag-over { border-color: ${theme.primaryColor}; background: ${theme.primaryColor}10; }
+    .dd-zone.dd-correct { border-color: #22c55e; border-style: solid; background: #dcfce7; }
+    .dd-zone.dd-incorrect { border-color: #ef4444; border-style: solid; background: #fee2e2; }
+
+    /* Branching */
+    .block-branching .scenario { margin-bottom: 16px; font-size: 15px; line-height: 1.6; }
+    .block-branching .choices { display: flex; flex-direction: column; gap: 8px; }
+    .branch-choice { padding: 12px 16px; border: 2px solid ${theme.textColor}20; border-radius: 8px; background: ${theme.surfaceColor}; cursor: pointer; text-align: left; font-size: 14px; transition: all 0.2s; }
+    .branch-choice:hover { border-color: ${theme.primaryColor}; background: ${theme.primaryColor}10; }
+    .branch-choice.chosen { border-color: ${theme.primaryColor}; background: ${theme.primaryColor}15; }
+    .branch-consequence { margin-top: 16px; padding: 16px; border-radius: 8px; background: ${theme.surfaceColor}; border-left: 4px solid ${theme.primaryColor}; font-size: 14px; }
+    .branch-continue { margin-top: 12px; padding: 8px 20px; background: ${theme.primaryColor}; color: #fff; border: none; border-radius: ${btnRadius}; cursor: pointer; font-size: 13px; font-weight: 600; }
+
+    /* Completion Criteria */
+    .completion-criteria { margin-top: 32px; padding: 16px 20px; border-radius: 10px; background: ${theme.primaryColor}08; border: 1px solid ${theme.primaryColor}25; }
+    .criteria-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: ${theme.primaryColor}; font-size: 14px; }
+    .completion-criteria ul { list-style: none; padding: 0; margin: 0; }
+    .completion-criteria li { position: relative; padding: 4px 0 4px 20px; font-size: 13px; color: ${theme.textColor}cc; }
+    .completion-criteria li::before { content: '\\2713'; position: absolute; left: 0; color: ${theme.primaryColor}; font-weight: bold; }
 
     [role="tablist"] { display: flex; border-bottom: 2px solid ${theme.textColor}15; margin-bottom: 12px; }
     [role="tab"] { padding: 8px 16px; border: none; background: none; cursor: pointer; font-weight: 600; border-bottom: 2px solid transparent; margin-bottom: -2px; }

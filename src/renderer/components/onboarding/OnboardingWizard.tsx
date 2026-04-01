@@ -12,7 +12,12 @@ import {
   SkipForward,
   Globe,
   Plus,
-  Trash2
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+  Upload,
+  FileText,
+  X
 } from 'lucide-react'
 import { useAppStore, type ThemeMode } from '@/stores/useAppStore'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -266,6 +271,22 @@ function GeneralStep(): JSX.Element {
 function AILLMStep(): JSX.Element {
   const ai = useAppStore((s) => s.ai)
   const updateAI = useAppStore((s) => s.updateAISettings)
+  const baseBrain = useAppStore((s) => s.baseBrain)
+  const updateBaseBrain = useAppStore((s) => s.updateBaseBrain)
+  const addBaseBrainFile = useAppStore((s) => s.addBaseBrainFile)
+  const removeBaseBrainFile = useAppStore((s) => s.removeBaseBrainFile)
+  const [bbExpanded, setBbExpanded] = useState(false)
+
+  function handleBbFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      addBaseBrainFile(file.name, reader.result as string)
+    }
+    reader.readAsText(file)
+    e.target.value = ''
+  }
 
   return (
     <div className="space-y-6 py-4">
@@ -350,6 +371,101 @@ function AILLMStep(): JSX.Element {
           </select>
         </FieldRow>
       </SettingsCard>
+
+      {/* Base Brain (Optional) */}
+      <div className="rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)]">
+        <button
+          onClick={() => setBbExpanded(!bbExpanded)}
+          className="w-full flex items-center justify-between px-4 py-3 text-left cursor-pointer"
+        >
+          <div className="flex items-center gap-2">
+            <Brain size={16} className="text-[var(--text-secondary)]" />
+            <div>
+              <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">Base Brain (Optional)</span>
+              <p className="text-xs text-[var(--text-tertiary)]">Define your design DNA for AI context</p>
+            </div>
+          </div>
+          {bbExpanded ? <ChevronUp size={16} className="text-[var(--text-tertiary)]" /> : <ChevronDown size={16} className="text-[var(--text-tertiary)]" />}
+        </button>
+
+        {bbExpanded && (
+          <div className="px-4 pb-4 space-y-4 border-t border-[var(--border-default)]">
+            <div className="flex items-center justify-between pt-3">
+              <span className="text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)]">Enable Base Brain</span>
+              <ToggleSwitch
+                checked={baseBrain.enabled}
+                onChange={(v) => updateBaseBrain({ enabled: v })}
+                label="Enable Base Brain"
+              />
+            </div>
+
+            {/* Reference Files */}
+            <div>
+              <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-2">Reference Files</label>
+              {baseBrain.referenceFiles.length > 0 && (
+                <div className="space-y-1 mb-2">
+                  {baseBrain.referenceFiles.map((file, i) => (
+                    <div key={i} className="flex items-center gap-2 p-2 rounded-md bg-[var(--bg-panel)] border border-[var(--border-default)]">
+                      <FileText size={14} className="text-[var(--brand-magenta)] shrink-0" />
+                      <span className="text-xs text-[var(--text-primary)] flex-1 truncate">{file.name}</span>
+                      <button
+                        onClick={() => removeBaseBrainFile(i)}
+                        className="p-1 rounded text-[var(--text-tertiary)] hover:text-red-500 cursor-pointer"
+                        aria-label={`Remove ${file.name}`}
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <label className="w-full flex items-center justify-center gap-2 p-2.5 rounded-md border border-dashed border-[var(--border-default)] text-xs text-[var(--text-secondary)] hover:border-[var(--brand-magenta)] hover:text-[var(--brand-magenta)] transition-colors cursor-pointer">
+                <Upload size={14} />
+                <span>Upload .md or .docx file</span>
+                <input
+                  type="file"
+                  accept=".md,.markdown,.txt,.docx"
+                  onChange={handleBbFileUpload}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            <div>
+              <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">Design Assumptions</label>
+              <textarea
+                value={baseBrain.designAssumptions}
+                onChange={(e) => updateBaseBrain({ designAssumptions: e.target.value })}
+                rows={3}
+                className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)] resize-none"
+                placeholder="e.g., All courses use scenario-based learning..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">Tone & Voice</label>
+              <textarea
+                value={baseBrain.toneAndVoice}
+                onChange={(e) => updateBaseBrain({ toneAndVoice: e.target.value })}
+                rows={3}
+                className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)] resize-none"
+                placeholder="e.g., Professional but approachable..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">Goals</label>
+              <textarea
+                value={baseBrain.goals}
+                onChange={(e) => updateBaseBrain({ goals: e.target.value })}
+                rows={3}
+                className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)] resize-none"
+                placeholder="e.g., Increase engagement, meet WCAG AA..."
+              />
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

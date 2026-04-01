@@ -236,7 +236,7 @@ export function EditorCanvas({ scrollContainerRef }: EditorCanvasProps): JSX.Ele
   }
 
   return (
-    <div ref={scrollContainerRef} className="flex-1 overflow-y-auto bg-[var(--bg-app)]">
+    <div ref={scrollContainerRef} className="h-full overflow-y-auto bg-[var(--bg-app)]">
       {/* Lesson header */}
       <div className="max-w-3xl mx-auto px-6 pt-6 pb-2">
         <p className="text-xs text-[var(--text-tertiary)] mb-1">{module.title}</p>

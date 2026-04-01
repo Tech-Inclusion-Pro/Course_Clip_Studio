@@ -1,6 +1,7 @@
 // ─── System Prompts for AI Actions ───
 
 import type { InterviewAnswers } from './types'
+import type { BaseBrainSettings } from '@/types/course'
 
 function interviewContext(answers: InterviewAnswers): string {
   const parts: string[] = []
@@ -12,6 +13,21 @@ function interviewContext(answers: InterviewAnswers): string {
   if (answers.accessibilityNeeds) parts.push(`Accessibility needs: ${answers.accessibilityNeeds}`)
   if (answers.masterKeyContent) parts.push(`Reference material:\n${answers.masterKeyContent}`)
   return parts.join('\n\n')
+}
+
+export function baseBrainContext(bb: BaseBrainSettings): string {
+  if (!bb.enabled) return ''
+  const parts: string[] = []
+  if (bb.designAssumptions) parts.push(`Design assumptions: ${bb.designAssumptions}`)
+  if (bb.toneAndVoice) parts.push(`Tone & voice: ${bb.toneAndVoice}`)
+  if (bb.visualPreferences) parts.push(`Visual preferences: ${bb.visualPreferences}`)
+  if (bb.goals) parts.push(`Goals: ${bb.goals}`)
+  if (bb.designConsiderations) parts.push(`Design considerations: ${bb.designConsiderations}`)
+  for (const file of bb.referenceFiles) {
+    parts.push(`Reference file "${file.name}":\n${file.content}`)
+  }
+  if (parts.length === 0) return ''
+  return `\n\n--- Base Brain Context ---\n${parts.join('\n\n')}`
 }
 
 export const SYSTEM_PROMPT = `You are an expert instructional designer and course author for LuminaUDL, an accessible course authoring application. You follow Universal Design for Learning (UDL) principles and WCAG 2.1 AA accessibility standards. Always write clear, structured, inclusive educational content. When generating JSON, output only valid JSON with no markdown fencing.`

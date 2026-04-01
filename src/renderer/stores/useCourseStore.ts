@@ -75,6 +75,10 @@ interface CourseState {
   unresolveNote: (courseId: string, moduleId: string, lessonId: string, noteId: string) => void
   deleteNote: (courseId: string, moduleId: string, lessonId: string, noteId: string) => void
 
+  // Course master key
+  setCourseMasterKey: (courseId: string, content: string, fileName: string) => void
+  clearCourseMasterKey: (courseId: string) => void
+
   // Block-level
   addBlock: (courseId: string, moduleId: string, lessonId: string, block: ContentBlock, atIndex?: number) => void
   removeBlock: (courseId: string, moduleId: string, lessonId: string, blockId: string) => void
@@ -321,6 +325,28 @@ export const useCourseStore = create<CourseState>((set, get) => ({
           notes: l.notes.filter((n) => n.id !== noteId)
         }))
       )
+    })),
+
+  // ─── Course master key ───
+
+  setCourseMasterKey: (courseId, content, fileName) =>
+    set((state) => ({
+      courses: mapCourse(state.courses, courseId, (c) => ({
+        ...c,
+        masterKeyContent: content,
+        masterKeyFileName: fileName,
+        updatedAt: new Date().toISOString()
+      }))
+    })),
+
+  clearCourseMasterKey: (courseId) =>
+    set((state) => ({
+      courses: mapCourse(state.courses, courseId, (c) => ({
+        ...c,
+        masterKeyContent: null,
+        masterKeyFileName: null,
+        updatedAt: new Date().toISOString()
+      }))
     })),
 
   // ─── Block-level ───

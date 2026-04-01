@@ -57,12 +57,16 @@ Each step is optional and can be skipped. All settings can be changed later from
 
 ### Course Authoring
 
-- **19 content block types** — Text, Image/Media, Video, Audio, Quiz, Drag & Drop, Matching, Accordion, Tabs, Flashcard, Branching Scenario, Embed, Code, Divider, Callout, H5P, Custom HTML, Plugin, and Feedback Form
+- **19 content block types** — Text, Image/Media, Video, Audio, Quiz, Drag & Drop, Matching, Accordion, Tabs, Flashcard, Branching Scenario, Embed, Code, Divider, Callout, H5P, HTML / Rich Text, Plugin, and Feedback Form
+- **HTML / Rich Text block** — Full code editor (HTML/CSS/JS tabs via Monaco) with live preview toggle, allowing users to add any custom content
 - **Block animations** — Fade-in, slide-up, slide-left, and scale with configurable duration and delay
 - **Rich text editing** — TipTap-powered editor with formatting toolbar
 - **Drag-and-drop reordering** — Reorder blocks, lessons, and modules via drag and drop
-- **Question bank** — Reusable quiz question library per course with linking to quiz blocks
+- **Question bank** — Reusable quiz question library per course with CSV import/export, downloadable template, and linking to quiz blocks
 - **Reading level analysis** — Automatic Flesch-Kincaid Grade Level calculation per text block and per course
+- **Lesson completion criteria** — Per-lesson requirements including quiz pass score, interactive block completion, and minimum time on page
+- **Completion criteria display** — Automatic "To complete this lesson" reference block rendered in preview/export when criteria are set
+- **Course enrollment page** — Optional enrollment overlay on course start that captures the learner's name for certificate auto-population
 
 ### Multi-Panel Editor
 
@@ -85,9 +89,18 @@ Each step is optional and can be skipped. All settings can be changed later from
 - **Smart guides** — Automatic alignment detection
 - **Snap-to-grid** — Precision block placement
 
+### Branching Scenarios
+
+- **User-choice mode** — Learners click a choice to navigate between branches
+- **Criteria-based mode** — System routes learners based on quiz score, lesson completion, or time spent
+- **Up to 6 branches** per branching block with configurable criteria per branch
+- **Destination selection** — Navigate to any lesson grouped by module
+- **Restart / wipe progress** — Branch action to restart the course and clear all learner progress
+- **Consequence feedback** — Display feedback text after each branch choice
+
 ### AI Features
 
-Supports **Anthropic (Claude)**, **OpenAI (GPT-4)**, and **Ollama (local models)** as LLM providers.
+Supports **Anthropic (Claude)**, **OpenAI (GPT-4)**, and **Ollama (local models)** as LLM providers. All API calls route through Electron IPC (`net.request`) to bypass CORS restrictions.
 
 | Feature | Description |
 |---|---|
@@ -99,7 +112,9 @@ Supports **Anthropic (Claude)**, **OpenAI (GPT-4)**, and **Ollama (local models)
 | Content Translation | Translate course content while preserving structure and IDs |
 | WCAG Review | Analyze lessons for WCAG 2.1 AA issues with severity levels |
 | UDL Suggestions | Recommendations across Representation, Action & Expression, and Engagement pillars |
-| Master Key Upload | Load reference materials for context-aware generation |
+| Master Key Upload | Load a markdown reference document for context-aware generation with enable/disable toggle |
+| Reference Files | Upload multiple reference files (.md, .txt, .html, etc.) with per-file notes describing what you like and how the AI should use each file |
+| Base Brain | Persistent design DNA settings (design assumptions, tone & voice, visual preferences, goals, reference files) that inform all AI generation when enabled |
 
 ### Visual / Image API Integration
 
@@ -226,12 +241,17 @@ All settings persist across sessions.
 ### Certificate Designer
 
 - Multiple pre-designed templates (Formal, Elegant, Modern, Achievement, and more)
-- Dynamic field rendering (learner name, course title, completion date)
+- **Visual field designer** — Drag fields to position them on the certificate canvas
+- **Enlarge mode** — Full-screen overlay for detailed field positioning with properties sidebar
+- **Custom template upload** — Upload HTML templates or background images (recommended: A4 Landscape, 3508 x 2480 px at 300 DPI)
+- Dynamic field rendering with variables: `{{learner_name}}`, `{{course_title}}`, `{{completion_date}}`, `{{completion_timestamp}}`, `{{score}}`, `{{instructor}}`, `{{signature}}`
+- Configurable field properties: font size, weight, color, alignment, and position
 - Logo and signature line customization
 - Brand color application toggle
 - Pass score requirements
 - Trigger on course completion
 - Live PDF preview and export
+- **Auto-populated learner name** — Captures name from enrollment page and populates certificate fields
 
 ### Course Templates
 
@@ -256,11 +276,12 @@ Start new courses from pre-designed templates:
 - **Workspace management** — Multi-course workspace with file system persistence
 - **Publish status tracking** — Draft, In Review, Published, Archived workflow
 - **Course metadata** — Title, description, author, language, estimated duration, tags, thumbnail, version
-- **Learner preview** — Full interactive preview with device modes (Desktop, Tablet, Mobile)
+- **Learner preview** — Full interactive preview with device modes (Desktop, Tablet, Mobile), with working flashcard 3D flip, drag & drop, matching, branching, and quiz interactions
 - **Learner notes** — Note-taking and bookmarking in preview mode
 - **UDL checklists** — Per-module tracking across Representation, Action & Expression, and Engagement pillars
 - **Reading level display** — Automatic Flesch-Kincaid Grade Level per text block
 - **Plugin system** — Extensible plugin block type for custom integrations
+- **Question bank CSV workflow** — Download a CSV template, fill it in Excel/Google Sheets/Numbers, and import questions in bulk; export existing questions to CSV
 
 ## Getting Started
 

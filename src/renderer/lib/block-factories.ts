@@ -163,6 +163,7 @@ export function createBranchingBlock(overrides: Partial<BranchingBlock> = {}): B
     notes: '',
     scenario: '',
     choices: [],
+    mode: 'user-choice',
     ...overrides
   }
 }
