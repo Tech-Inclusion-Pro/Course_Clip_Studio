@@ -12,7 +12,7 @@
 
 ## What Is Course Clip Studio?
 
-Course Clip Studio is a professional-grade desktop application for creating accessible, interactive e-learning courses. It exports to industry-standard formats (SCORM, xAPI, HTML5, PDF) and is designed from the ground up with WCAG 2.1 AA accessibility compliance.
+Course Clip Studio is a professional-grade desktop application for creating accessible, interactive e-learning courses. It exports to industry-standard formats (SCORM 1.2, SCORM 2004, xAPI, HTML5, PDF) and is designed from the ground up with WCAG 2.1 AA accessibility compliance. Every feature — from the floating accessibility widget to the built-in audit engine — ensures that both course authors and learners have an inclusive experience.
 
 ## Tech Stack
 
@@ -24,16 +24,204 @@ Course Clip Studio is a professional-grade desktop application for creating acce
 | Styling | Tailwind CSS v4 + CSS custom properties |
 | State Management | Zustand |
 | Icons | lucide-react |
+| Internationalization | i18next |
+| AI Providers | Anthropic (Claude), OpenAI (GPT), Ollama (local) |
 
-## Features (Milestone 1)
+## Features
 
-- **5 application views** — Dashboard, Editor (3-panel layout), Preview, Settings, Publish
-- **Full design token system** — light mode, dark mode, and system-preference detection
-- **Collapsible sidebar** with route navigation
-- **Theme toggle** — cycles between light, dark, and system
-- **Accessibility built in** — skip link, visible focus rings (3px), ARIA landmarks, 44px minimum tap targets, `prefers-reduced-motion` support
-- **IPC architecture** — theme persistence and file dialogs via Electron IPC with context isolation
-- **TypeScript data model** — full course structure types (Course, Module, Lesson, 10+ content block types, UDL checklists, certificates, export settings)
+### Course Authoring
+
+- **19 content block types** — Text, Image/Media, Video, Audio, Quiz, Drag & Drop, Matching, Accordion, Tabs, Flashcard, Branching Scenario, Embed, Code, Divider, Callout, H5P, Custom HTML, Plugin, and Feedback Form
+- **Block animations** — Fade-in, slide-up, slide-left, and scale with configurable duration and delay
+- **Rich text editing** — TipTap-powered editor with formatting toolbar
+- **Drag-and-drop reordering** — Reorder blocks, lessons, and modules via drag and drop
+- **Question bank** — Reusable quiz question library per course with linking to quiz blocks
+- **Reading level analysis** — Automatic Flesch-Kincaid Grade Level calculation per text block and per course
+
+### Multi-Panel Editor
+
+- **Course tree navigator** — Hierarchical view of modules and lessons with drag-drop reordering
+- **Editor canvas** — Visual block editor with insertion toolbar and block property editing
+- **Split preview pane** — Side-by-side editing and preview with scroll synchronization
+- **Theme editor** — Customize colors, fonts, branding, player shell, and loading screens per course
+- **AI assistant panel** — AI-powered content generation and analysis (see AI Features below)
+- **Accessibility audit panel** — Real-time WCAG 2.1 AA compliance checking
+- **Certificate designer** — Design and preview completion certificates
+- **Version history panel** — Save named checkpoints and restore previous versions
+- **Collaborator notes panel** — Threaded discussion notes attached to specific blocks
+- **Branching graph view** — Visualize branching scenario connections
+
+### Canvas Editing Modes
+
+- **Block canvas mode** — Default vertical block layout
+- **Slide-based layout mode** — Presentation-style editing with freeform positioning
+- **Grid overlay** — Pixel-perfect alignment guide
+- **Smart guides** — Automatic alignment detection
+- **Snap-to-grid** — Precision block placement
+
+### AI Features
+
+Supports **Anthropic (Claude)**, **OpenAI (GPT-4)**, and **Ollama (local models)** as LLM providers.
+
+| Feature | Description |
+|---|---|
+| Course Outline Generation | Interactive interview-based course creation with learning objectives, audience, tone, and format selection |
+| Lesson Content Generation | AI-generated text blocks, callouts, accordions, and tabs based on lesson descriptions |
+| Quiz Generation | Auto-generate multiple-choice and true/false questions with feedback |
+| Narration Script Generation | Conversational narration for audio accompaniment |
+| Alt Text Generation | WCAG-compliant alt text for images based on context |
+| Content Translation | Translate course content while preserving structure and IDs |
+| WCAG Review | Analyze lessons for WCAG 2.1 AA issues with severity levels |
+| UDL Suggestions | Recommendations across Representation, Action & Expression, and Engagement pillars |
+| Master Key Upload | Load reference materials for context-aware generation |
+
+### Export Formats
+
+| Format | Description |
+|---|---|
+| SCORM 1.2 | Legacy SCORM packaging with API script, manifest, and lesson HTML |
+| SCORM 2004 | Modern SCORM 2004 (2nd, 3rd, 4th edition) with updated API and manifest |
+| xAPI (Experience API) | LRS-compatible statements with configurable endpoint and authentication |
+| HTML5 | Self-contained ZIP with localStorage-based progress tracking — no server required |
+| PDF | Print-optimized export with optional quiz answers and UDL checklist inclusion |
+
+### Import Capabilities
+
+| Format | Description |
+|---|---|
+| Markdown | H1 → Course title, H2 → Modules, H3 → Lessons, paragraphs/images/code blocks mapped to content blocks |
+| PowerPoint (PPTX) | Extracts slides as lessons with text blocks, embedded images, and speaker notes |
+| SCORM Package | Parses imsmanifest.xml to reconstruct course structure from SCORM resources |
+| Lumina Format | Native import for previously exported Course Clip Studio courses |
+
+### LMS Upload Integration
+
+Direct upload to learning management systems via a guided wizard:
+
+- **Canvas** (Instructure) — OAuth token-based authentication
+- **Moodle** — Web services token-based authentication
+- **Blackboard Learn** — Application key/secret-based authentication
+
+Includes connection testing, course/module selection, and progress tracking.
+
+### Accessibility
+
+#### Authoring UI Accessibility (WCAG 2.1 AA)
+
+- Semantic HTML (`<main>`, `<nav>`, `<aside>`, `<header>`)
+- Skip-to-content link
+- 3px focus-visible ring on all interactive elements
+- 44px minimum tap/click targets
+- 16px minimum body text
+- `lang` attribute on the root element
+- `prefers-reduced-motion` media query support
+- Full keyboard operability
+
+#### Floating Accessibility Widget
+
+A persistent floating action button (FAB) available on every screen with quick access to:
+
+| Feature | Description |
+|---|---|
+| Font Size Controls | +/- buttons with reset (range: 12px–28px) |
+| High Contrast Mode | Black/white/yellow color scheme override |
+| Reduced Motion | Disables all animations and transitions |
+| Enhanced Text Spacing | Increased line height (1.8), letter spacing (0.12em), and word spacing (0.16em) per WCAG 1.4.12 |
+| Enhanced Focus Indicators | High-visibility orange focus outlines (4px + glow) per WCAG 2.4.7 |
+| Color Blind Modes | Protanopia, Deuteranopia, Tritanopia, and Achromatopsia (monochrome) via SVG color matrix filters |
+| Custom Cursors | Large, Crosshair, and High Contrast cursor options |
+| Cursor Trail | Visual trail that follows the mouse pointer |
+| OpenDyslexic Font | Dyslexia-friendly typeface toggle (SIL Open Font License) |
+| Bionic Reading | Bolds the first half of each word to create fixation points for faster reading |
+| Color Theme Selector | Quick switching between all built-in and brand kit themes |
+| Reset All | One-click reset to default settings |
+
+All settings persist across sessions.
+
+#### Accessibility Audit Engine
+
+- Real-time WCAG 2.1 AA compliance scanning across 19 audit categories
+- Issues classified by severity: Critical, Serious, Moderate, Minor
+- Checks for missing alt text (1.1.1), missing transcripts (1.2.1–1.2.3), captions (1.2.1–1.2.2), heading structure (1.3.1), color contrast (1.4.3), form labels (4.1.2), reading level (3.1.5), and language attributes (3.1.1)
+- UDL compliance scoring (0–100) across Representation, Action & Expression, and Engagement pillars
+- Exportable audit report as PDF
+
+### Theme System
+
+#### 7 Built-In Color Themes
+
+| Theme | Description |
+|---|---|
+| System | Follows OS light/dark preference |
+| Light | Default light theme with purple brand accents |
+| Dark | Dark theme with muted purple tones |
+| Sepia | Warm paper-like reading theme |
+| Midnight | GitHub-dark-inspired deep theme |
+| Forest | Green nature-inspired light theme |
+| Ocean | Deep blue dark theme |
+
+#### Brand Kit Themes
+
+- Create unlimited brand kits with custom primary, secondary, and accent colors
+- Google Fonts integration with live font picker for body and heading fonts
+- Apply any brand kit as an app-wide theme
+- Brand colors are injected as CSS custom properties for consistent styling
+
+#### Per-Course Theme Customization
+
+- Full color palette customization (primary, secondary, accent, background, surface, text)
+- Custom CSS injection
+- Dark mode toggle
+- Player shell configuration (header color, button style, progress bar color, logo display)
+- Loading screen customization (logo, background, progress ring, custom message)
+- Color contrast ratio analysis with WCAG AA/AAA feedback
+
+### Collaboration
+
+- **Collaborator notes** — Threaded discussion attached to specific content blocks with author attribution and timestamps
+- **Note resolution** — Mark notes as resolved/unresolved for team coordination
+- **Version history** — Manual and auto-save checkpoints with named snapshots
+- **Snapshot restore** — Roll back to any previous version (current state saved automatically before restoring)
+- **Undo/redo** — Full undo/redo stack with Cmd/Ctrl+Z and Cmd/Ctrl+Shift+Z
+
+### Certificate Designer
+
+- Multiple pre-designed templates (Formal, Elegant, Modern, Achievement, and more)
+- Dynamic field rendering (learner name, course title, completion date)
+- Logo and signature line customization
+- Brand color application toggle
+- Pass score requirements
+- Trigger on course completion
+- Live PDF preview and export
+
+### Course Templates
+
+Start new courses from pre-designed templates:
+
+- **Blank Course** — Empty starting point
+- **Corporate Training** — Professional development structure
+- **Employee Onboarding** — New hire orientation flow
+- **Compliance Training** — Regulatory and policy training
+- **Higher Education** — Academic course structure
+- **UDL Showcase** — Demonstrates UDL principles with example content
+
+### Internationalization
+
+- **English** and **Spanish** interface translations
+- UI language selection independent of course content language
+- i18n namespaces: common, editor, dashboard, settings, preview, publish, accessibility
+
+### Additional Features
+
+- **Auto-save** — Debounced course saves to workspace (configurable interval: 1–10 minutes)
+- **Workspace management** — Multi-course workspace with file system persistence
+- **Publish status tracking** — Draft, In Review, Published, Archived workflow
+- **Course metadata** — Title, description, author, language, estimated duration, tags, thumbnail, version
+- **Learner preview** — Full interactive preview with device modes (Desktop, Tablet, Mobile)
+- **Learner notes** — Note-taking and bookmarking in preview mode
+- **UDL checklists** — Per-module tracking across Representation, Action & Expression, and Engagement pillars
+- **Reading level display** — Automatic Flesch-Kincaid Grade Level per text block
+- **Plugin system** — Extensible plugin block type for custom integrations
 
 ## Getting Started
 
@@ -46,7 +234,6 @@ Course Clip Studio is a professional-grade desktop application for creating acce
 ### Install Dependencies
 
 ```bash
-cd lumina-udl
 npm install
 ```
 
@@ -88,21 +275,35 @@ Builds, packages, code-signs (ad-hoc), and copies `Course Clip Studio.app` to `/
 lumina-udl/
 ├── src/
 │   ├── main/                  # Electron main process
-│   │   ├── index.ts           # BrowserWindow, app lifecycle
-│   │   └── ipc-handlers.ts    # Theme persistence, file dialogs
+│   │   ├── index.ts           # BrowserWindow, app lifecycle, auto-update
+│   │   └── ipc-handlers.ts    # Theme persistence, file dialogs, secrets
 │   ├── preload/               # Context bridge (renderer ↔ main)
 │   │   ├── index.ts           # Exposed electronAPI
 │   │   └── index.d.ts         # Window type augmentation
 │   └── renderer/              # React application
 │       ├── main.tsx            # Entry point (HashRouter)
 │       ├── App.tsx             # Route definitions
-│       ├── assets/styles/      # Design tokens + Tailwind
-│       ├── components/         # Layout (AppShell, Sidebar, TopBar) + UI (Button, ThemeToggle, SkipLink)
+│       ├── assets/
+│       │   ├── styles/         # Design tokens, themes, Tailwind
+│       │   └── fonts/          # OpenDyslexic woff2 font files
+│       ├── components/
+│       │   ├── layout/         # AppShell, Sidebar, TopBar
+│       │   ├── editor/         # Block editors, AI panel, tree navigator
+│       │   ├── dashboard/      # Course cards, import dialog, templates
+│       │   ├── publish/        # Export wizard, LMS upload
+│       │   └── ui/             # Button, ThemeToggle, AccessibilityWidget
 │       ├── views/              # Dashboard, Editor, Preview, Settings, Publish
 │       ├── stores/             # Zustand stores (app, course, editor)
-│       ├── hooks/              # useTheme (system preference detection)
-│       ├── lib/                # Constants and utilities
-│       └── types/              # Course data model TypeScript types
+│       ├── hooks/              # useTheme, useAccessibility, useWorkspaceInit
+│       ├── lib/
+│       │   ├── export/         # HTML packager, PDF renderer
+│       │   ├── import/         # Markdown, PPTX, SCORM parsers
+│       │   ├── scorm/          # SCORM 1.2 & 2004 packagers
+│       │   ├── xapi/           # xAPI packager
+│       │   ├── ai/             # LLM provider abstraction
+│       │   └── accessibility/  # Audit engine, contrast checker
+│       ├── types/              # Course data model TypeScript types
+│       └── i18n/               # Internationalization (en, es)
 ├── resources/
 │   ├── icon.png               # App icon source (512x512)
 │   └── icon.icns              # macOS app icon
@@ -119,27 +320,17 @@ lumina-udl/
 | `npm run dist` | Package as platform-native app |
 | `npm run install-app` | Build + install to `/Applications` (macOS) |
 | `npm run typecheck` | Run TypeScript type checking |
+| `npm run test` | Run test suite |
 
 ## Keyboard Shortcuts
 
 | Shortcut | Action |
 |---|---|
+| Cmd/Ctrl + Z | Undo |
+| Cmd/Ctrl + Shift + Z | Redo |
 | Tab | Navigate between interactive elements |
+| Escape | Close accessibility widget / dialogs |
 | Tab (from page top) | Skip link appears — press Enter to jump to main content |
-| Theme toggle button | Cycles: Light → Dark → System |
-
-## Accessibility
-
-Course Clip Studio follows WCAG 2.1 AA guidelines in the authoring UI itself:
-
-- Semantic HTML (`<main>`, `<nav>`, `<aside>`, `<header>`)
-- Skip-to-content link
-- 3px focus-visible ring on all interactive elements
-- 44px minimum tap/click targets
-- 16px minimum body text
-- `lang="en"` on the root element
-- `prefers-reduced-motion` media query support
-- Full keyboard operability
 
 ## License
 
