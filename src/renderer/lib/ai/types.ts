@@ -1,3 +1,12 @@
+// ─── Reference File Categories ───
+
+export type ReferenceFileCategory = 'design' | 'content' | 'assignment' | 'quiz' | 'format' | 'activity' | 'assessment' | 'rubric' | 'standards' | 'template'
+
+export const REFERENCE_FILE_CATEGORIES: ReferenceFileCategory[] = [
+  'design', 'content', 'assignment', 'quiz', 'format',
+  'activity', 'assessment', 'rubric', 'standards', 'template'
+]
+
 // ─── AI Provider Abstraction Layer ───
 
 export interface AIProvider {

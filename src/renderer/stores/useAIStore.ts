@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { InterviewAnswers, AIAction } from '@/lib/ai/types'
+import type { InterviewAnswers, AIAction, ReferenceFileCategory } from '@/lib/ai/types'
 import { EMPTY_INTERVIEW } from '@/lib/ai/types'
 
 export type AIView = 'home' | 'interview' | 'actions' | 'result'
@@ -17,6 +17,7 @@ export interface AIReferenceFile {
   name: string
   content: string
   notes: string
+  categories: ReferenceFileCategory[]
 }
 
 interface AIState {
@@ -34,6 +35,9 @@ interface AIState {
 
   // Reference files
   referenceFiles: AIReferenceFile[]
+
+  // Content area
+  selectedContentAreaId: string | null
 
   // Generation
   isGenerating: boolean
@@ -64,6 +68,10 @@ interface AIState {
   addReferenceFile: (name: string, content: string) => void
   removeReferenceFile: (id: string) => void
   updateReferenceFileNotes: (id: string, notes: string) => void
+  updateReferenceFileCategories: (id: string, categories: ReferenceFileCategory[]) => void
+
+  // Content area
+  setSelectedContentAreaId: (id: string | null) => void
 
   // Generation
   startGeneration: (action: AIAction) => void
@@ -89,6 +97,7 @@ export const useAIStore = create<AIState>((set) => ({
   masterKeyFileName: null,
   useMasterKey: true,
   referenceFiles: [],
+  selectedContentAreaId: null,
   isGenerating: false,
   currentAction: null,
   lastResult: null,
@@ -136,7 +145,7 @@ export const useAIStore = create<AIState>((set) => ({
     set((s) => ({
       referenceFiles: [
         ...s.referenceFiles,
-        { id: `ref-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, name, content, notes: '' }
+        { id: `ref-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, name, content, notes: '', categories: [] }
       ]
     })),
 
@@ -149,6 +158,14 @@ export const useAIStore = create<AIState>((set) => ({
     set((s) => ({
       referenceFiles: s.referenceFiles.map((f) => (f.id === id ? { ...f, notes } : f))
     })),
+
+  updateReferenceFileCategories: (id, categories) =>
+    set((s) => ({
+      referenceFiles: s.referenceFiles.map((f) => (f.id === id ? { ...f, categories } : f))
+    })),
+
+  // Content area
+  setSelectedContentAreaId: (id) => set({ selectedContentAreaId: id }),
 
   // Generation
   startGeneration: (action) =>
@@ -185,6 +202,7 @@ export const useAIStore = create<AIState>((set) => ({
       masterKeyFileName: null,
       useMasterKey: true,
       referenceFiles: [],
+      selectedContentAreaId: null,
       isGenerating: false,
       currentAction: null,
       lastResult: null,

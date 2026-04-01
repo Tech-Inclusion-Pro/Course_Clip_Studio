@@ -1,7 +1,57 @@
 // ─── System Prompts for AI Actions ───
 
-import type { InterviewAnswers } from './types'
+import type { InterviewAnswers, ReferenceFileCategory } from './types'
 import type { BaseBrainSettings } from '@/types/course'
+import type { AIReferenceFile } from '@/stores/useAIStore'
+
+const CATEGORY_INSTRUCTIONS: Record<ReferenceFileCategory, string> = {
+  design: 'Use these files to inform visual design decisions, layout, colors, and styling',
+  content: 'Use these files as source content to draw from or reference',
+  assignment: 'Use these files to guide assignment/activity creation',
+  quiz: 'Use these files to inform quiz question generation',
+  format: 'Use these files for formatting guidelines and document structure',
+  activity: 'Use these files to guide interactive activity design',
+  assessment: 'Use these files for assessment criteria and evaluation approaches',
+  rubric: 'Use these files as rubric templates or grading criteria',
+  standards: 'Use these files for alignment with learning standards and competencies',
+  template: 'Use these files as structural templates to follow'
+}
+
+export function categorizedRefFilesContext(referenceFiles: AIReferenceFile[]): string {
+  if (referenceFiles.length === 0) return ''
+
+  const grouped = new Map<string, AIReferenceFile[]>()
+
+  for (const rf of referenceFiles) {
+    if (rf.categories.length === 0) {
+      const list = grouped.get('general') || []
+      list.push(rf)
+      grouped.set('general', list)
+    } else {
+      for (const cat of rf.categories) {
+        const list = grouped.get(cat) || []
+        list.push(rf)
+        grouped.set(cat, list)
+      }
+    }
+  }
+
+  let context = '\n\n## Reference Files\n'
+
+  for (const [key, files] of grouped) {
+    if (key === 'general') {
+      context += '\n### General Reference\n'
+    } else {
+      const instruction = CATEGORY_INSTRUCTIONS[key as ReferenceFileCategory]
+      context += `\n### ${key.charAt(0).toUpperCase() + key.slice(1)} References\n${instruction}\n`
+    }
+    for (const rf of files) {
+      context += `\n**${rf.name}**${rf.notes ? `\nUser notes: ${rf.notes}` : ''}\n\`\`\`\n${rf.content.slice(0, 5000)}\n\`\`\`\n`
+    }
+  }
+
+  return context
+}
 
 function interviewContext(answers: InterviewAnswers): string {
   const parts: string[] = []

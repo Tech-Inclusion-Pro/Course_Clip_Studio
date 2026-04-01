@@ -114,6 +114,8 @@ Supports **Anthropic (Claude)**, **OpenAI (GPT-4)**, and **Ollama (local models)
 | UDL Suggestions | Recommendations across Representation, Action & Expression, and Engagement pillars |
 | Master Key Upload | Load a markdown reference document for context-aware generation with enable/disable toggle |
 | Reference Files | Upload multiple reference files (.md, .txt, .html, etc.) with per-file notes describing what you like and how the AI should use each file |
+| Reference File Categories | Tag each reference file with multiple categories (design, content, assignment, quiz, format, activity, assessment, rubric, standards, template) via clickable chips — AI groups files by category and applies contextual instructions per category |
+| Content Areas | Create reusable content area profiles on the Dashboard with audience, objectives, prior knowledge, tone, format, and accessibility needs — select a content area per project in the AI panel to automatically supplement interview answers |
 | Base Brain | Persistent design DNA settings (design assumptions, tone & voice, visual preferences, goals, reference files) that inform all AI generation when enabled |
 
 ### Visual / Image API Integration
@@ -282,6 +284,7 @@ Start new courses from pre-designed templates:
 - **Reading level display** — Automatic Flesch-Kincaid Grade Level per text block
 - **Plugin system** — Extensible plugin block type for custom integrations
 - **Question bank CSV workflow** — Download a CSV template, fill it in Excel/Google Sheets/Numbers, and import questions in bulk; export existing questions to CSV
+- **Content areas** — Dashboard section for creating reusable content area profiles (audience, objectives, prior knowledge, tone, format, accessibility needs) that persist across sessions and can be selected per project to supplement AI generation
 
 ## Getting Started
 

@@ -31,6 +31,7 @@ import {
   AIClientError,
   AI_ACTIONS,
   SYSTEM_PROMPT,
+  REFERENCE_FILE_CATEGORIES,
   outlinePrompt,
   lessonContentPrompt,
   quizPrompt,
@@ -39,11 +40,13 @@ import {
   translatePrompt,
   wcagReviewPrompt,
   udlSuggestionsPrompt,
-  baseBrainContext
+  baseBrainContext,
+  categorizedRefFilesContext
 } from '@/lib/ai'
 import type {
   InterviewAnswers,
   AIAction,
+  ReferenceFileCategory,
   CourseOutlineResult,
   QuizGenerationResult,
   WCAGIssue,
@@ -147,8 +150,19 @@ function HomeView(): JSX.Element {
   const addReferenceFile = useAIStore((s) => s.addReferenceFile)
   const removeReferenceFile = useAIStore((s) => s.removeReferenceFile)
   const updateReferenceFileNotes = useAIStore((s) => s.updateReferenceFileNotes)
+  const updateReferenceFileCategories = useAIStore((s) => s.updateReferenceFileCategories)
+  const selectedContentAreaId = useAIStore((s) => s.selectedContentAreaId)
+  const setSelectedContentAreaId = useAIStore((s) => s.setSelectedContentAreaId)
+  const contentAreas = useAppStore((s) => s.contentAreas)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const refFileInputRef = useRef<HTMLInputElement>(null)
+
+  function toggleCategory(fileId: string, currentCategories: ReferenceFileCategory[], cat: ReferenceFileCategory) {
+    const next = currentCategories.includes(cat)
+      ? currentCategories.filter((c) => c !== cat)
+      : [...currentCategories, cat]
+    updateReferenceFileCategories(fileId, next)
+  }
 
   function handleMasterKeyUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -177,6 +191,25 @@ function HomeView(): JSX.Element {
 
   return (
     <div className="p-4 space-y-4">
+      {/* Content Area Picker */}
+      {contentAreas.length > 0 && (
+        <div className="space-y-1.5">
+          <label className="text-xs font-[var(--font-weight-semibold)] text-[var(--text-secondary)] uppercase tracking-wide">
+            Content Area
+          </label>
+          <select
+            value={selectedContentAreaId || ''}
+            onChange={(e) => setSelectedContentAreaId(e.target.value || null)}
+            className="w-full px-2.5 py-1.5 text-xs rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--ring-brand)] cursor-pointer"
+          >
+            <option value="">None</option>
+            {contentAreas.map((ca) => (
+              <option key={ca.id} value={ca.id}>{ca.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {/* Pre-Creation Interview */}
       <button
         onClick={() => setView(interviewComplete ? 'actions' : 'interview')}
@@ -285,6 +318,24 @@ function HomeView(): JSX.Element {
                   rows={2}
                   className="w-full px-2 py-1 text-[10px] rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:ring-1 focus:ring-[var(--ring-brand)] resize-y"
                 />
+                <div className="flex flex-wrap gap-1">
+                  {REFERENCE_FILE_CATEGORIES.map((cat) => {
+                    const selected = file.categories.includes(cat)
+                    return (
+                      <button
+                        key={cat}
+                        onClick={() => toggleCategory(file.id, file.categories, cat)}
+                        className={`px-1.5 py-0.5 text-[9px] rounded-full border transition-colors cursor-pointer ${
+                          selected
+                            ? 'bg-[var(--brand-magenta)]/15 border-[var(--brand-magenta)] text-[var(--brand-magenta)]'
+                            : 'border-[var(--border-default)] text-[var(--text-tertiary)] hover:border-[var(--brand-magenta)] hover:text-[var(--text-secondary)]'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             ))}
           </div>
@@ -859,6 +910,30 @@ async function runAction(action: AIAction): Promise<void> {
     effectiveAnswers.masterKeyContent = null
   }
 
+  // Merge content area fields if one is selected
+  if (aiStore.selectedContentAreaId) {
+    const contentArea = appStore.contentAreas.find((ca) => ca.id === aiStore.selectedContentAreaId)
+    if (contentArea) {
+      // Text fields: append if both have values, use content area if only it has a value
+      for (const field of ['audience', 'objectives', 'priorKnowledge', 'accessibilityNeeds'] as const) {
+        if (contentArea[field]) {
+          if (effectiveAnswers[field]) {
+            effectiveAnswers[field] = `${effectiveAnswers[field]}\n${contentArea[field]}`
+          } else {
+            effectiveAnswers[field] = contentArea[field]
+          }
+        }
+      }
+      // Enum fields: use content area value only if interview answer is empty
+      if (!effectiveAnswers.tone && contentArea.tone) {
+        effectiveAnswers.tone = contentArea.tone
+      }
+      if (!effectiveAnswers.format && contentArea.format) {
+        effectiveAnswers.format = contentArea.format
+      }
+    }
+  }
+
   // Get current lesson content for context
   let lessonContent = ''
   if (course && editorStore.activeModuleId && editorStore.activeLessonId) {
@@ -883,14 +958,7 @@ async function runAction(action: AIAction): Promise<void> {
   try {
     const provider = getProvider(aiSettings)
     const bbContext = baseBrainContext(appStore.baseBrain)
-    // Include reference files context
-    let refFilesContext = ''
-    if (aiStore.referenceFiles.length > 0) {
-      refFilesContext = '\n\n## Reference Files\nThe user has uploaded the following reference files. Use them as context:\n'
-      for (const rf of aiStore.referenceFiles) {
-        refFilesContext += `\n### ${rf.name}${rf.notes ? `\nUser notes: ${rf.notes}` : ''}\n\`\`\`\n${rf.content.slice(0, 5000)}\n\`\`\`\n`
-      }
-    }
+    const refFilesContext = categorizedRefFilesContext(aiStore.referenceFiles)
     const systemPrompt = SYSTEM_PROMPT + bbContext + refFilesContext
     let result: string
 

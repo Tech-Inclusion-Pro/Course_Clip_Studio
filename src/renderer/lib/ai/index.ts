@@ -3,13 +3,15 @@ export type { AIProvider } from './types'
 export {
   EMPTY_INTERVIEW,
   AI_ACTIONS,
+  REFERENCE_FILE_CATEGORIES,
   type InterviewAnswers,
   type AIAction,
   type AIActionConfig,
   type CourseOutlineResult,
   type QuizGenerationResult,
   type WCAGIssue,
-  type UDLSuggestion
+  type UDLSuggestion,
+  type ReferenceFileCategory
 } from './types'
 export {
   SYSTEM_PROMPT,
@@ -21,5 +23,6 @@ export {
   translatePrompt,
   wcagReviewPrompt,
   udlSuggestionsPrompt,
-  baseBrainContext
+  baseBrainContext,
+  categorizedRefFilesContext
 } from './prompts'

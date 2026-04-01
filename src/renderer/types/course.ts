@@ -498,6 +498,21 @@ export const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
   'feedback-form': 'Feedback Form'
 }
 
+// ─── Content Area ───
+
+export interface ContentArea {
+  id: string
+  name: string
+  audience: string
+  objectives: string
+  priorKnowledge: string
+  tone: 'formal' | 'conversational' | 'scenario-based' | ''
+  format: 'linear' | 'branching' | 'mixed' | ''
+  accessibilityNeeds: string
+  createdAt: string
+  updatedAt: string
+}
+
 // ─── Brand Kit ───
 
 export interface BrandKit {

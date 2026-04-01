@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { AISettings, AccessibilitySettings, BrandKit, VisualApiProvider, BaseBrainSettings } from '@/types/course'
+import type { AISettings, AccessibilitySettings, BrandKit, VisualApiProvider, BaseBrainSettings, ContentArea } from '@/types/course'
 import { uid } from '@/lib/uid'
 
 export type ThemeMode = 'light' | 'dark' | 'system' | 'sepia' | 'midnight' | 'forest' | 'ocean' | `brand-${string}`
@@ -36,6 +36,9 @@ interface AppState {
 
   // Base Brain
   baseBrain: BaseBrainSettings
+
+  // Content Areas
+  contentAreas: ContentArea[]
 
   // Plugins
   pluginsPath: string | null
@@ -76,6 +79,12 @@ interface AppState {
   updateBaseBrain: (partial: Partial<BaseBrainSettings>) => void
   addBaseBrainFile: (name: string, content: string) => void
   removeBaseBrainFile: (index: number) => void
+
+  // Content Area actions
+  loadContentAreas: () => Promise<void>
+  addContentArea: (area: Omit<ContentArea, 'id' | 'createdAt' | 'updatedAt'>) => void
+  updateContentArea: (id: string, partial: Partial<ContentArea>) => void
+  removeContentArea: (id: string) => void
 
   // Visual API actions
   loadVisualApiSettings: () => Promise<void>
@@ -139,6 +148,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     goals: '',
     designConsiderations: ''
   },
+
+  // Content Areas defaults
+  contentAreas: [],
 
   // Visual API defaults
   visualApis: {
@@ -299,6 +311,51 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
       window.electronAPI.settings.set('baseBrain', updated)
       return { baseBrain: updated }
+    })
+  },
+
+  // Content Area actions
+  loadContentAreas: async () => {
+    try {
+      const saved = (await window.electronAPI.settings.get('contentAreas')) as ContentArea[] | null
+      if (saved && Array.isArray(saved)) {
+        set({ contentAreas: saved })
+      }
+    } catch (err) {
+      console.error('Failed to load content areas:', err)
+    }
+  },
+
+  addContentArea: (area) => {
+    set((state) => {
+      const now = new Date().toISOString()
+      const newArea: ContentArea = {
+        ...area,
+        id: uid('ca'),
+        createdAt: now,
+        updatedAt: now
+      }
+      const updated = [...state.contentAreas, newArea]
+      window.electronAPI.settings.set('contentAreas', updated)
+      return { contentAreas: updated }
+    })
+  },
+
+  updateContentArea: (id, partial) => {
+    set((state) => {
+      const updated = state.contentAreas.map((ca) =>
+        ca.id === id ? { ...ca, ...partial, updatedAt: new Date().toISOString() } : ca
+      )
+      window.electronAPI.settings.set('contentAreas', updated)
+      return { contentAreas: updated }
+    })
+  },
+
+  removeContentArea: (id) => {
+    set((state) => {
+      const updated = state.contentAreas.filter((ca) => ca.id !== id)
+      window.electronAPI.settings.set('contentAreas', updated)
+      return { contentAreas: updated }
     })
   },
 

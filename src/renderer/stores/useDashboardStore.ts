@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { PublishStatus } from '@/types/course'
 
-export type DashboardSection = 'courses' | 'templates'
+export type DashboardSection = 'courses' | 'templates' | 'content-areas'
 
 interface DashboardState {
   searchQuery: string

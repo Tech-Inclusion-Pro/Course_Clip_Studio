@@ -12,6 +12,7 @@ import { CourseCard } from '@/components/dashboard/CourseCard'
 import { TemplateCard } from '@/components/dashboard/TemplateCard'
 import { NewCourseDialog } from '@/components/dashboard/NewCourseDialog'
 import { ImportDialog } from '@/components/dashboard/ImportDialog'
+import { ContentAreasSection } from '@/components/dashboard/ContentAreasSection'
 import { WorkspacePickerDialog } from '@/components/dashboard/WorkspacePickerDialog'
 import { createCourse } from '@/lib/mock-data'
 import { saveCourseToWorkspace } from '@/lib/workspace'
@@ -161,6 +162,8 @@ export function DashboardView(): JSX.Element {
               </div>
             )}
           </>
+        ) : activeSection === 'content-areas' ? (
+          <ContentAreasSection />
         ) : (
           /* Templates Section */
           <>
