@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { AISettings, AccessibilitySettings, BrandKit } from '@/types/course'
 
-export type ThemeMode = 'light' | 'dark' | 'system'
+export type ThemeMode = 'light' | 'dark' | 'system' | 'sepia' | 'midnight' | 'forest' | 'ocean' | `brand-${string}`
 
 interface AppState {
   // UI
@@ -61,6 +61,7 @@ interface AppState {
   updateAISettings: (settings: Partial<AISettings>) => void
 
   // Accessibility actions
+  loadAccessibilitySettings: () => Promise<void>
   updateAccessibilitySettings: (settings: Partial<AccessibilitySettings>) => void
 }
 
@@ -99,7 +100,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   accessibility: {
     highContrastMode: false,
     baseFontSize: 16,
-    reducedMotion: false
+    reducedMotion: false,
+    colorBlindMode: 'none',
+    cursorStyle: 'default',
+    cursorTrail: false,
+    openDyslexic: false,
+    bionicReading: false,
+    enhancedTextSpacing: false,
+    enhancedFocusIndicators: false
   },
 
   // Plugins defaults
@@ -107,7 +115,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   setPluginsPath: (path) => set({ pluginsPath: path }),
 
   // UI actions
-  setTheme: (theme) => set({ theme }),
+  setTheme: (theme) => {
+    set({ theme })
+    window.electronAPI?.settings.set('themeMode', theme)
+  },
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
   setUILanguage: (lang) => set({ uiLanguage: lang }),
@@ -187,6 +198,26 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   // Accessibility actions
-  updateAccessibilitySettings: (settings) =>
-    set((state) => ({ accessibility: { ...state.accessibility, ...settings } }))
+  loadAccessibilitySettings: async () => {
+    try {
+      const saved = (await window.electronAPI.settings.get('accessibility')) as Partial<AccessibilitySettings> | null
+      if (saved) {
+        set((state) => ({ accessibility: { ...state.accessibility, ...saved } }))
+      }
+      const savedTheme = (await window.electronAPI.settings.get('themeMode')) as ThemeMode | null
+      if (savedTheme) {
+        set({ theme: savedTheme })
+      }
+    } catch (err) {
+      console.error('Failed to load accessibility settings:', err)
+    }
+  },
+
+  updateAccessibilitySettings: (settings) => {
+    set((state) => {
+      const updated = { ...state.accessibility, ...settings }
+      window.electronAPI.settings.set('accessibility', updated)
+      return { accessibility: updated }
+    })
+  }
 }))

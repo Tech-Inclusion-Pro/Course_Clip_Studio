@@ -501,8 +501,18 @@ export interface AISettings {
   defaultAILanguage: string
 }
 
+export type ColorBlindMode = 'none' | 'protanopia' | 'deuteranopia' | 'tritanopia' | 'achromatopsia'
+export type CursorStyle = 'default' | 'large' | 'crosshair' | 'high-contrast'
+
 export interface AccessibilitySettings {
   highContrastMode: boolean
   baseFontSize: number
   reducedMotion: boolean
+  colorBlindMode: ColorBlindMode
+  cursorStyle: CursorStyle
+  cursorTrail: boolean
+  openDyslexic: boolean
+  bionicReading: boolean
+  enhancedTextSpacing: boolean
+  enhancedFocusIndicators: boolean
 }

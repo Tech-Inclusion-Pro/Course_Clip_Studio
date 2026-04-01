@@ -20,7 +20,8 @@ export function useWorkspaceInit(): void {
       try {
         const [path] = await Promise.all([
           loadWorkspacePath(),
-          useAppStore.getState().loadAISettings()
+          useAppStore.getState().loadAISettings(),
+          useAppStore.getState().loadAccessibilitySettings()
         ])
         if (path) {
           setWorkspacePath(path)

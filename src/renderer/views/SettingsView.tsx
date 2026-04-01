@@ -93,6 +93,7 @@ function GeneralSettings(): JSX.Element {
   const setDefaultExportFolder = useAppStore((s) => s.setDefaultExportFolder)
   const theme = useAppStore((s) => s.theme)
   const setTheme = useAppStore((s) => s.setTheme)
+  const brandKits = useAppStore((s) => s.brandKits)
   const uiLanguage = useAppStore((s) => s.uiLanguage)
   const setUILanguage = useAppStore((s) => s.setUILanguage)
 
@@ -168,8 +169,8 @@ function GeneralSettings(): JSX.Element {
 
       <SettingsCard title="Appearance" icon={Palette}>
         <FieldRow label="Theme" description="Controls the authoring UI appearance">
-          <div className="flex gap-1">
-            {(['light', 'dark', 'system'] as ThemeMode[]).map((t) => (
+          <div className="flex flex-wrap gap-1">
+            {(['system', 'light', 'dark', 'sepia', 'midnight', 'forest', 'ocean'] as ThemeMode[]).map((t) => (
               <button
                 key={t}
                 onClick={() => setTheme(t)}
@@ -187,6 +188,32 @@ function GeneralSettings(): JSX.Element {
             ))}
           </div>
         </FieldRow>
+        {brandKits.length > 0 && (
+          <FieldRow label="Brand Kit Themes" description="Apply your brand colors as a theme">
+            <div className="flex flex-wrap gap-1">
+              {brandKits.map((kit) => (
+                <button
+                  key={kit.id}
+                  onClick={() => setTheme(`brand-${kit.id}`)}
+                  className={`
+                    flex items-center gap-1.5 px-3 py-1.5 text-xs font-[var(--font-weight-medium)] rounded-md border cursor-pointer transition-colors
+                    ${theme === `brand-${kit.id}`
+                      ? 'border-[var(--brand-magenta)] bg-[var(--bg-active)] text-[var(--text-brand)]'
+                      : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'
+                    }
+                  `}
+                  aria-pressed={theme === `brand-${kit.id}`}
+                >
+                  <span className="flex gap-0.5">
+                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: kit.primaryColor }} />
+                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: kit.secondaryColor }} />
+                  </span>
+                  {kit.name}
+                </button>
+              ))}
+            </div>
+          </FieldRow>
+        )}
       </SettingsCard>
 
       <WorkspaceFolderSettings />
@@ -572,6 +599,21 @@ function AccessibilitySettingsPanel(): JSX.Element {
   const accessibility = useAppStore((s) => s.accessibility)
   const updateAccessibility = useAppStore((s) => s.updateAccessibilitySettings)
 
+  const colorBlindOptions: Array<{ value: 'none' | 'protanopia' | 'deuteranopia' | 'tritanopia' | 'achromatopsia'; label: string }> = [
+    { value: 'none', label: 'None' },
+    { value: 'protanopia', label: 'Protanopia' },
+    { value: 'deuteranopia', label: 'Deuteranopia' },
+    { value: 'tritanopia', label: 'Tritanopia' },
+    { value: 'achromatopsia', label: 'Monochrome' }
+  ]
+
+  const cursorOptions: Array<{ value: 'default' | 'large' | 'crosshair' | 'high-contrast'; label: string }> = [
+    { value: 'default', label: 'Default' },
+    { value: 'large', label: 'Large' },
+    { value: 'crosshair', label: 'Crosshair' },
+    { value: 'high-contrast', label: 'High Contrast' }
+  ]
+
   return (
     <div className="space-y-6">
       <SettingsCard title="Display" icon={Accessibility}>
@@ -586,8 +628,8 @@ function AccessibilitySettingsPanel(): JSX.Element {
           <div className="flex items-center gap-2">
             <input
               type="range"
-              min={14}
-              max={24}
+              min={12}
+              max={28}
               value={accessibility.baseFontSize}
               onChange={(e) => updateAccessibility({ baseFontSize: Number(e.target.value) })}
               className="w-32"
@@ -596,11 +638,91 @@ function AccessibilitySettingsPanel(): JSX.Element {
             <span className="text-sm text-[var(--text-primary)] font-mono w-10">{accessibility.baseFontSize}px</span>
           </div>
         </FieldRow>
-        <FieldRow label="Reduced Motion" description="Minimize animations and transitions">
+        <FieldRow label="Reduced Motion" description="Minimize animations and transitions (WCAG 2.3.3)">
           <ToggleSwitch
             checked={accessibility.reducedMotion}
             onChange={(v) => updateAccessibility({ reducedMotion: v })}
             label="Reduced motion"
+          />
+        </FieldRow>
+        <FieldRow label="Enhanced Text Spacing" description="Increase line height, letter spacing, and word spacing (WCAG 1.4.12)">
+          <ToggleSwitch
+            checked={accessibility.enhancedTextSpacing}
+            onChange={(v) => updateAccessibility({ enhancedTextSpacing: v })}
+            label="Enhanced text spacing"
+          />
+        </FieldRow>
+        <FieldRow label="Enhanced Focus Indicators" description="High-visibility focus outlines for keyboard navigation (WCAG 2.4.7)">
+          <ToggleSwitch
+            checked={accessibility.enhancedFocusIndicators}
+            onChange={(v) => updateAccessibility({ enhancedFocusIndicators: v })}
+            label="Enhanced focus indicators"
+          />
+        </FieldRow>
+      </SettingsCard>
+
+      <SettingsCard title="Color Blind Support" icon={Accessibility}>
+        <FieldRow label="Color Blind Mode" description="Simulates color vision deficiency for accessible design">
+          <div className="flex flex-wrap gap-1">
+            {colorBlindOptions.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => updateAccessibility({ colorBlindMode: opt.value })}
+                className={`px-2.5 py-1 text-xs rounded-md border transition-colors cursor-pointer ${
+                  accessibility.colorBlindMode === opt.value
+                    ? 'border-[var(--brand-magenta)] bg-[var(--bg-active)] text-[var(--text-brand)]'
+                    : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'
+                }`}
+                aria-pressed={accessibility.colorBlindMode === opt.value}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </FieldRow>
+      </SettingsCard>
+
+      <SettingsCard title="Cursor" icon={Accessibility}>
+        <FieldRow label="Cursor Style" description="Custom cursor for motor accessibility">
+          <div className="flex flex-wrap gap-1">
+            {cursorOptions.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => updateAccessibility({ cursorStyle: opt.value })}
+                className={`px-2.5 py-1 text-xs rounded-md border transition-colors cursor-pointer ${
+                  accessibility.cursorStyle === opt.value
+                    ? 'border-[var(--brand-magenta)] bg-[var(--bg-active)] text-[var(--text-brand)]'
+                    : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'
+                }`}
+                aria-pressed={accessibility.cursorStyle === opt.value}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </FieldRow>
+        <FieldRow label="Cursor Trail" description="Visual trail that follows your cursor">
+          <ToggleSwitch
+            checked={accessibility.cursorTrail}
+            onChange={(v) => updateAccessibility({ cursorTrail: v })}
+            label="Cursor trail"
+          />
+        </FieldRow>
+      </SettingsCard>
+
+      <SettingsCard title="Reading" icon={Accessibility}>
+        <FieldRow label="OpenDyslexic Font" description="Dyslexia-friendly typeface (SIL Open Font License)">
+          <ToggleSwitch
+            checked={accessibility.openDyslexic}
+            onChange={(v) => updateAccessibility({ openDyslexic: v })}
+            label="OpenDyslexic font"
+          />
+        </FieldRow>
+        <FieldRow label="Bionic Reading" description="Bold the first half of each word to create fixation points for faster reading">
+          <ToggleSwitch
+            checked={accessibility.bionicReading}
+            onChange={(v) => updateAccessibility({ bionicReading: v })}
+            label="Bionic reading"
           />
         </FieldRow>
       </SettingsCard>

@@ -7,12 +7,15 @@ import { useTheme } from '@/hooks/useTheme'
 import { useWorkspaceInit } from '@/hooks/useWorkspaceInit'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useDeepLink } from '@/hooks/useDeepLink'
+import { useAccessibility } from '@/hooks/useAccessibility'
+import { AccessibilityWidget } from '@/components/ui/AccessibilityWidget'
 
 export function AppShell(): JSX.Element {
   useTheme()
   useWorkspaceInit()
   useAutoSave()
   useDeepLink()
+  useAccessibility()
 
   return (
     <>
@@ -32,6 +35,7 @@ export function AppShell(): JSX.Element {
           </main>
         </div>
       </div>
+      <AccessibilityWidget />
     </>
   )
 }
