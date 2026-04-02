@@ -559,6 +559,7 @@ export interface ContentAreaFile {
   name: string
   path: string
   priority: 1 | 2 | 3
+  context?: string
 }
 
 export interface ContentArea {

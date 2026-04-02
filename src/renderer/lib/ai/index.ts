@@ -24,5 +24,6 @@ export {
   wcagReviewPrompt,
   udlSuggestionsPrompt,
   baseBrainContext,
-  categorizedRefFilesContext
+  categorizedRefFilesContext,
+  contentAreaFilesContext
 } from './prompts'

@@ -1,7 +1,7 @@
 // ─── System Prompts for AI Actions ───
 
 import type { InterviewAnswers, ReferenceFileCategory } from './types'
-import type { BaseBrainSettings } from '@/types/course'
+import type { BaseBrainSettings, ContentAreaFile } from '@/types/course'
 import type { AIReferenceFile } from '@/stores/useAIStore'
 
 const CATEGORY_INSTRUCTIONS: Record<ReferenceFileCategory, string> = {
@@ -48,6 +48,39 @@ export function categorizedRefFilesContext(referenceFiles: AIReferenceFile[]): s
     for (const rf of files) {
       context += `\n**${rf.name}**${rf.notes ? `\nUser notes: ${rf.notes}` : ''}\n\`\`\`\n${rf.content.slice(0, 5000)}\n\`\`\`\n`
     }
+  }
+
+  return context
+}
+
+/**
+ * Build context string from content area files.
+ * Accepts pre-loaded file contents keyed by file ID.
+ * Files are sorted by priority (high first) and include user-provided context annotations.
+ */
+export function contentAreaFilesContext(
+  files: ContentAreaFile[],
+  fileContents: Record<string, string>
+): string {
+  if (files.length === 0) return ''
+
+  // Sort by priority descending (3=High first)
+  const sorted = [...files].sort((a, b) => b.priority - a.priority)
+  const PRIORITY_LABELS: Record<number, string> = { 1: 'Low', 2: 'Medium', 3: 'High' }
+
+  let context = '\n\n## Content Area Reference Files\nThe user has uploaded the following reference files for this content area. Use them to inform your responses, following the priority and context notes provided.\n'
+
+  for (const f of sorted) {
+    const content = fileContents[f.id]
+    if (!content) continue
+
+    context += `\n### ${f.name} (Priority: ${PRIORITY_LABELS[f.priority] ?? 'Medium'})\n`
+    if (f.context) {
+      context += `**User context:** ${f.context}\n`
+    }
+    // Truncate very large files to avoid blowing up context
+    const truncated = content.length > 8000 ? content.slice(0, 8000) + '\n...[truncated]' : content
+    context += `\`\`\`\n${truncated}\n\`\`\`\n`
   }
 
   return context

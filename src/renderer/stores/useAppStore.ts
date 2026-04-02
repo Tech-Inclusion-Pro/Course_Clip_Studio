@@ -104,6 +104,8 @@ interface AppState {
   removeContentArea: (id: string) => void
   addContentAreaFile: (contentAreaId: string, file: ContentAreaFile) => void
   updateContentAreaFilePriority: (contentAreaId: string, fileId: string, priority: 1 | 2 | 3) => void
+  updateContentAreaFileContext: (contentAreaId: string, fileId: string, context: string) => void
+  reorderContentAreaFiles: (contentAreaId: string, fileIds: string[]) => void
   removeContentAreaFile: (contentAreaId: string, fileId: string) => void
 
   // Visual API actions
@@ -447,6 +449,37 @@ export const useAppStore = create<AppState>((set, get) => ({
             }
           : ca
       )
+      window.electronAPI.settings.set('contentAreas', updated)
+      return { contentAreas: updated }
+    })
+  },
+
+  updateContentAreaFileContext: (contentAreaId, fileId, context) => {
+    set((state) => {
+      const updated = state.contentAreas.map((ca) =>
+        ca.id === contentAreaId
+          ? {
+              ...ca,
+              files: (ca.files ?? []).map((f) => f.id === fileId ? { ...f, context } : f),
+              updatedAt: new Date().toISOString()
+            }
+          : ca
+      )
+      window.electronAPI.settings.set('contentAreas', updated)
+      return { contentAreas: updated }
+    })
+  },
+
+  reorderContentAreaFiles: (contentAreaId, fileIds) => {
+    set((state) => {
+      const updated = state.contentAreas.map((ca) => {
+        if (ca.id !== contentAreaId) return ca
+        const files = ca.files ?? []
+        const reordered = fileIds
+          .map((id) => files.find((f) => f.id === id))
+          .filter(Boolean) as ContentAreaFile[]
+        return { ...ca, files: reordered, updatedAt: new Date().toISOString() }
+      })
       window.electronAPI.settings.set('contentAreas', updated)
       return { contentAreas: updated }
     })

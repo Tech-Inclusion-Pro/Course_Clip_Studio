@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Plus, Pencil, Trash2, X, Check, FileUp, File } from 'lucide-react'
+import { useState, useRef, useCallback } from 'react'
+import { Plus, Pencil, Trash2, X, Check, FileUp, File, GripVertical, MessageSquarePlus } from 'lucide-react'
 import { useAppStore } from '@/stores/useAppStore'
 import type { ContentArea, ContentAreaFile } from '@/types/course'
 
@@ -83,6 +83,8 @@ export function ContentAreasSection(): JSX.Element {
   const removeContentArea = useAppStore((s) => s.removeContentArea)
   const addContentAreaFile = useAppStore((s) => s.addContentAreaFile)
   const updateContentAreaFilePriority = useAppStore((s) => s.updateContentAreaFilePriority)
+  const updateContentAreaFileContext = useAppStore((s) => s.updateContentAreaFileContext)
+  const reorderContentAreaFiles = useAppStore((s) => s.reorderContentAreaFiles)
   const removeContentAreaFile = useAppStore((s) => s.removeContentAreaFile)
 
   const [showForm, setShowForm] = useState(false)
@@ -93,6 +95,21 @@ export function ContentAreasSection(): JSX.Element {
   const [pendingSourcePaths, setPendingSourcePaths] = useState<string[]>([])
   const [pendingFileNames, setPendingFileNames] = useState<string[]>([])
   const [isSaving, setIsSaving] = useState(false)
+  // Drag-drop upload visual state
+  const [isDragOver, setIsDragOver] = useState(false)
+  // Context editing — which file's context textarea is open
+  const [contextEditFileId, setContextEditFileId] = useState<string | null>(null)
+  const [contextEditCardFileId, setContextEditCardFileId] = useState<string | null>(null)
+  // Drag-to-reorder state (for form files)
+  const [dragReorderIndex, setDragReorderIndex] = useState<number | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+  // Drag-to-reorder state (for card files)
+  const [cardDragFileId, setCardDragFileId] = useState<string | null>(null)
+  const [cardDragOverFileId, setCardDragOverFileId] = useState<string | null>(null)
+  const [cardDragContentAreaId, setCardDragContentAreaId] = useState<string | null>(null)
+
+  // Card-level drag-drop upload state
+  const [cardDragOverId, setCardDragOverId] = useState<string | null>(null)
 
   function handleAdd() {
     setEditingId(null)
@@ -183,7 +200,6 @@ export function ContentAreasSection(): JSX.Element {
       const newPaths: string[] = []
       const newNames: string[] = []
       for (const fp of result.filePaths) {
-        // Skip duplicates
         if (pendingSourcePaths.includes(fp)) continue
         newPaths.push(fp)
         newNames.push(fp.split(/[\\/]/).pop() || 'file')
@@ -194,6 +210,66 @@ export function ContentAreasSection(): JSX.Element {
       console.error('File selection failed:', err)
     }
   }
+
+  /** Handle native drag-and-drop of files onto the form upload zone */
+  const handleFormDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+
+    const files = e.dataTransfer.files
+    if (!files || files.length === 0) return
+
+    const newPaths: string[] = []
+    const newNames: string[] = []
+    for (let i = 0; i < files.length; i++) {
+      const filePath = (files[i] as unknown as { path?: string }).path
+      if (!filePath) continue
+      if (pendingSourcePaths.includes(filePath)) continue
+      newPaths.push(filePath)
+      newNames.push(files[i].name)
+    }
+    if (newPaths.length > 0) {
+      setPendingSourcePaths((prev) => [...prev, ...newPaths])
+      setPendingFileNames((prev) => [...prev, ...newNames])
+    }
+  }, [pendingSourcePaths])
+
+  const handleFormDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(true)
+  }, [])
+
+  const handleFormDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+  }, [])
+
+  /** Handle drag-and-drop of files directly onto a card */
+  const handleCardDrop = useCallback(async (e: React.DragEvent, contentAreaId: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setCardDragOverId(null)
+
+    const files = e.dataTransfer.files
+    if (!files || files.length === 0) return
+
+    const paths: string[] = []
+    for (let i = 0; i < files.length; i++) {
+      const filePath = (files[i] as unknown as { path?: string }).path
+      if (filePath) paths.push(filePath)
+    }
+    if (paths.length === 0) return
+
+    const ca = contentAreas.find((c) => c.id === contentAreaId)
+    const existingFiles = ca?.files ?? []
+    const copiedFiles = await copyFilesToWorkspace(paths, contentAreaId, existingFiles)
+    for (const file of copiedFiles) {
+      addContentAreaFile(contentAreaId, file)
+    }
+  }, [contentAreas, addContentAreaFile])
 
   /** Remove a pending file from the form (not yet saved) */
   function removePendingFile(index: number) {
@@ -230,6 +306,80 @@ export function ContentAreasSection(): JSX.Element {
     }
   }
 
+  // ── Drag-to-reorder handlers for form saved files ──
+
+  function handleFileReorderDragStart(index: number) {
+    setDragReorderIndex(index)
+  }
+
+  function handleFileReorderDragOver(e: React.DragEvent, index: number) {
+    e.preventDefault()
+    setDragOverIndex(index)
+  }
+
+  function handleFileReorderDrop(e: React.DragEvent, dropIndex: number) {
+    e.preventDefault()
+    if (dragReorderIndex === null || dragReorderIndex === dropIndex) {
+      setDragReorderIndex(null)
+      setDragOverIndex(null)
+      return
+    }
+
+    const files = [...(form.files ?? [])]
+    const [moved] = files.splice(dragReorderIndex, 1)
+    files.splice(dropIndex, 0, moved)
+    setForm((prev) => ({ ...prev, files }))
+    setDragReorderIndex(null)
+    setDragOverIndex(null)
+  }
+
+  function handleFileReorderDragEnd() {
+    setDragReorderIndex(null)
+    setDragOverIndex(null)
+  }
+
+  // ── Drag-to-reorder handlers for card files ──
+
+  function handleCardFileReorderDragStart(contentAreaId: string, fileId: string) {
+    setCardDragContentAreaId(contentAreaId)
+    setCardDragFileId(fileId)
+  }
+
+  function handleCardFileReorderDragOver(e: React.DragEvent, fileId: string) {
+    e.preventDefault()
+    setCardDragOverFileId(fileId)
+  }
+
+  function handleCardFileReorderDrop(e: React.DragEvent, contentAreaId: string, dropFileId: string) {
+    e.preventDefault()
+    if (!cardDragFileId || cardDragContentAreaId !== contentAreaId || cardDragFileId === dropFileId) {
+      setCardDragFileId(null)
+      setCardDragOverFileId(null)
+      setCardDragContentAreaId(null)
+      return
+    }
+
+    const ca = contentAreas.find((c) => c.id === contentAreaId)
+    const files = [...(ca?.files ?? [])]
+    const fromIndex = files.findIndex((f) => f.id === cardDragFileId)
+    const toIndex = files.findIndex((f) => f.id === dropFileId)
+    if (fromIndex === -1 || toIndex === -1) return
+
+    const [moved] = files.splice(fromIndex, 1)
+    files.splice(toIndex, 0, moved)
+    reorderContentAreaFiles(contentAreaId, files.map((f) => f.id))
+
+    setCardDragFileId(null)
+    setCardDragOverFileId(null)
+    setCardDragContentAreaId(null)
+  }
+
+  function handleCardFileReorderDragEnd() {
+    setCardDragFileId(null)
+    setCardDragOverFileId(null)
+    setCardDragContentAreaId(null)
+  }
+
   function filledFieldCount(ca: ContentArea): number {
     let count = 0
     if (ca.audience) count++
@@ -240,6 +390,8 @@ export function ContentAreasSection(): JSX.Element {
     if (ca.accessibilityNeeds) count++
     return count
   }
+
+  const PRIORITY_LABELS: Record<number, string> = { 1: 'Low', 2: 'Medium', 3: 'High' }
 
   return (
     <div>
@@ -374,26 +526,61 @@ export function ContentAreasSection(): JSX.Element {
               Upload reference documents, syllabi, rubrics, or any supporting files. They will be copied into the app workspace.
             </p>
 
-            {/* Upload drop zone */}
+            {/* Upload drop zone — real HTML5 drag-and-drop */}
             <div
-              className="flex flex-col items-center justify-center py-4 border-2 border-dashed border-[var(--border-default)] rounded-lg bg-[var(--bg-muted)] hover:border-[var(--brand-magenta)] transition-colors cursor-pointer"
+              className={`flex flex-col items-center justify-center py-4 border-2 border-dashed rounded-lg transition-colors cursor-pointer ${
+                isDragOver
+                  ? 'border-[var(--brand-magenta)] bg-[var(--brand-magenta)]/10'
+                  : 'border-[var(--border-default)] bg-[var(--bg-muted)] hover:border-[var(--brand-magenta)]'
+              }`}
               onClick={handleFormFileSelect}
+              onDrop={handleFormDrop}
+              onDragOver={handleFormDragOver}
+              onDragLeave={handleFormDragLeave}
             >
-              <FileUp size={20} className="text-[var(--text-tertiary)] mb-1" />
-              <p className="text-xs text-[var(--text-tertiary)]">Click to browse or drag files here</p>
+              <FileUp size={20} className={`mb-1 ${isDragOver ? 'text-[var(--brand-magenta)]' : 'text-[var(--text-tertiary)]'}`} />
+              <p className="text-xs text-[var(--text-tertiary)]">
+                {isDragOver ? 'Drop files here' : 'Click to browse or drag files here'}
+              </p>
               <p className="text-[10px] text-[var(--text-tertiary)] mt-0.5">Multiple files supported</p>
             </div>
 
-            {/* Already-saved files (when editing) */}
+            {/* Already-saved files (when editing) — draggable for reordering */}
             {editingId && (form.files ?? []).length > 0 && (
               <div className="space-y-1">
                 <p className="text-[10px] font-[var(--font-weight-medium)] text-[var(--text-tertiary)]">
-                  Saved files ({(form.files ?? []).length})
+                  Saved files ({(form.files ?? []).length}) — drag to reorder
                 </p>
-                {(form.files ?? []).map((f) => (
-                  <div key={f.id} className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-[var(--bg-muted)] border border-[var(--border-default)]">
+                {(form.files ?? []).map((f, i) => (
+                  <div
+                    key={f.id}
+                    draggable
+                    onDragStart={() => handleFileReorderDragStart(i)}
+                    onDragOver={(e) => handleFileReorderDragOver(e, i)}
+                    onDrop={(e) => handleFileReorderDrop(e, i)}
+                    onDragEnd={handleFileReorderDragEnd}
+                    className={`flex items-center gap-2 px-2 py-1.5 rounded-md bg-[var(--bg-muted)] border transition-colors ${
+                      dragOverIndex === i && dragReorderIndex !== null && dragReorderIndex !== i
+                        ? 'border-[var(--brand-indigo)] bg-[var(--brand-indigo)]/5'
+                        : 'border-[var(--border-default)]'
+                    }`}
+                  >
+                    <GripVertical size={12} className="text-[var(--text-tertiary)] shrink-0 cursor-grab" />
                     <File size={12} className="text-[var(--text-tertiary)] shrink-0" />
                     <span className="text-xs text-[var(--text-primary)] truncate flex-1" title={f.path}>{f.name}</span>
+                    {f.context && (
+                      <span className="text-[10px] text-[var(--brand-indigo)] truncate max-w-[120px]" title={f.context}>
+                        {f.context.slice(0, 30)}{f.context.length > 30 ? '...' : ''}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setContextEditFileId(contextEditFileId === f.id ? null : f.id) }}
+                      className="p-0.5 text-[var(--text-tertiary)] hover:text-[var(--brand-indigo)] cursor-pointer"
+                      title="Give context for when/why to use this file"
+                    >
+                      <MessageSquarePlus size={12} />
+                    </button>
                     <select
                       value={f.priority}
                       onChange={(e) => {
@@ -420,6 +607,35 @@ export function ContentAreasSection(): JSX.Element {
                     </button>
                   </div>
                 ))}
+                {/* Context edit textarea for form files */}
+                {contextEditFileId && (form.files ?? []).find((f) => f.id === contextEditFileId) && (
+                  <div className="mt-1 p-2 rounded-md border border-[var(--brand-indigo)] bg-[var(--bg-muted)]">
+                    <label className="text-[10px] font-[var(--font-weight-medium)] text-[var(--brand-indigo)] block mb-1">
+                      Context: When should AI use this file and why is it important?
+                    </label>
+                    <textarea
+                      value={(form.files ?? []).find((f) => f.id === contextEditFileId)?.context ?? ''}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        setForm((prev) => ({
+                          ...prev,
+                          files: (prev.files ?? []).map((ff) =>
+                            ff.id === contextEditFileId ? { ...ff, context: val } : ff
+                          )
+                        }))
+                      }}
+                      placeholder="e.g., Use this rubric template when generating assessment criteria for written essays..."
+                      rows={2}
+                      className="w-full px-2 py-1.5 text-xs rounded border border-[var(--border-default)] bg-[var(--bg-primary)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:ring-1 focus:ring-[var(--brand-indigo)] resize-none"
+                    />
+                    <button
+                      onClick={() => setContextEditFileId(null)}
+                      className="mt-1 px-2 py-0.5 text-[10px] font-[var(--font-weight-medium)] text-[var(--brand-indigo)] rounded border border-[var(--brand-indigo)] hover:bg-[var(--brand-indigo)]/10 cursor-pointer"
+                    >
+                      Done
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -492,7 +708,14 @@ export function ContentAreasSection(): JSX.Element {
           {contentAreas.map((ca) => (
             <div
               key={ca.id}
-              className="p-4 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] space-y-2"
+              className={`p-4 rounded-lg border bg-[var(--bg-surface)] space-y-2 transition-colors ${
+                cardDragOverId === ca.id
+                  ? 'border-[var(--brand-magenta)] bg-[var(--brand-magenta)]/5'
+                  : 'border-[var(--border-default)]'
+              }`}
+              onDrop={(e) => handleCardDrop(e, ca.id)}
+              onDragOver={(e) => { e.preventDefault(); setCardDragOverId(ca.id) }}
+              onDragLeave={() => setCardDragOverId(null)}
             >
               <div className="flex items-start justify-between">
                 <h3 className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-primary)]">
@@ -553,11 +776,11 @@ export function ContentAreasSection(): JSX.Element {
                 </p>
               )}
 
-              {/* Files on card */}
+              {/* Files on card — draggable for reordering, droppable for uploads */}
               <div className="pt-1 border-t border-[var(--border-default)]">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-[10px] font-[var(--font-weight-medium)] text-[var(--text-tertiary)]">
-                    Files ({ca.files?.length ?? 0})
+                    Files ({ca.files?.length ?? 0}) {(ca.files?.length ?? 0) > 1 ? '— drag to reorder' : ''}
                   </span>
                   <button
                     onClick={() => handleCardFileUpload(ca.id)}
@@ -571,29 +794,80 @@ export function ContentAreasSection(): JSX.Element {
                 {(ca.files ?? []).length > 0 && (
                   <div className="space-y-1">
                     {(ca.files ?? []).map((f) => (
-                      <div key={f.id} className="flex items-center gap-1.5 text-[10px]">
-                        <File size={10} className="text-[var(--text-tertiary)] shrink-0" />
-                        <span className="text-[var(--text-secondary)] truncate flex-1" title={f.path}>{f.name}</span>
-                        <select
-                          value={f.priority}
-                          onChange={(e) => updateContentAreaFilePriority(ca.id, f.id, Number(e.target.value) as 1 | 2 | 3)}
-                          className="px-1 py-0.5 text-[10px] rounded border border-[var(--border-default)] bg-[var(--bg-primary)] text-[var(--text-secondary)] cursor-pointer"
-                          title="Priority"
+                      <div key={f.id}>
+                        <div
+                          draggable
+                          onDragStart={() => handleCardFileReorderDragStart(ca.id, f.id)}
+                          onDragOver={(e) => handleCardFileReorderDragOver(e, f.id)}
+                          onDrop={(e) => handleCardFileReorderDrop(e, ca.id, f.id)}
+                          onDragEnd={handleCardFileReorderDragEnd}
+                          className={`flex items-center gap-1.5 text-[10px] px-1 py-0.5 rounded transition-colors ${
+                            cardDragOverFileId === f.id && cardDragFileId !== f.id
+                              ? 'bg-[var(--brand-indigo)]/10 border border-[var(--brand-indigo)]'
+                              : ''
+                          }`}
                         >
-                          <option value={1}>Low</option>
-                          <option value={2}>Med</option>
-                          <option value={3}>High</option>
-                        </select>
-                        <button
-                          onClick={() => removeContentAreaFile(ca.id, f.id)}
-                          className="p-0.5 text-[var(--text-tertiary)] hover:text-red-500 cursor-pointer"
-                          title="Remove file"
-                        >
-                          <X size={10} />
-                        </button>
+                          <GripVertical size={10} className="text-[var(--text-tertiary)] shrink-0 cursor-grab" />
+                          <File size={10} className="text-[var(--text-tertiary)] shrink-0" />
+                          <span className="text-[var(--text-secondary)] truncate flex-1" title={f.path}>{f.name}</span>
+                          <button
+                            onClick={() => setContextEditCardFileId(contextEditCardFileId === f.id ? null : f.id)}
+                            className="p-0.5 text-[var(--text-tertiary)] hover:text-[var(--brand-indigo)] cursor-pointer"
+                            title="Give context"
+                          >
+                            <MessageSquarePlus size={10} />
+                          </button>
+                          <select
+                            value={f.priority}
+                            onChange={(e) => updateContentAreaFilePriority(ca.id, f.id, Number(e.target.value) as 1 | 2 | 3)}
+                            className="px-1 py-0.5 text-[10px] rounded border border-[var(--border-default)] bg-[var(--bg-primary)] text-[var(--text-secondary)] cursor-pointer"
+                            title="Priority"
+                          >
+                            <option value={1}>Low</option>
+                            <option value={2}>Med</option>
+                            <option value={3}>High</option>
+                          </select>
+                          <button
+                            onClick={() => removeContentAreaFile(ca.id, f.id)}
+                            className="p-0.5 text-[var(--text-tertiary)] hover:text-red-500 cursor-pointer"
+                            title="Remove file"
+                          >
+                            <X size={10} />
+                          </button>
+                        </div>
+                        {/* Context snippet display */}
+                        {f.context && contextEditCardFileId !== f.id && (
+                          <p className="ml-6 text-[10px] text-[var(--brand-indigo)] italic truncate" title={f.context}>
+                            {f.context}
+                          </p>
+                        )}
+                        {/* Context edit textarea on card */}
+                        {contextEditCardFileId === f.id && (
+                          <div className="ml-6 mt-1 p-1.5 rounded border border-[var(--brand-indigo)] bg-[var(--bg-muted)]">
+                            <label className="text-[10px] font-[var(--font-weight-medium)] text-[var(--brand-indigo)] block mb-0.5">
+                              When should AI use this file?
+                            </label>
+                            <textarea
+                              value={f.context ?? ''}
+                              onChange={(e) => updateContentAreaFileContext(ca.id, f.id, e.target.value)}
+                              placeholder="e.g., Reference this document when creating quizzes about safety protocols..."
+                              rows={2}
+                              className="w-full px-2 py-1 text-[10px] rounded border border-[var(--border-default)] bg-[var(--bg-primary)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:ring-1 focus:ring-[var(--brand-indigo)] resize-none"
+                            />
+                            <button
+                              onClick={() => setContextEditCardFileId(null)}
+                              className="mt-0.5 px-1.5 py-0.5 text-[10px] font-[var(--font-weight-medium)] text-[var(--brand-indigo)] rounded border border-[var(--brand-indigo)] hover:bg-[var(--brand-indigo)]/10 cursor-pointer"
+                            >
+                              Done
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
+                )}
+                {(ca.files ?? []).length === 0 && (
+                  <p className="text-[10px] text-[var(--text-tertiary)] italic">Drop files here or click Add</p>
                 )}
               </div>
             </div>

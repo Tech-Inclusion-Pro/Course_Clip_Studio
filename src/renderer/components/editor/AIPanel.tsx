@@ -42,7 +42,8 @@ import {
   wcagReviewPrompt,
   udlSuggestionsPrompt,
   baseBrainContext,
-  categorizedRefFilesContext
+  categorizedRefFilesContext,
+  contentAreaFilesContext
 } from '@/lib/ai'
 import type {
   InterviewAnswers,
@@ -1036,7 +1037,27 @@ async function runAction(action: AIAction): Promise<void> {
     const provider = getProvider(aiSettings)
     const bbContext = baseBrainContext(appStore.baseBrain)
     const refFilesContext = categorizedRefFilesContext(aiStore.referenceFiles)
-    const systemPrompt = SYSTEM_PROMPT + bbContext + refFilesContext
+
+    // Load content area file contents if a content area is selected
+    let caFilesContext = ''
+    if (aiStore.selectedContentAreaId) {
+      const contentArea = appStore.contentAreas.find((ca) => ca.id === aiStore.selectedContentAreaId)
+      const caFiles = contentArea?.files ?? []
+      if (caFiles.length > 0) {
+        const fileContents: Record<string, string> = {}
+        for (const f of caFiles) {
+          try {
+            const text = await window.electronAPI.fs.readFile(f.path, 'utf-8')
+            fileContents[f.id] = text
+          } catch {
+            // File may not be readable (binary, missing, etc.) — skip
+          }
+        }
+        caFilesContext = contentAreaFilesContext(caFiles, fileContents)
+      }
+    }
+
+    const systemPrompt = SYSTEM_PROMPT + bbContext + refFilesContext + caFilesContext
     let result: string
 
     switch (action) {
