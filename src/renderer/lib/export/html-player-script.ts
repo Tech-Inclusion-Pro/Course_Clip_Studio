@@ -96,6 +96,7 @@ export function getHtmlPlayerScript(): string {
     initDragDrop();
     initMatching();
     initBranching();
+    initAnimations();
     restoreCompletionIndicators();
   }
 
@@ -422,6 +423,31 @@ export function getHtmlPlayerScript(): string {
         }
       });
     });
+  }
+
+  // Scroll-triggered block animations via IntersectionObserver
+  function initAnimations() {
+    var blocks = document.querySelectorAll('[data-anim]');
+    if (blocks.length === 0) return;
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      blocks.forEach(function(el) { el.style.opacity = '1'; });
+      return;
+    }
+
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (!entry.isIntersecting) return;
+        var el = entry.target;
+        var animType = el.getAttribute('data-anim');
+        var duration = el.getAttribute('data-anim-duration') || '500';
+        var delay = el.getAttribute('data-anim-delay') || '0';
+        el.style.animation = 'lumina-' + animType + ' ' + duration + 'ms ease-out ' + delay + 'ms both';
+        observer.unobserve(el);
+      });
+    }, { threshold: 0.15 });
+
+    blocks.forEach(function(el) { observer.observe(el); });
   }
 })();
 `

@@ -54,18 +54,21 @@ function renderSlideElement(el: SlideElement): string {
   }
 }
 
-/** Build an inline animation style string if the block has an animation. */
+/**
+ * Build data attributes + initial hidden style for scroll-triggered animations.
+ * The actual animation is triggered by IntersectionObserver in the player scripts.
+ */
 function getAnimationStyle(block: ContentBlock): string {
   const anim = block.animation
   if (!anim || anim.type === 'none') return ''
-  return ` style="animation: lumina-${anim.type} ${anim.duration}ms ease-out ${anim.delay}ms both;"`
+  return ` style="opacity:0;" data-anim="${anim.type}" data-anim-duration="${anim.duration}" data-anim-delay="${anim.delay}"`
 }
 
 /** Build an animation class if the block has an animation. */
 function getAnimationClass(block: ContentBlock): string {
   const anim = block.animation
   if (!anim || anim.type === 'none') return ''
-  return ' animated'
+  return ' anim-pending'
 }
 
 /**
@@ -121,7 +124,7 @@ function renderBlockInner(block: ContentBlock, animStyle: string, animClass: str
 </section>`
 
     case 'quiz':
-      return renderQuiz(block)
+      return renderQuiz(block, animStyle, animClass)
 
     case 'accordion':
       return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-accordion${animClass}"${animStyle}>
@@ -280,7 +283,7 @@ function renderCompletionCriteria(lesson: Lesson): string {
 </aside>`
 }
 
-function renderQuiz(block: ContentBlock & { type: 'quiz' }): string {
+function renderQuiz(block: ContentBlock & { type: 'quiz' }, animStyle: string = '', animClass: string = ''): string {
   const questions = block.questions.map((q, qi) => {
     let choicesHtml = ''
 
@@ -317,7 +320,7 @@ function renderQuiz(block: ContentBlock & { type: 'quiz' }): string {
     </div>`
   }).join('\n    ')
 
-  return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-quiz" data-pass="${block.passThreshold}" data-feedback="${block.showFeedback}" data-retry="${block.allowRetry}">
+  return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-quiz${animClass}" data-pass="${block.passThreshold}" data-feedback="${block.showFeedback}" data-retry="${block.allowRetry}"${animStyle}>
     ${questions}
     <div class="quiz-actions">
       <button class="quiz-submit" type="button">Submit Answers</button>
