@@ -53,6 +53,10 @@ export function ThemeEditor({ onClose }: ThemeEditorProps): JSX.Element {
   // Compute contrast ratios
   const textBgRatio = contrastRatio(theme.textColor, theme.backgroundColor)
   const textSurfaceRatio = contrastRatio(theme.textColor, theme.surfaceColor)
+  const blockTextRatio = contrastRatio(
+    theme.blockTextColor || theme.textColor,
+    theme.blockBackgroundColor || theme.surfaceColor
+  )
 
   return (
     <div className="flex flex-col h-full">
@@ -108,12 +112,21 @@ export function ThemeEditor({ onClose }: ThemeEditorProps): JSX.Element {
               </div>
             </div>
 
+            <div className="border-t border-[var(--border-default)] pt-3 mt-3">
+              <p className="text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-2">Block Colors (Quiz, Flashcard, etc.)</p>
+              <div className="space-y-3">
+                <ColorField label="Block Background" value={theme.blockBackgroundColor || theme.surfaceColor} onChange={(v) => handleUpdate({ blockBackgroundColor: v })} />
+                <ColorField label="Block Text" value={theme.blockTextColor || theme.textColor} onChange={(v) => handleUpdate({ blockTextColor: v })} />
+              </div>
+            </div>
+
             {/* WCAG Contrast Preview */}
             <div className="border-t border-[var(--border-default)] pt-3 mt-3">
               <p className="text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-2">WCAG Contrast</p>
               <div className="space-y-2">
                 <ContrastIndicator label="Text on Background" ratio={textBgRatio} />
                 <ContrastIndicator label="Text on Surface" ratio={textSurfaceRatio} />
+                <ContrastIndicator label="Block Text on Block Bg" ratio={blockTextRatio} />
               </div>
             </div>
 

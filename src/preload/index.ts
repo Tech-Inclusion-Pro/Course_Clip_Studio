@@ -37,7 +37,9 @@ const api = {
     exists: (filePath: string): Promise<boolean> =>
       ipcRenderer.invoke('fs:exists', filePath),
     removeDir: (dirPath: string): Promise<void> =>
-      ipcRenderer.invoke('fs:removeDir', dirPath)
+      ipcRenderer.invoke('fs:removeDir', dirPath),
+    copyFile: (src: string, dest: string): Promise<void> =>
+      ipcRenderer.invoke('fs:copyFile', src, dest)
   },
   settings: {
     get: (key: string): Promise<unknown> =>

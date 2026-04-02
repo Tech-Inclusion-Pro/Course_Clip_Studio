@@ -98,7 +98,7 @@ app.whenReady().then(() => {
         responseHeaders: {
           ...details.responseHeaders,
           'Content-Security-Policy': [
-            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://api.anthropic.com https://api.openai.com http://localhost:* http://127.0.0.1:*"
+            "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob:; font-src 'self' data: https:; media-src 'self' data: blob:; connect-src 'self' https://api.anthropic.com https://api.openai.com http://localhost:* http://127.0.0.1:*; frame-src 'self' blob: data: https:"
           ]
         }
       })

@@ -141,6 +141,9 @@ export interface AudioBlock extends BaseBlock {
   assetPath: string
   transcript: string
   captions: CaptionTrack[]
+  srtFilePath?: string
+  srtFileName?: string
+  wordsPerLine?: number
 }
 
 export interface CaptionTrack {
@@ -387,6 +390,8 @@ export interface CourseTheme {
   backgroundColor: string
   surfaceColor: string
   textColor: string
+  blockBackgroundColor?: string
+  blockTextColor?: string
   fontFamily: string
   fontFamilyHeading: string
   googleFontUrl: string | null
@@ -534,7 +539,7 @@ export const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
   'tabs': 'Tabs',
   'flashcard': 'Flashcard',
   'branching': 'Branching Scenario',
-  'embed': 'Embed',
+  'embed': 'URL / Embed',
   'code': 'Code',
   'divider': 'Divider',
   'callout': 'Callout',

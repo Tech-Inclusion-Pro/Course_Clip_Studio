@@ -25,6 +25,7 @@ interface LuminaAPI {
     mkdir(dirPath: string): Promise<void>
     exists(filePath: string): Promise<boolean>
     removeDir(dirPath: string): Promise<void>
+    copyFile(src: string, dest: string): Promise<void>
   }
   settings: {
     get(key: string): Promise<unknown>

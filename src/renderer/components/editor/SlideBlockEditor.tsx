@@ -1,15 +1,10 @@
 import { useState, useRef, useCallback } from 'react'
 import {
-  MousePointer2,
-  Type,
-  Image,
-  Box,
-  HelpCircle,
-  Link2,
   Trash2,
   Plus
 } from 'lucide-react'
 import { uid } from '@/lib/uid'
+import { useAssetUpload } from '@/hooks/useAssetUpload'
 import type { SlideBlock, SlideElement, SlideElementType } from '@/types/course'
 
 interface SlideBlockEditorProps {
@@ -29,19 +24,20 @@ const ELEMENT_DEFAULTS: Record<SlideElementType, { width: number; height: number
   image: { width: 200, height: 150 }
 }
 
-const ELEMENT_ICONS: Record<SlideElementType, typeof Type> = {
-  button: MousePointer2,
-  embed: Box,
-  quiz: HelpCircle,
-  matching: Link2,
-  text: Type,
-  image: Image
+const ELEMENT_TYPE_LABELS: Record<SlideElementType, string> = {
+  button: 'Button',
+  embed: 'Embed',
+  quiz: 'Quiz',
+  matching: 'Matching',
+  text: 'Text',
+  image: 'Image'
 }
 
 export function SlideBlockEditor({ block, onUpdate }: SlideBlockEditorProps): JSX.Element {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [dragging, setDragging] = useState<{ id: string; offsetX: number; offsetY: number } | null>(null)
   const canvasRef = useRef<HTMLDivElement>(null)
+  const copyAsset = useAssetUpload()
 
   const selectedElement = block.elements.find((el) => el.id === selectedId) || null
 
@@ -109,10 +105,11 @@ export function SlideBlockEditor({ block, onUpdate }: SlideBlockEditorProps): JS
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = 'image/*'
-    input.onchange = () => {
+    input.onchange = async () => {
       const file = input.files?.[0]
       if (file) {
-        onUpdate({ backgroundImage: file.path })
+        const copied = await copyAsset(file.path)
+        onUpdate({ backgroundImage: copied })
       }
     }
     input.click()
@@ -123,20 +120,17 @@ export function SlideBlockEditor({ block, onUpdate }: SlideBlockEditorProps): JS
       {/* Toolbar */}
       <div className="flex items-center gap-1 px-3 py-2 bg-[var(--bg-muted)] border-b border-[var(--border-default)] flex-wrap">
         <span className="text-xs font-[var(--font-weight-semibold)] text-[var(--text-tertiary)] mr-2">Add:</span>
-        {(Object.keys(ELEMENT_ICONS) as SlideElementType[]).map((type) => {
-          const Icon = ELEMENT_ICONS[type]
-          return (
-            <button
-              key={type}
-              onClick={() => addElement(type)}
-              className="flex items-center gap-1 px-2 py-1 text-xs rounded text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] cursor-pointer transition-colors"
-              title={`Add ${type}`}
-            >
-              <Icon size={12} />
-              <span className="capitalize">{type}</span>
-            </button>
-          )
-        })}
+        {(Object.keys(ELEMENT_TYPE_LABELS) as SlideElementType[]).map((type) => (
+          <button
+            key={type}
+            onClick={() => addElement(type)}
+            className="flex items-center gap-1 px-2 py-1 text-xs rounded text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] cursor-pointer transition-colors"
+            title={`Add ${type}`}
+          >
+            <Plus size={10} />
+            {ELEMENT_TYPE_LABELS[type]}
+          </button>
+        ))}
       </div>
 
       {/* Canvas */}
@@ -157,7 +151,6 @@ export function SlideBlockEditor({ block, onUpdate }: SlideBlockEditorProps): JS
         onClick={() => setSelectedId(null)}
       >
         {block.elements.map((el) => {
-          const Icon = ELEMENT_ICONS[el.type]
           const isSelected = selectedId === el.id
           return (
             <div
@@ -175,13 +168,11 @@ export function SlideBlockEditor({ block, onUpdate }: SlideBlockEditorProps): JS
                 backgroundColor: el.type === 'button' ? 'var(--brand-magenta)' : 'rgba(255,255,255,0.85)'
               }}
               onMouseDown={(e) => handleMouseDown(e, el)}
+              onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex flex-col items-center gap-1 text-center px-2">
-                <Icon size={16} className={el.type === 'button' ? 'text-white' : 'text-[var(--text-tertiary)]'} />
-                <span className={`text-[10px] ${el.type === 'button' ? 'text-white' : 'text-[var(--text-secondary)]'}`}>
-                  {el.data.buttonLabel || el.data.textContent || el.data.embedTitle || el.type}
-                </span>
-              </div>
+              <span className={`text-xs text-center px-2 truncate w-full ${el.type === 'button' ? 'text-white font-semibold' : 'text-[var(--text-secondary)]'}`}>
+                {el.data.buttonLabel || el.data.textContent || el.data.embedTitle || el.type}
+              </span>
               {isSelected && (
                 <button
                   className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-[var(--color-danger-600)] text-white flex items-center justify-center cursor-pointer"

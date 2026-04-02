@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Image, Upload, AlertTriangle } from 'lucide-react'
+import { useAssetUpload } from '@/hooks/useAssetUpload'
 import type { MediaBlock } from '@/types/course'
 
 interface MediaBlockEditorProps {
@@ -9,16 +10,18 @@ interface MediaBlockEditorProps {
 
 export function MediaBlockEditor({ block, onUpdate }: MediaBlockEditorProps): JSX.Element {
   const [dragOver, setDragOver] = useState(false)
+  const copyAsset = useAssetUpload()
   const hasImage = !!block.assetPath
   const missingAlt = !block.altText
 
-  function handleDrop(e: React.DragEvent) {
+  async function handleDrop(e: React.DragEvent) {
     e.preventDefault()
     setDragOver(false)
     const files = e.dataTransfer.files
     if (files.length > 0 && files[0].type.startsWith('image/')) {
       const filePath = window.electronAPI.webUtils.getPathForFile(files[0]) || files[0].path
-      onUpdate({ assetPath: filePath })
+      const copied = await copyAsset(filePath)
+      onUpdate({ assetPath: copied })
     }
   }
 
@@ -35,10 +38,11 @@ export function MediaBlockEditor({ block, onUpdate }: MediaBlockEditorProps): JS
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = 'image/*'
-    input.onchange = () => {
+    input.onchange = async () => {
       const file = input.files?.[0]
       if (file) {
-        onUpdate({ assetPath: file.path })
+        const copied = await copyAsset(file.path)
+        onUpdate({ assetPath: copied })
       }
     }
     input.click()

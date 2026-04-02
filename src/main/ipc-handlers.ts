@@ -1,5 +1,5 @@
 import { ipcMain, dialog, app, BrowserWindow, net, safeStorage } from 'electron'
-import { readFileSync, readFile, writeFileSync, existsSync, mkdirSync, readdirSync, statSync, rmSync } from 'fs'
+import { readFileSync, readFile, writeFileSync, copyFileSync, existsSync, mkdirSync, readdirSync, statSync, rmSync } from 'fs'
 import { join, dirname } from 'path'
 
 function getConfigPath(): string {
@@ -170,6 +170,14 @@ export function registerIpcHandlers(): void {
     if (existsSync(dirPath)) {
       rmSync(dirPath, { recursive: true, force: true })
     }
+  })
+
+  ipcMain.handle('fs:copyFile', async (_event, src: string, dest: string) => {
+    const destDir = dirname(dest)
+    if (!existsSync(destDir)) {
+      mkdirSync(destDir, { recursive: true })
+    }
+    copyFileSync(src, dest)
   })
 
   // ─── Directory Picker ───

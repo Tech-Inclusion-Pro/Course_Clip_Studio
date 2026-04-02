@@ -355,6 +355,8 @@ export function renderLessonHtml(
 
 function getPlayerStyles(theme: CourseTheme): string {
   const btnRadius = theme.playerShell.buttonStyle === 'pill' ? '999px' : theme.playerShell.buttonStyle === 'rounded' ? '8px' : '2px'
+  const blockBg = theme.blockBackgroundColor || theme.surfaceColor
+  const blockText = theme.blockTextColor || theme.textColor
 
   return `
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -437,15 +439,15 @@ function getPlayerStyles(theme: CourseTheme): string {
     details { border: 1px solid ${theme.textColor}20; border-radius: 8px; margin-bottom: 8px; }
     details summary {
       padding: 12px 16px; cursor: pointer; font-weight: 600;
-      background: ${theme.surfaceColor}; border-radius: 8px;
+      background: ${blockBg}; color: ${blockText}; border-radius: 8px;
     }
     details[open] summary { border-radius: 8px 8px 0 0; }
     details > div, .accordion-content { padding: 12px 16px; }
 
-    .block-quiz { background: ${theme.surfaceColor}; padding: 24px; border-radius: 12px; }
+    .block-quiz { background: ${blockBg}; color: ${blockText}; padding: 24px; border-radius: 12px; }
     .quiz-question { margin-bottom: 20px; }
-    .question-prompt { margin-bottom: 10px; font-size: 15px; }
-    .quiz-choice { display: block; padding: 8px 12px; margin: 4px 0; cursor: pointer; border-radius: 6px; }
+    .question-prompt { margin-bottom: 10px; font-size: 15px; color: ${blockText}; }
+    .quiz-choice { display: block; padding: 8px 12px; margin: 4px 0; cursor: pointer; border-radius: 6px; color: ${blockText}; }
     .quiz-choice:hover { background: ${theme.primaryColor}10; }
     .quiz-choice input { margin-right: 8px; }
     .quiz-submit {
@@ -463,7 +465,7 @@ function getPlayerStyles(theme: CourseTheme): string {
 
     .player-footer {
       position: fixed; bottom: 0; left: 0; right: 0;
-      background: ${theme.surfaceColor}; border-top: 1px solid ${theme.textColor}15;
+      background: ${blockBg}; color: ${blockText}; border-top: 1px solid ${blockText}15;
       padding: 12px 24px; z-index: 50;
     }
     .lesson-nav {
@@ -484,16 +486,16 @@ function getPlayerStyles(theme: CourseTheme): string {
     .flashcard-inner { transition: transform 0.6s; transform-style: preserve-3d; -webkit-transform-style: preserve-3d; position: relative; min-height: 200px; width: 100%; }
     .flashcard.flipped .flashcard-inner { transform: rotateY(180deg); }
     .flashcard-front, .flashcard-back { backface-visibility: hidden; -webkit-backface-visibility: hidden; display: flex; align-items: center; justify-content: center; padding: 32px; border: 1px solid ${theme.textColor}20; border-radius: 12px; text-align: center; min-height: 200px; width: 100%; position: absolute; inset: 0; }
-    .flashcard-front { background: ${theme.backgroundColor}; z-index: 2; }
-    .flashcard-back { transform: rotateY(180deg); background: ${theme.surfaceColor}; z-index: 1; }
+    .flashcard-front { background: ${blockBg}; color: ${blockText}; z-index: 2; }
+    .flashcard-back { transform: rotateY(180deg); background: ${blockBg}; color: ${blockText}; z-index: 1; }
     .flashcard.fc-hidden { display: none; }
     .flashcard-nav { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 12px; }
-    .flashcard-nav button { padding: 4px 12px; border: 1px solid ${theme.textColor}30; border-radius: ${btnRadius}; background: none; cursor: pointer; }
+    .flashcard-nav button { padding: 4px 12px; border: 1px solid ${theme.textColor}30; border-radius: ${btnRadius}; background: none; color: ${theme.textColor}; cursor: pointer; }
 
     /* Matching — click-to-select */
     .block-matching .matching-columns { display: flex; gap: 24px; }
     .matching-columns > div { flex: 1; }
-    .match-item { padding: 8px 12px; margin: 4px 0; border: 2px solid ${theme.textColor}20; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+    .match-item { padding: 8px 12px; margin: 4px 0; border: 2px solid ${blockText}20; border-radius: 6px; cursor: pointer; transition: all 0.2s; color: ${blockText}; }
     .match-item:hover { background: ${theme.primaryColor}10; }
     .match-item.selected { border-color: ${theme.primaryColor}; background: ${theme.primaryColor}15; box-shadow: 0 0 0 2px ${theme.primaryColor}30; }
     .match-item.matched-correct { border-color: #22c55e; background: #dcfce7; cursor: default; }
@@ -502,10 +504,10 @@ function getPlayerStyles(theme: CourseTheme): string {
     /* Drag & Drop */
     .block-dragdrop .instruction { margin-bottom: 12px; font-weight: 600; }
     .drag-items { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-    .dd-item { padding: 8px 16px; background: ${theme.surfaceColor}; border: 2px solid ${theme.textColor}20; border-radius: 6px; cursor: grab; transition: all 0.2s; }
+    .dd-item { padding: 8px 16px; background: ${blockBg}; color: ${blockText}; border: 2px solid ${blockText}20; border-radius: 6px; cursor: grab; transition: all 0.2s; }
     .dd-item:active { cursor: grabbing; }
     .dd-item.placed { opacity: 0.4; cursor: default; }
-    .dd-zone { min-height: 60px; padding: 12px; border: 2px dashed ${theme.textColor}30; border-radius: 8px; margin-bottom: 8px; text-align: center; transition: all 0.2s; }
+    .dd-zone { min-height: 60px; padding: 12px; border: 2px dashed ${blockText}30; border-radius: 8px; margin-bottom: 8px; text-align: center; transition: all 0.2s; color: ${blockText}; }
     .dd-zone.drag-over { border-color: ${theme.primaryColor}; background: ${theme.primaryColor}10; }
     .dd-zone.dd-correct { border-color: #22c55e; border-style: solid; background: #dcfce7; }
     .dd-zone.dd-incorrect { border-color: #ef4444; border-style: solid; background: #fee2e2; }
@@ -513,7 +515,7 @@ function getPlayerStyles(theme: CourseTheme): string {
     /* Branching */
     .block-branching .scenario { margin-bottom: 16px; font-size: 15px; line-height: 1.6; }
     .block-branching .choices { display: flex; flex-direction: column; gap: 8px; }
-    .branch-choice { padding: 12px 16px; border: 2px solid ${theme.textColor}20; border-radius: 8px; background: ${theme.surfaceColor}; cursor: pointer; text-align: left; font-size: 14px; transition: all 0.2s; }
+    .branch-choice { padding: 12px 16px; border: 2px solid ${blockText}20; border-radius: 8px; background: ${blockBg}; color: ${blockText}; cursor: pointer; text-align: left; font-size: 14px; transition: all 0.2s; }
     .branch-choice:hover { border-color: ${theme.primaryColor}; background: ${theme.primaryColor}10; }
     .branch-choice.chosen { border-color: ${theme.primaryColor}; background: ${theme.primaryColor}15; }
     .branch-consequence { margin-top: 16px; padding: 16px; border-radius: 8px; background: ${theme.surfaceColor}; border-left: 4px solid ${theme.primaryColor}; font-size: 14px; }

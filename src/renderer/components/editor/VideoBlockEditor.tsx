@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Video, Upload, AlertTriangle, Globe, HardDrive, FileText, Type } from 'lucide-react'
+import { useAssetUpload } from '@/hooks/useAssetUpload'
 import type { VideoBlock } from '@/types/course'
 
 interface VideoBlockEditorProps {
@@ -33,15 +34,17 @@ export function VideoBlockEditor({ block, onUpdate }: VideoBlockEditorProps): JS
   const [dragOver, setDragOver] = useState(false)
   const [transcriptMode, setTranscriptMode] = useState<'text' | 'srt'>(block.srtFileName ? 'srt' : 'text')
   const [srtDragOver, setSrtDragOver] = useState(false)
+  const copyAsset = useAssetUpload()
   const missingTranscript = !block.transcript
 
-  function handleDrop(e: React.DragEvent) {
+  async function handleDrop(e: React.DragEvent) {
     e.preventDefault()
     setDragOver(false)
     const files = e.dataTransfer.files
     if (files.length > 0 && files[0].type.startsWith('video/')) {
       const filePath = window.electronAPI.webUtils.getPathForFile(files[0]) || files[0].path
-      onUpdate({ url: filePath, source: 'upload' })
+      const copied = await copyAsset(filePath)
+      onUpdate({ url: copied, source: 'upload' })
     }
   }
 
@@ -49,10 +52,11 @@ export function VideoBlockEditor({ block, onUpdate }: VideoBlockEditorProps): JS
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = 'video/*'
-    input.onchange = () => {
+    input.onchange = async () => {
       const file = input.files?.[0]
       if (file) {
-        onUpdate({ url: file.path, source: 'upload' })
+        const copied = await copyAsset(file.path)
+        onUpdate({ url: copied, source: 'upload' })
       }
     }
     input.click()
@@ -60,10 +64,11 @@ export function VideoBlockEditor({ block, onUpdate }: VideoBlockEditorProps): JS
 
   async function handleSrtFile(filePath: string, fileName: string) {
     try {
-      const content = await window.electronAPI.fs.readFile(filePath, 'utf-8')
+      const copied = await copyAsset(filePath)
+      const content = await window.electronAPI.fs.readFile(copied, 'utf-8')
       const plainText = parseSrtToPlainText(content, block.wordsPerLine || 10)
       onUpdate({
-        srtFilePath: filePath,
+        srtFilePath: copied,
         srtFileName: fileName,
         transcript: plainText
       })

@@ -43,9 +43,20 @@ export function getPreviewPlayerScript(): string {
     }, '*');
   };
 
+  // Bind navigation buttons via addEventListener (CSP may block inline onclick)
+  function initNavigation() {
+    var prevBtn = document.getElementById('btn-prev');
+    var nextBtn = document.getElementById('btn-next');
+    var finishBtn = document.getElementById('btn-finish');
+    if (prevBtn) prevBtn.addEventListener('click', function() { window.scormNav(-1); });
+    if (nextBtn) nextBtn.addEventListener('click', function() { window.scormNav(1); });
+    if (finishBtn) finishBtn.addEventListener('click', function() { window.scormFinish(); });
+  }
+
   // Initialize immediately if DOM is ready, otherwise wait for DOMContentLoaded.
   // NOTE: We avoid 'load' because srcDoc iframes may miss the load event.
   function _initAll() {
+    initNavigation();
     initEnrollment();
     initTabs();
     initFlashcards();

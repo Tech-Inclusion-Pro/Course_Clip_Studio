@@ -18,7 +18,7 @@ export function EmbedBlockEditor({ block, onUpdate }: EmbedBlockEditorProps): JS
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3 bg-[var(--bg-muted)] border-b border-[var(--border-default)]">
         <Box size={16} className="text-[var(--brand-magenta)]" />
-        <h3 className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-primary)]">Embed</h3>
+        <h3 className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-primary)]">URL / Embed</h3>
       </div>
 
       <div className="p-4 space-y-3">
@@ -78,7 +78,7 @@ export function EmbedBlockEditor({ block, onUpdate }: EmbedBlockEditorProps): JS
               }`}
               aria-pressed={(block.display || 'inline') === 'inline'}
             >
-              <Box size={12} /> Inline
+              <Box size={12} /> Show in Course
             </button>
             <button
               type="button"
@@ -90,7 +90,7 @@ export function EmbedBlockEditor({ block, onUpdate }: EmbedBlockEditorProps): JS
               }`}
               aria-pressed={block.display === 'new-tab'}
             >
-              <ExternalLink size={12} /> New Tab
+              <ExternalLink size={12} /> Open External
             </button>
           </div>
         </div>
