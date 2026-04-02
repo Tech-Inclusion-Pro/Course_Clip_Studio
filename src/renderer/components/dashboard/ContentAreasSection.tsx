@@ -610,7 +610,7 @@ export function ContentAreasSection(): JSX.Element {
                 {/* Context edit textarea for form files */}
                 {contextEditFileId && (form.files ?? []).find((f) => f.id === contextEditFileId) && (
                   <div className="mt-1 p-2 rounded-md border border-[var(--brand-indigo)] bg-[var(--bg-muted)]">
-                    <label className="text-[10px] font-[var(--font-weight-medium)] text-[var(--brand-indigo)] block mb-1">
+                    <label className="text-[10px] font-[var(--font-weight-medium)] text-[var(--text-primary)] block mb-1">
                       Context: When should AI use this file and why is it important?
                     </label>
                     <textarea
@@ -626,11 +626,11 @@ export function ContentAreasSection(): JSX.Element {
                       }}
                       placeholder="e.g., Use this rubric template when generating assessment criteria for written essays..."
                       rows={2}
-                      className="w-full px-2 py-1.5 text-xs rounded border border-[var(--border-default)] bg-[var(--bg-primary)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:ring-1 focus:ring-[var(--brand-indigo)] resize-none"
+                      className="w-full px-2 py-1.5 text-xs rounded border border-[var(--border-default)] bg-[var(--bg-primary)] text-white placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[var(--brand-indigo)] resize-none"
                     />
                     <button
                       onClick={() => setContextEditFileId(null)}
-                      className="mt-1 px-2 py-0.5 text-[10px] font-[var(--font-weight-medium)] text-[var(--brand-indigo)] rounded border border-[var(--brand-indigo)] hover:bg-[var(--brand-indigo)]/10 cursor-pointer"
+                      className="mt-1 px-2 py-0.5 text-[10px] font-[var(--font-weight-medium)] text-white rounded border border-[var(--brand-indigo)] hover:bg-[var(--brand-indigo)]/10 cursor-pointer"
                     >
                       Done
                     </button>
@@ -844,7 +844,7 @@ export function ContentAreasSection(): JSX.Element {
                         {/* Context edit textarea on card */}
                         {contextEditCardFileId === f.id && (
                           <div className="ml-6 mt-1 p-1.5 rounded border border-[var(--brand-indigo)] bg-[var(--bg-muted)]">
-                            <label className="text-[10px] font-[var(--font-weight-medium)] text-[var(--brand-indigo)] block mb-0.5">
+                            <label className="text-[10px] font-[var(--font-weight-medium)] text-[var(--text-primary)] block mb-0.5">
                               When should AI use this file?
                             </label>
                             <textarea
@@ -852,11 +852,11 @@ export function ContentAreasSection(): JSX.Element {
                               onChange={(e) => updateContentAreaFileContext(ca.id, f.id, e.target.value)}
                               placeholder="e.g., Reference this document when creating quizzes about safety protocols..."
                               rows={2}
-                              className="w-full px-2 py-1 text-[10px] rounded border border-[var(--border-default)] bg-[var(--bg-primary)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:ring-1 focus:ring-[var(--brand-indigo)] resize-none"
+                              className="w-full px-2 py-1 text-[10px] rounded border border-[var(--border-default)] bg-[var(--bg-primary)] text-white placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[var(--brand-indigo)] resize-none"
                             />
                             <button
                               onClick={() => setContextEditCardFileId(null)}
-                              className="mt-0.5 px-1.5 py-0.5 text-[10px] font-[var(--font-weight-medium)] text-[var(--brand-indigo)] rounded border border-[var(--brand-indigo)] hover:bg-[var(--brand-indigo)]/10 cursor-pointer"
+                              className="mt-0.5 px-1.5 py-0.5 text-[10px] font-[var(--font-weight-medium)] text-white rounded border border-[var(--brand-indigo)] hover:bg-[var(--brand-indigo)]/10 cursor-pointer"
                             >
                               Done
                             </button>
