@@ -147,6 +147,35 @@ Supports **Anthropic (Claude)**, **OpenAI (GPT-4)**, and **Ollama (local models)
 | Base Brain Screener Files | Three bundled screener frameworks (WCAG Accessibility, UDL, DisCrit Inclusive Identity) auto-loaded on first launch — organized by category with view, delete, and drag-and-drop replacement |
 | Categorized Base Brain Context | AI prompts automatically group Base Brain reference files by framework (Accessibility, UDL, Inclusive Teaching, General) with framework-specific instructions for each category |
 
+### Tippy — Context-Aware AI Assistant
+
+<p align="center">
+  <img src="resources/tippy-icon.png" alt="Tippy AI Assistant" width="120" height="120" />
+</p>
+
+Tippy is a friendly, draggable AI assistant that lives inside Course Clip Studio. Powered by the same AI provider you configure in Settings (Anthropic, OpenAI, or Ollama), Tippy understands where you are in the app and what you're working on — then gives you targeted help, wayfinding, and instructional design guidance.
+
+| Feature | Description |
+|---|---|
+| **Context-Aware Chat** | Tippy reads the current view, active course, module, lesson, selected block, open panels, and accessibility settings — then responds with help specific to your situation |
+| **Guided Tour** | Click "Give me a tour" and Tippy walks you through every area of the app step-by-step, narrating each highlight with a chat message and advancing when you're ready |
+| **Quick Actions** | Three one-click prompts on first open: "Give me a tour," "Help me get started," and "What can I do here?" |
+| **Draggable Button** | Drag Tippy's floating button anywhere on screen — position persists across sessions |
+| **Error Recovery** | Tippy automatically detects AI or translation errors, opens the chat, and offers to help resolve them |
+| **Session Save / Restore** | Save your conversation, reload it later, or clear and start fresh |
+| **Markdown Responses** | Tippy's responses render with bold, links, inline code, and bullet lists |
+| **Onboarding Tour Highlights** | 10-step tour with animated highlight rings around sidebar, dashboard, toolbar, outline, canvas, properties, block palette, AI assistant, preview, and publish |
+| **Full Accessibility** | `role="dialog"`, `aria-label`, `aria-expanded`, keyboard navigation (Escape to close, arrow keys during tour), focus management, and reduced-motion awareness |
+| **Localized** | Tippy responds in your selected UI language |
+
+#### How to Use Tippy
+
+1. **Click the Tippy icon** — the floating purple character in the bottom-left corner of the app
+2. **Ask anything** — type a question about course authoring, accessibility, UDL, or how to use a feature
+3. **Use quick actions** — click a suggestion button to start a tour, get onboarded, or learn what's available on the current screen
+4. **Drag to reposition** — grab and move Tippy's button to any edge of the screen
+5. **Save conversations** — click the save icon to preserve your chat; reload saved sessions anytime
+
 ### Visual / Image API Integration
 
 Connect stock image providers to search and insert photos directly into courses.
@@ -394,7 +423,8 @@ lumina-udl/
 │       ├── assets/
 │       │   ├── styles/         # Design tokens, themes, Tailwind
 │       │   ├── fonts/          # OpenDyslexic woff2 font files
-│       │   └── base-brain/     # Bundled screener MD files (WCAG, UDL, DisCrit)
+│       │   ├── base-brain/     # Bundled screener MD files (WCAG, UDL, DisCrit)
+│       │   └── tippy/          # Tippy AI assistant icon
 │       ├── components/
 │       │   ├── layout/         # AppShell, Sidebar, TopBar
 │       │   ├── editor/         # Block editors, AI panel, tree navigator
@@ -403,6 +433,7 @@ lumina-udl/
 │       │   │   ├── steps/      # 6 wizard step components
 │       │   │   ├── cards/      # ObjectiveCard, AssignmentCard, RubricEditor
 │       │   │   └── library/    # SyllabusLibraryView, SyllabusCard
+│       │   ├── tippy/          # Tippy AI assistant (button, panel, chat, tour, error watcher)
 │       │   ├── publish/        # Export wizard, LMS upload
 │       │   ├── auth/           # PinInput component
 │       │   ├── onboarding/     # First-launch setup wizard
@@ -416,6 +447,7 @@ lumina-udl/
 │       │   ├── scorm/          # SCORM 1.2 & 2004 packagers
 │       │   ├── xapi/           # xAPI packager
 │       │   ├── ai/             # LLM provider abstraction + syllabus AI prompts
+│       │   ├── tippy/          # Tippy context gatherer, system prompt, tour steps
 │       │   └── accessibility/  # Audit engine, contrast checker
 │       ├── types/              # Course data model TypeScript types
 │       └── i18n/               # Internationalization (en, es)
@@ -444,7 +476,7 @@ lumina-udl/
 | Cmd/Ctrl + Z | Undo |
 | Cmd/Ctrl + Shift + Z | Redo |
 | Tab | Navigate between interactive elements |
-| Escape | Close accessibility widget / dialogs |
+| Escape | Close accessibility widget / Tippy panel / tour / dialogs |
 | Tab (from page top) | Skip link appears — press Enter to jump to main content |
 
 ## License
