@@ -103,6 +103,27 @@ Each step is optional and can be skipped. All settings can be changed later from
 - **Restart / wipe progress** — Branch action to restart the course and clear all learner progress
 - **Consequence feedback** — Display feedback text after each branch choice
 
+### Syllabus Builder
+
+A dedicated dashboard tab with a 6-step wizard for creating WCAG-compliant course syllabi with AI assistance.
+
+| Feature | Description |
+|---|---|
+| 6-Step Wizard | Course Identity → Audience & Level → Learning Objectives → Assignments → Rubrics → Review & Export |
+| 20 Preset Content Areas | Special Education, STEM, Literacy, Counseling, Nursing, DEI, Ed Tech, and more — plus custom content areas |
+| Bloom's Taxonomy Integration | Interactive reference panel with 6 levels, 10 action verbs each, and color-coded badges on every objective |
+| AI-Generated Objectives | Generate 4–6 measurable learning objectives aligned to Bloom's Taxonomy from course context |
+| AI-Generated Assignments | Generate assignments with UDL accommodations linked to objectives |
+| AI-Generated Rubrics | Generate analytic, holistic, single-point, or checklist rubrics from assignment context |
+| UDL Accommodations | Per-assignment annotations across Representation, Action & Expression, and Engagement pillars with AI suggestions per pillar |
+| 4 Rubric Types | Analytic (full grid editor), Holistic (level descriptors), Single-Point (growth/proficient/strengths), Checklist (yes/no items) |
+| Reusable Pools | Save objectives, assignments, and rubrics to personal pools for reuse across syllabi |
+| Import from Pool | Pull saved items from pools into any syllabus |
+| .docx Export | Download syllabi as formatted Word documents with proper headings, numbered lists, and rubric tables |
+| Syllabus Library | View, open, duplicate, and delete saved syllabi from a tabbed library |
+| Send to AI Assistant | Load a saved syllabus as context into the main AI panel for further content generation |
+| 14 Audience Levels | PreK through Graduate/Doctoral, plus Corporate, Healthcare, Parent/Caregiver, Community, and custom |
+
 ### AI Features
 
 Supports **Anthropic (Claude)**, **OpenAI (GPT-4)**, and **Ollama (local models)** as LLM providers. All API calls route through Electron IPC (`net.request`) to bypass CORS restrictions.
@@ -372,6 +393,10 @@ lumina-udl/
 │       │   ├── layout/         # AppShell, Sidebar, TopBar
 │       │   ├── editor/         # Block editors, AI panel, tree navigator
 │       │   ├── dashboard/      # Course cards, import dialog, templates
+│       │   ├── syllabus/       # Syllabus Builder wizard, cards, library, preview
+│       │   │   ├── steps/      # 6 wizard step components
+│       │   │   ├── cards/      # ObjectiveCard, AssignmentCard, RubricEditor
+│       │   │   └── library/    # SyllabusLibraryView, SyllabusCard
 │       │   ├── publish/        # Export wizard, LMS upload
 │       │   ├── auth/           # PinInput component
 │       │   ├── onboarding/     # First-launch setup wizard
@@ -380,11 +405,11 @@ lumina-udl/
 │       ├── stores/             # Zustand stores (app, auth, course, editor)
 │       ├── hooks/              # useTheme, useAccessibility, useWorkspaceInit, useAssetUpload
 │       ├── lib/
-│       │   ├── export/         # HTML packager, PDF renderer
+│       │   ├── export/         # HTML packager, PDF renderer, syllabus .docx export
 │       │   ├── import/         # Markdown, PPTX, SCORM parsers
 │       │   ├── scorm/          # SCORM 1.2 & 2004 packagers
 │       │   ├── xapi/           # xAPI packager
-│       │   ├── ai/             # LLM provider abstraction
+│       │   ├── ai/             # LLM provider abstraction + syllabus AI prompts
 │       │   └── accessibility/  # Audit engine, contrast checker
 │       ├── types/              # Course data model TypeScript types
 │       └── i18n/               # Internationalization (en, es)

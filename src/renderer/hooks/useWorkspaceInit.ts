@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useAppStore } from '@/stores/useAppStore'
 import { useCourseStore } from '@/stores/useCourseStore'
+import { useSyllabusStore } from '@/stores/useSyllabusStore'
 import { loadWorkspacePath, loadWorkspace } from '@/lib/workspace'
 
 /**
@@ -25,7 +26,8 @@ export function useWorkspaceInit(): void {
           useAppStore.getState().loadVisualApiSettings(),
           useAppStore.getState().loadBaseBrainSettings(),
           useAppStore.getState().loadContentAreas(),
-          useAppStore.getState().loadUserTemplates()
+          useAppStore.getState().loadUserTemplates(),
+          useSyllabusStore.getState().loadSyllabusData()
         ])
         if (path) {
           setWorkspacePath(path)
