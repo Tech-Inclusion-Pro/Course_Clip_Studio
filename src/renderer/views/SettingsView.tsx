@@ -21,9 +21,10 @@ import {
   FileText,
   X
 } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
-import i18next from 'i18next'
 import { useAppStore, type ThemeMode } from '@/stores/useAppStore'
+import { useLocaleStore } from '@/stores/useLocaleStore'
+import { LANGUAGES } from '@/lib/i18n/languages'
+import { useT } from '@/hooks/useT'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { uid } from '@/lib/uid'
@@ -94,7 +95,8 @@ export function SettingsView(): JSX.Element {
 // ─── General Settings ───
 
 function GeneralSettings(): JSX.Element {
-  const { t } = useTranslation('settings')
+  const t = useT()
+  const isTranslating = useLocaleStore((s) => s.isTranslating)
   const authorName = useAppStore((s) => s.authorName)
   const setAuthorName = useAppStore((s) => s.setAuthorName)
   const defaultLanguage = useAppStore((s) => s.defaultLanguage)
@@ -124,20 +126,29 @@ function GeneralSettings(): JSX.Element {
         </FieldRow>
       </SettingsCard>
 
-      <SettingsCard title={t('general.uiLanguage')} icon={Globe}>
-        <FieldRow label={t('general.uiLanguage')} description={t('general.uiLanguageDescription')}>
-          <select
-            value={uiLanguage}
-            onChange={(e) => {
-              const lang = e.target.value
-              setUILanguage(lang)
-              i18next.changeLanguage(lang)
-            }}
-            className="w-40 px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
-          >
-            <option value="en">English</option>
-            <option value="es">Espa&#241;ol</option>
-          </select>
+      <SettingsCard title={t('settings.general.uiLanguage', 'UI Language')} icon={Globe}>
+        <FieldRow label={t('settings.general.uiLanguage', 'UI Language')} description={t('settings.general.uiLanguageDescription', 'Language for the application interface')}>
+          <div className="flex items-center gap-2">
+            <select
+              value={uiLanguage}
+              disabled={isTranslating}
+              onChange={(e) => {
+                const lang = e.target.value
+                setUILanguage(lang)
+                useLocaleStore.getState().setLanguage(lang)
+              }}
+              className="w-52 px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)] disabled:opacity-50"
+            >
+              {LANGUAGES.map((lang) => (
+                <option key={lang.code} value={lang.code}>
+                  {lang.nativeName} — {lang.name}
+                </option>
+              ))}
+            </select>
+            {isTranslating && (
+              <span className="text-xs text-[var(--text-tertiary)] animate-pulse">Translating...</span>
+            )}
+          </div>
         </FieldRow>
       </SettingsCard>
 

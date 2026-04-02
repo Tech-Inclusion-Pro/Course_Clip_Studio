@@ -8,7 +8,9 @@ import { SettingsView } from '@/views/SettingsView'
 import { PublishView } from '@/views/PublishView'
 import { SignInView } from '@/views/SignInView'
 import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard'
+import { TranslationBanner } from '@/components/common/TranslationBanner'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { useLocaleStore } from '@/stores/useLocaleStore'
 import { ROUTES } from '@/lib/constants'
 
 function AuthGate({ children }: { children: React.ReactNode }): JSX.Element {
@@ -44,8 +46,18 @@ function AuthGate({ children }: { children: React.ReactNode }): JSX.Element {
 }
 
 export function App(): JSX.Element {
+  // Hydrate saved language on startup
+  useEffect(() => {
+    window.electronAPI?.settings.get('uiLanguage').then((lang: unknown) => {
+      if (typeof lang === 'string' && lang !== 'en') {
+        useLocaleStore.getState().setLanguage(lang)
+      }
+    })
+  }, [])
+
   return (
     <AuthGate>
+      <TranslationBanner />
       <Routes>
         <Route element={<AppShell />}>
           <Route path={ROUTES.DASHBOARD} element={<DashboardView />} />

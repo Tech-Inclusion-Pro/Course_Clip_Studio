@@ -2,10 +2,12 @@ import { Clock, Layout, Palette, BookOpen, FileText, ClipboardList, PanelLeftClo
 import { useNavigate } from 'react-router-dom'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useDashboardStore, type DashboardSection } from '@/stores/useDashboardStore'
+import { useT } from '@/hooks/useT'
 import { ROUTES } from '@/lib/constants'
 
 export function DashboardSidebar(): JSX.Element {
   const navigate = useNavigate()
+  const t = useT()
   const courses = useCourseStore((s) => s.courses)
   const setActiveCourse = useCourseStore((s) => s.setActiveCourse)
   const activeSection = useDashboardStore((s) => s.activeSection)
@@ -24,10 +26,10 @@ export function DashboardSidebar(): JSX.Element {
   }
 
   const sections: Array<{ id: DashboardSection; label: string; icon: typeof Layout }> = [
-    { id: 'courses', label: 'My Courses', icon: Layout },
-    { id: 'templates', label: 'Templates', icon: FileText },
-    { id: 'content-areas', label: 'Content Areas', icon: BookOpen },
-    { id: 'syllabus', label: 'Syllabus Builder', icon: ClipboardList }
+    { id: 'courses', label: t('sidebar.myCourses', 'My Courses'), icon: Layout },
+    { id: 'templates', label: t('sidebar.templates', 'Templates'), icon: FileText },
+    { id: 'content-areas', label: t('sidebar.contentAreas', 'Content Areas'), icon: BookOpen },
+    { id: 'syllabus', label: t('sidebar.syllabusBuilder', 'Syllabus Builder'), icon: ClipboardList }
   ]
 
   return (
@@ -47,8 +49,8 @@ export function DashboardSidebar(): JSX.Element {
         <button
           onClick={toggleSidebar}
           className="p-1.5 rounded-md text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={collapsed ? t('sidebar.expandSidebar', 'Expand sidebar') : t('sidebar.collapseSidebar', 'Collapse sidebar')}
+          title={collapsed ? t('sidebar.expandSidebar', 'Expand sidebar') : t('sidebar.collapseSidebar', 'Collapse sidebar')}
         >
           {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
         </button>
@@ -90,10 +92,10 @@ export function DashboardSidebar(): JSX.Element {
             transition-colors duration-[var(--duration-fast)]
             ${collapsed ? 'justify-center px-0 py-2' : 'px-3 py-2'}
           `}
-          title={collapsed ? 'Brand Kit' : undefined}
+          title={collapsed ? t('sidebar.brandKit', 'Brand Kit') : undefined}
         >
           <Palette size={16} className="shrink-0" />
-          {!collapsed && 'Brand Kit'}
+          {!collapsed && t('sidebar.brandKit', 'Brand Kit')}
         </button>
       </nav>
 
@@ -102,10 +104,10 @@ export function DashboardSidebar(): JSX.Element {
         <div className="px-4 pb-4">
           <h3 className="flex items-center gap-1.5 text-xs font-[var(--font-weight-semibold)] text-[var(--text-tertiary)] uppercase tracking-wider mb-2 px-1">
             <Clock size={12} aria-hidden="true" />
-            Recent
+            {t('sidebar.recent', 'Recent')}
           </h3>
           {recentCourses.length === 0 ? (
-            <p className="text-xs text-[var(--text-tertiary)] px-1">No recent courses</p>
+            <p className="text-xs text-[var(--text-tertiary)] px-1">{t('sidebar.noRecentCourses', 'No recent courses')}</p>
           ) : (
             <ul className="space-y-0.5">
               {recentCourses.map((course) => (

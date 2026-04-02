@@ -130,7 +130,30 @@ export function baseBrainContext(bb: BaseBrainSettings): string {
   return `\n\n--- Base Brain Context ---\n${parts.join('\n\n')}`
 }
 
-export const SYSTEM_PROMPT = `You are an expert instructional designer and course author for LuminaUDL, an accessible course authoring application. You follow Universal Design for Learning (UDL) principles and WCAG 2.1 AA accessibility standards. Always write clear, structured, inclusive educational content. When generating JSON, output only valid JSON with no markdown fencing. When Base Brain context is provided, ALWAYS apply those frameworks consistently: check accessibility against WCAG screener criteria, validate UDL alignment against UDL screener principles, and ensure inclusive language/identity standards from the DisCrit screener.`
+const BASE_SYSTEM_PROMPT = `You are an expert instructional designer and course author for LuminaUDL, an accessible course authoring application. You follow Universal Design for Learning (UDL) principles and WCAG 2.1 AA accessibility standards. Always write clear, structured, inclusive educational content. When generating JSON, output only valid JSON with no markdown fencing. When Base Brain context is provided, ALWAYS apply those frameworks consistently: check accessibility against WCAG screener criteria, validate UDL alignment against UDL screener principles, and ensure inclusive language/identity standards from the DisCrit screener.`
+
+/** @deprecated Use getSystemPrompt() instead */
+export const SYSTEM_PROMPT = BASE_SYSTEM_PROMPT
+
+export function getSystemPrompt(languageCode: string = 'en'): string {
+  if (languageCode === 'en') return BASE_SYSTEM_PROMPT
+  // Dynamic import would be circular — inline the lookup
+  const LANG_NAMES: Record<string, [string, string]> = {
+    es: ['Spanish', 'Español'], fr: ['French', 'Français'], de: ['German', 'Deutsch'],
+    pt: ['Portuguese', 'Português'], it: ['Italian', 'Italiano'], nl: ['Dutch', 'Nederlands'],
+    ru: ['Russian', 'Русский'], uk: ['Ukrainian', 'Українська'], pl: ['Polish', 'Polski'],
+    tr: ['Turkish', 'Türkçe'], ja: ['Japanese', '日本語'], zh: ['Chinese (Simplified)', '中文 (简体)'],
+    'zh-TW': ['Chinese (Traditional)', '中文 (繁體)'], ko: ['Korean', '한국어'],
+    hi: ['Hindi', 'हिन्दी'], bn: ['Bengali', 'বাংলা'], ar: ['Arabic', 'العربية'],
+    fa: ['Persian', 'فارسی'], ur: ['Urdu', 'اردو'], he: ['Hebrew', 'עברית'],
+    arz: ['Egyptian Arabic', 'مصرى'], vi: ['Vietnamese', 'Tiếng Việt'], th: ['Thai', 'ไทย'],
+    id: ['Indonesian', 'Bahasa Indonesia'], ms: ['Malay', 'Bahasa Melayu'],
+    sw: ['Swahili', 'Kiswahili'], tl: ['Filipino', 'Filipino'],
+    pa: ['Punjabi', 'ਪੰਜਾਬੀ'], ta: ['Tamil', 'தமிழ்']
+  }
+  const [name, nativeName] = LANG_NAMES[languageCode] ?? [languageCode, languageCode]
+  return BASE_SYSTEM_PROMPT + `\n\nIMPORTANT: Generate ALL responses in ${name} (${nativeName}). All text content, labels, descriptions, feedback, and explanations must be in ${name}. Keep only technical terms (SCORM, WCAG, UDL, HTML, JSON) in English. Respond naturally in ${name}, not as a translation from English.`
+}
 
 export function outlinePrompt(topic: string, answers: InterviewAnswers): string {
   return `Generate a course outline for the topic: "${topic}"

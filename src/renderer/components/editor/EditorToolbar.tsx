@@ -31,6 +31,7 @@ import {
 } from 'lucide-react'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useEditorStore, type PreviewDevice } from '@/stores/useEditorStore'
+import { useT } from '@/hooks/useT'
 import { useHistoryStore } from '@/stores/useHistoryStore'
 import { serializeCourse, deserializeCourse } from '@/lib/course-helpers'
 import { ROUTES } from '@/lib/constants'
@@ -50,6 +51,7 @@ const DEVICE_LABELS: Record<PreviewDevice, string> = {
 
 export function EditorToolbar(): JSX.Element {
   const navigate = useNavigate()
+  const t = useT()
 
   const course = useCourseStore((s) => s.courses.find((c) => c.id === s.activeCourseId))
   const activeCourseId = useCourseStore((s) => s.activeCourseId)
@@ -148,8 +150,8 @@ export function EditorToolbar(): JSX.Element {
         <button
           onClick={() => navigate(ROUTES.DASHBOARD)}
           className="p-1.5 rounded-md cursor-pointer text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors"
-          aria-label="Back to dashboard"
-          title="Back to dashboard"
+          aria-label={t('toolbar.backToDashboard', 'Back to dashboard')}
+          title={t('toolbar.backToDashboard', 'Back to dashboard')}
         >
           <ArrowLeft size={16} />
         </button>
@@ -167,9 +169,9 @@ export function EditorToolbar(): JSX.Element {
           <button
             onClick={startEditTitle}
             className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-primary)] truncate hover:text-[var(--brand-magenta)] transition-colors cursor-pointer"
-            title="Click to rename course"
+            title={t('toolbar.clickToRename', 'Click to rename course')}
           >
-            {course?.meta.title ?? 'Untitled Course'}
+            {course?.meta.title ?? t('toolbar.untitledCourse', 'Untitled Course')}
           </button>
         )}
       </div>
@@ -178,14 +180,14 @@ export function EditorToolbar(): JSX.Element {
       <div className="flex items-center gap-1">
         <ToolbarButton
           icon={Undo2}
-          label="Undo"
+          label={t('toolbar.undo', 'Undo')}
           shortcut="Ctrl+Z"
           disabled={!canUndo}
           onClick={handleUndo}
         />
         <ToolbarButton
           icon={Redo2}
-          label="Redo"
+          label={t('toolbar.redo', 'Redo')}
           shortcut="Ctrl+Shift+Z"
           disabled={!canRedo}
           onClick={handleRedo}
@@ -195,7 +197,7 @@ export function EditorToolbar(): JSX.Element {
 
         <ToolbarButton
           icon={SplitSquareHorizontal}
-          label="Split preview"
+          label={t('toolbar.splitPreview', 'Split preview')}
           active={splitPreviewOpen}
           onClick={toggleSplitPreview}
         />
@@ -203,7 +205,7 @@ export function EditorToolbar(): JSX.Element {
         {/* Device switcher */}
         <ToolbarButton
           icon={DeviceIcon}
-          label={`Preview: ${DEVICE_LABELS[previewDevice]}`}
+          label={`${t('toolbar.preview', 'Preview')}: ${DEVICE_LABELS[previewDevice]}`}
           onClick={() => {
             const devices: PreviewDevice[] = ['desktop', 'tablet', 'mobile']
             const idx = devices.indexOf(previewDevice)
@@ -216,19 +218,19 @@ export function EditorToolbar(): JSX.Element {
         {/* Canvas mode toggle */}
         <ToolbarButton
           icon={canvasMode === 'block' ? LayoutGrid : Columns}
-          label={canvasMode === 'block' ? 'Switch to Slide view' : 'Switch to Block view'}
+          label={canvasMode === 'block' ? t('toolbar.switchToSlide', 'Switch to Slide view') : t('toolbar.switchToBlock', 'Switch to Block view')}
           active={canvasMode === 'slide'}
           onClick={() => setCanvasMode(canvasMode === 'block' ? 'slide' : 'block')}
         />
         <ToolbarButton
           icon={Grid3x3}
-          label="Toggle Grid"
+          label={t('toolbar.toggleGrid', 'Toggle Grid')}
           active={showGrid}
           onClick={toggleGrid}
         />
         <ToolbarButton
           icon={Magnet}
-          label="Smart Guides"
+          label={t('toolbar.smartGuides', 'Smart Guides')}
           active={showSmartGuides}
           onClick={toggleSmartGuides}
         />
@@ -236,7 +238,7 @@ export function EditorToolbar(): JSX.Element {
         {/* Branching graph toggle */}
         <ToolbarButton
           icon={GitBranch}
-          label="Branching Graph"
+          label={t('toolbar.branchingGraph', 'Branching Graph')}
           active={branchingGraphOpen}
           onClick={toggleBranchingGraph}
         />
@@ -244,7 +246,7 @@ export function EditorToolbar(): JSX.Element {
         {/* Question bank toggle */}
         <ToolbarButton
           icon={Database}
-          label="Question Bank"
+          label={t('toolbar.questionBank', 'Question Bank')}
           active={questionBankOpen}
           onClick={toggleQuestionBank}
         />
@@ -253,17 +255,17 @@ export function EditorToolbar(): JSX.Element {
 
         <ToolbarButton
           icon={Eye}
-          label="Preview"
+          label={t('toolbar.preview', 'Preview')}
           onClick={() => navigate(ROUTES.PREVIEW)}
         />
         <ToolbarButton
           icon={Upload}
-          label="Publish"
+          label={t('toolbar.publish', 'Publish')}
           onClick={() => navigate(ROUTES.PUBLISH)}
         />
         <ToolbarButton
           icon={BookmarkPlus}
-          label="Save as Template"
+          label={t('toolbar.saveAsTemplate', 'Save as Template')}
           onClick={() => setSaveTemplateOpen(true)}
         />
       </div>
@@ -272,25 +274,25 @@ export function EditorToolbar(): JSX.Element {
       <div className="flex items-center gap-1">
         <ToolbarButton
           icon={Palette}
-          label="Theme Editor"
+          label={t('toolbar.themeEditor', 'Theme Editor')}
           active={themeEditorOpen}
           onClick={toggleThemeEditor}
         />
         <ToolbarButton
           icon={Award}
-          label="Certificate Designer"
+          label={t('toolbar.certificateDesigner', 'Certificate Designer')}
           active={certificateDesignerOpen}
           onClick={toggleCertificateDesigner}
         />
         <ToolbarButton
           icon={ShieldCheck}
-          label="Accessibility Audit"
+          label={t('toolbar.accessibilityAudit', 'Accessibility Audit')}
           active={auditPanelOpen}
           onClick={toggleAuditPanel}
         />
         <ToolbarButton
           icon={Sparkles}
-          label="AI Assistant"
+          label={t('toolbar.aiAssistant', 'AI Assistant')}
           active={aiPanelOpen}
           onClick={toggleAIPanel}
         />
@@ -299,18 +301,18 @@ export function EditorToolbar(): JSX.Element {
 
         <ToolbarButton
           icon={Save}
-          label={saveFlash ? 'Saved!' : 'Save'}
+          label={saveFlash ? t('toolbar.saved', 'Saved!') : t('toolbar.save', 'Save')}
           onClick={handleManualSave}
         />
         <ToolbarButton
           icon={History}
-          label="Version History"
+          label={t('toolbar.versionHistory', 'Version History')}
           active={versionHistoryOpen}
           onClick={toggleVersionHistory}
         />
         <ToolbarButton
           icon={MessageSquare}
-          label="Notes"
+          label={t('toolbar.notes', 'Notes')}
           active={notesPanelOpen}
           onClick={toggleNotesPanel}
         />
@@ -319,12 +321,12 @@ export function EditorToolbar(): JSX.Element {
 
         <ToolbarButton
           icon={leftPanelOpen ? PanelLeftClose : PanelLeftOpen}
-          label={leftPanelOpen ? 'Hide outline' : 'Show outline'}
+          label={leftPanelOpen ? t('toolbar.hideOutline', 'Hide outline') : t('toolbar.showOutline', 'Show outline')}
           onClick={toggleLeftPanel}
         />
         <ToolbarButton
           icon={rightPanelOpen ? PanelRightClose : PanelRightOpen}
-          label={rightPanelOpen ? 'Hide properties' : 'Show properties'}
+          label={rightPanelOpen ? t('toolbar.hideProperties', 'Hide properties') : t('toolbar.showProperties', 'Show properties')}
           onClick={toggleRightPanel}
         />
       </div>

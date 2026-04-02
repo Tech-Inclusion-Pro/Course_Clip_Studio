@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Plus, Upload, BookOpen, Search as SearchIcon, FolderOpen, Trash2, X, Save } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { useT } from '@/hooks/useT'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useDashboardStore } from '@/stores/useDashboardStore'
 import { useAppStore } from '@/stores/useAppStore'
@@ -30,6 +31,7 @@ const ICON_OPTIONS = [
 ]
 
 export function DashboardView(): JSX.Element {
+  const t = useT()
   const workspacePath = useAppStore((s) => s.workspacePath)
   const workspaceLoaded = useAppStore((s) => s.workspaceLoaded)
 
@@ -120,7 +122,7 @@ export function DashboardView(): JSX.Element {
   if (!workspaceLoaded) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-sm text-[var(--text-tertiary)]">Loading workspace...</p>
+        <p className="text-sm text-[var(--text-tertiary)]">{t('dashboard.loadingWorkspace', 'Loading workspace...')}</p>
       </div>
     )
   }
@@ -141,20 +143,20 @@ export function DashboardView(): JSX.Element {
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-[var(--font-weight-bold)] text-[var(--text-primary)]">
-                  My Courses
+                  {t('dashboard.myCourses', 'My Courses')}
                 </h2>
                 <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                  Create and manage your course content
+                  {t('dashboard.createAndManage', 'Create and manage your course content')}
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="secondary" size="md" onClick={() => setImportOpen(true)}>
                   <Upload size={18} />
-                  Import
+                  {t('dashboard.import', 'Import')}
                 </Button>
                 <Button variant="primary" size="md" onClick={() => setDialogOpen(true)}>
                   <Plus size={18} />
-                  New Course
+                  {t('dashboard.newCourse', 'New Course')}
                 </Button>
               </div>
             </div>
@@ -184,18 +186,18 @@ export function DashboardView(): JSX.Element {
                 </div>
                 <h3 className="text-lg font-[var(--font-weight-semibold)] text-[var(--text-primary)] mb-2">
                   {searchQuery || statusFilter !== 'all' || tagFilter
-                    ? 'No matching courses'
-                    : 'No courses yet'}
+                    ? t('dashboard.noMatchingCourses', 'No matching courses')
+                    : t('dashboard.noCourses', 'No courses yet')}
                 </h3>
                 <p className="text-sm text-[var(--text-secondary)] max-w-md mb-6">
                   {searchQuery || statusFilter !== 'all' || tagFilter
-                    ? 'Try adjusting your search or filters to find what you\'re looking for.'
-                    : 'Get started by creating your first course. You can add modules, lessons, and interactive content blocks.'}
+                    ? t('dashboard.noMatchingDescription', "Try adjusting your search or filters to find what you're looking for.")
+                    : t('dashboard.getStartedDescription', 'Get started by creating your first course. You can add modules, lessons, and interactive content blocks.')}
                 </p>
                 {!searchQuery && statusFilter === 'all' && !tagFilter && (
                   <Button variant="primary" size="lg" onClick={() => setDialogOpen(true)}>
                     <Plus size={18} />
-                    Create Your First Course
+                    {t('dashboard.createFirstCourse', 'Create Your First Course')}
                   </Button>
                 )}
               </div>
@@ -219,17 +221,17 @@ export function DashboardView(): JSX.Element {
           <>
             <div className="mb-6">
               <h2 className="text-2xl font-[var(--font-weight-bold)] text-[var(--text-primary)]">
-                Templates
+                {t('dashboard.templates', 'Templates')}
               </h2>
               <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                Start with a pre-built course structure
+                {t('dashboard.startWithTemplate', 'Start with a pre-built course structure')}
               </p>
             </div>
 
             {/* User Templates */}
             <div className="mb-8">
               <h3 className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-secondary)] uppercase tracking-wider mb-3">
-                My Templates
+                {t('dashboard.myTemplates', 'My Templates')}
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                 {/* Create New Template card */}
@@ -249,10 +251,10 @@ export function DashboardView(): JSX.Element {
                     <Plus size={20} className="text-[var(--brand-magenta)]" />
                   </div>
                   <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
-                    Create Template
+                    {t('dashboard.createTemplate', 'Create Template')}
                   </span>
                   <span className="text-xs text-[var(--text-tertiary)] line-clamp-2">
-                    Build a custom template from scratch
+                    {t('dashboard.buildCustomTemplate', 'Build a custom template from scratch')}
                   </span>
                 </button>
 
@@ -287,7 +289,7 @@ export function DashboardView(): JSX.Element {
 
             {/* Built-in Templates */}
             <h3 className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-secondary)] uppercase tracking-wider mb-3">
-              Built-in Templates
+              {t('dashboard.builtInTemplates', 'Built-in Templates')}
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {COURSE_TEMPLATES.map((template) => (

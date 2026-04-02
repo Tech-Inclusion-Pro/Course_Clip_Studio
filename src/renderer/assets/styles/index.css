@@ -260,3 +260,27 @@ body {
   pointer-events: none;
   height: 0;
 }
+
+/* ─── RTL Support ─── */
+[dir="rtl"] {
+  text-align: right;
+}
+
+[dir="rtl"] .sidebar,
+[dir="rtl"] aside[aria-label] {
+  border-right: none;
+  border-left: 1px solid var(--border-default);
+}
+
+[dir="rtl"] .tiptap ul,
+[dir="rtl"] .tiptap ol {
+  padding-left: 0;
+  padding-right: 1.5em;
+}
+
+[dir="rtl"] .tiptap blockquote {
+  border-left: none;
+  border-right: 3px solid var(--border-default);
+  padding-left: 0;
+  padding-right: 0.75em;
+}

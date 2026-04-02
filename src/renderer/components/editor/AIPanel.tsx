@@ -32,6 +32,7 @@ import {
   AIClientError,
   AI_ACTIONS,
   SYSTEM_PROMPT,
+  getSystemPrompt,
   REFERENCE_FILE_CATEGORIES,
   outlinePrompt,
   lessonContentPrompt,
@@ -1057,7 +1058,8 @@ async function runAction(action: AIAction): Promise<void> {
       }
     }
 
-    const systemPrompt = SYSTEM_PROMPT + bbContext + refFilesContext + caFilesContext
+    const uiLang = useAppStore.getState().uiLanguage
+    const systemPrompt = getSystemPrompt(uiLang) + bbContext + refFilesContext + caFilesContext
     let result: string
 
     switch (action) {

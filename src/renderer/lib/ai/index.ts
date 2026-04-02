@@ -15,6 +15,7 @@ export {
 } from './types'
 export {
   SYSTEM_PROMPT,
+  getSystemPrompt,
   outlinePrompt,
   lessonContentPrompt,
   quizPrompt,
