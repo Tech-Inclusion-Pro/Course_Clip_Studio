@@ -122,6 +122,8 @@ Supports **Anthropic (Claude)**, **OpenAI (GPT-4)**, and **Ollama (local models)
 | Reference File Categories | Tag each reference file with multiple categories (design, content, assignment, quiz, format, activity, assessment, rubric, standards, template) via clickable chips — AI groups files by category and applies contextual instructions per category |
 | Content Areas | Create reusable content area profiles on the Dashboard with audience, objectives, prior knowledge, tone, format, and accessibility needs — select a content area per project in the AI panel to automatically supplement interview answers |
 | Base Brain | Persistent design DNA settings (design assumptions, tone & voice, visual preferences, goals, reference files) that inform all AI generation when enabled |
+| Base Brain Screener Files | Three bundled screener frameworks (WCAG Accessibility, UDL, DisCrit Inclusive Identity) auto-loaded on first launch — organized by category with view, delete, and drag-and-drop replacement |
+| Categorized Base Brain Context | AI prompts automatically group Base Brain reference files by framework (Accessibility, UDL, Inclusive Teaching, General) with framework-specific instructions for each category |
 
 ### Visual / Image API Integration
 
@@ -232,6 +234,7 @@ All settings persist across sessions.
 
 - Full color palette customization (primary, secondary, accent, background, surface, text)
 - Block-specific background and text colors for interactive elements (quiz, flashcard, matching, drag & drop, branching, accordion) with WCAG contrast indicator
+- **Automatic contrast correction** — Preview and SCORM export automatically detect insufficient text/background contrast (below WCAG AA 4.5:1) and substitute readable dark or light text to ensure legibility
 - Custom CSS injection
 - Dark mode toggle
 - Player shell configuration (header color, button style, progress bar color, logo display)
@@ -272,6 +275,14 @@ Start new courses from pre-designed templates:
 - **Higher Education** — Academic course structure
 - **UDL Showcase** — Demonstrates UDL principles with example content
 
+#### Custom User Templates
+
+- **Save as Template** — Save any existing course as a reusable template from the editor toolbar (BookmarkPlus icon)
+- **Structure-only option** — Optionally strip all content while keeping block types and course structure
+- **Template metadata** — Set name, description, and icon for each custom template
+- **My Templates section** — User templates appear in the Dashboard Templates tab above built-in templates
+- **Delete templates** — Remove user templates with a hover-reveal delete button
+
 ### Internationalization
 
 - **English** and **Spanish** interface translations
@@ -284,7 +295,7 @@ Start new courses from pre-designed templates:
 - **Workspace management** — Multi-course workspace with file system persistence
 - **Publish status tracking** — Draft, In Review, Published, Archived workflow
 - **Course metadata** — Title, description, author, language, estimated duration, tags, thumbnail, version
-- **Asset management** — All uploaded files (images, audio, video, SRT/VTT) are automatically copied into the course's `assets/` folder, ensuring courses are fully self-contained for export and packaging
+- **Asset management** — All uploaded files (images, audio, video, SRT/VTT, theme logos, certificate backgrounds and logos) are automatically copied into the course's `assets/` folder, ensuring courses are fully self-contained for export and packaging
 - **Learner preview** — Full interactive preview with device modes (Desktop, Tablet, Mobile), with working flashcard 3D flip, drag & drop, matching, branching, quiz interactions, and in-iframe navigation buttons
 - **Learner notes** — Note-taking and bookmarking in preview mode
 - **UDL checklists** — Per-module tracking across Representation, Action & Expression, and Engagement pillars
@@ -355,7 +366,8 @@ lumina-udl/
 │       ├── App.tsx             # Route definitions
 │       ├── assets/
 │       │   ├── styles/         # Design tokens, themes, Tailwind
-│       │   └── fonts/          # OpenDyslexic woff2 font files
+│       │   ├── fonts/          # OpenDyslexic woff2 font files
+│       │   └── base-brain/     # Bundled screener MD files (WCAG, UDL, DisCrit)
 │       ├── components/
 │       │   ├── layout/         # AppShell, Sidebar, TopBar
 │       │   ├── editor/         # Block editors, AI panel, tree navigator

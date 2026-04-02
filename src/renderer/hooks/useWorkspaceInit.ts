@@ -24,7 +24,8 @@ export function useWorkspaceInit(): void {
           useAppStore.getState().loadAccessibilitySettings(),
           useAppStore.getState().loadVisualApiSettings(),
           useAppStore.getState().loadBaseBrainSettings(),
-          useAppStore.getState().loadContentAreas()
+          useAppStore.getState().loadContentAreas(),
+          useAppStore.getState().loadUserTemplates()
         ])
         if (path) {
           setWorkspacePath(path)

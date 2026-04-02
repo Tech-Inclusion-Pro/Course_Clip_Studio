@@ -1,4 +1,4 @@
-import { Clock, Layout, Palette, BookOpen } from 'lucide-react'
+import { Clock, Layout, Palette, BookOpen, FileText } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useDashboardStore, type DashboardSection } from '@/stores/useDashboardStore'
@@ -23,7 +23,7 @@ export function DashboardSidebar(): JSX.Element {
 
   const sections: Array<{ id: DashboardSection; label: string; icon: typeof Layout }> = [
     { id: 'courses', label: 'My Courses', icon: Layout },
-    { id: 'templates', label: 'Templates', icon: Layout },
+    { id: 'templates', label: 'Templates', icon: FileText },
     { id: 'content-areas', label: 'Content Areas', icon: BookOpen }
   ]
 

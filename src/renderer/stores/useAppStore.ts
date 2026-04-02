@@ -1,6 +1,15 @@
 import { create } from 'zustand'
-import type { AISettings, AccessibilitySettings, BrandKit, VisualApiProvider, BaseBrainSettings, ContentArea } from '@/types/course'
+import type { AISettings, AccessibilitySettings, BrandKit, VisualApiProvider, BaseBrainSettings, BaseBrainFile, ContentArea, UserTemplate } from '@/types/course'
 import { uid } from '@/lib/uid'
+import wcagScreener from '@/assets/base-brain/01_WCAG_Accessibility_Screener.md?raw'
+import udlScreener from '@/assets/base-brain/02_UDL_Screener.md?raw'
+import discritScreener from '@/assets/base-brain/03_DisCrit_Inclusive_Identity_Screener.md?raw'
+
+const DEFAULT_BRAIN_FILES: BaseBrainFile[] = [
+  { name: '01_WCAG_Accessibility_Screener.md', content: wcagScreener, category: 'accessibility' },
+  { name: '02_UDL_Screener.md', content: udlScreener, category: 'udl' },
+  { name: '03_DisCrit_Inclusive_Identity_Screener.md', content: discritScreener, category: 'inclusive' }
+]
 
 export type ThemeMode = 'light' | 'dark' | 'system' | 'sepia' | 'midnight' | 'forest' | 'ocean' | `brand-${string}`
 
@@ -36,6 +45,9 @@ interface AppState {
 
   // Base Brain
   baseBrain: BaseBrainSettings
+
+  // User Templates
+  userTemplates: UserTemplate[]
 
   // Content Areas
   contentAreas: ContentArea[]
@@ -77,8 +89,13 @@ interface AppState {
   // Base Brain actions
   loadBaseBrainSettings: () => Promise<void>
   updateBaseBrain: (partial: Partial<BaseBrainSettings>) => void
-  addBaseBrainFile: (name: string, content: string) => void
+  addBaseBrainFile: (name: string, content: string, category?: BaseBrainFile['category']) => void
   removeBaseBrainFile: (index: number) => void
+
+  // User Template actions
+  loadUserTemplates: () => Promise<void>
+  addUserTemplate: (template: UserTemplate) => void
+  removeUserTemplate: (id: string) => void
 
   // Content Area actions
   loadContentAreas: () => Promise<void>
@@ -148,6 +165,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     goals: '',
     designConsiderations: ''
   },
+
+  // User Templates defaults
+  userTemplates: [],
 
   // Content Areas defaults
   contentAreas: [],
@@ -277,7 +297,19 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       const saved = (await window.electronAPI.settings.get('baseBrain')) as Partial<BaseBrainSettings> | null
       if (saved) {
-        set((state) => ({ baseBrain: { ...state.baseBrain, ...saved } }))
+        // Migrate old files without category
+        const files = (saved.referenceFiles ?? []).map((f) => ({
+          ...f,
+          category: (f as BaseBrainFile).category || ('general' as const)
+        }))
+        set((state) => ({ baseBrain: { ...state.baseBrain, ...saved, referenceFiles: files } }))
+      }
+      // Auto-populate defaults if no reference files exist
+      const current = get().baseBrain
+      if (current.referenceFiles.length === 0) {
+        const updated = { ...current, referenceFiles: DEFAULT_BRAIN_FILES }
+        set({ baseBrain: updated })
+        window.electronAPI.settings.set('baseBrain', updated)
       }
     } catch (err) {
       console.error('Failed to load Base Brain settings:', err)
@@ -292,11 +324,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     })
   },
 
-  addBaseBrainFile: (name, content) => {
+  addBaseBrainFile: (name, content, category = 'general') => {
     set((state) => {
       const updated = {
         ...state.baseBrain,
-        referenceFiles: [...state.baseBrain.referenceFiles, { name, content }]
+        referenceFiles: [...state.baseBrain.referenceFiles, { name, content, category }]
       }
       window.electronAPI.settings.set('baseBrain', updated)
       return { baseBrain: updated }
@@ -311,6 +343,34 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
       window.electronAPI.settings.set('baseBrain', updated)
       return { baseBrain: updated }
+    })
+  },
+
+  // User Template actions
+  loadUserTemplates: async () => {
+    try {
+      const saved = (await window.electronAPI.settings.get('userTemplates')) as UserTemplate[] | null
+      if (saved && Array.isArray(saved)) {
+        set({ userTemplates: saved })
+      }
+    } catch (err) {
+      console.error('Failed to load user templates:', err)
+    }
+  },
+
+  addUserTemplate: (template) => {
+    set((state) => {
+      const updated = [...state.userTemplates, template]
+      window.electronAPI.settings.set('userTemplates', updated)
+      return { userTemplates: updated }
+    })
+  },
+
+  removeUserTemplate: (id) => {
+    set((state) => {
+      const updated = state.userTemplates.filter((t) => t.id !== id)
+      window.electronAPI.settings.set('userTemplates', updated)
+      return { userTemplates: updated }
     })
   },
 

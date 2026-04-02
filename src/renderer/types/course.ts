@@ -634,12 +634,32 @@ export interface AccessibilitySettings {
 
 // ─── Base Brain ───
 
+export type BaseBrainCategory = 'accessibility' | 'udl' | 'inclusive' | 'general'
+
+export interface BaseBrainFile {
+  name: string
+  content: string
+  category: BaseBrainCategory
+}
+
 export interface BaseBrainSettings {
   enabled: boolean
-  referenceFiles: { name: string; content: string }[]
+  referenceFiles: BaseBrainFile[]
   designAssumptions: string
   toneAndVoice: string
   visualPreferences: string
   goals: string
   designConsiderations: string
+}
+
+// ─── User Templates ───
+
+export interface UserTemplate {
+  id: string
+  name: string
+  description: string
+  icon: string
+  tags: string[]
+  courseJson: string
+  createdAt: string
 }

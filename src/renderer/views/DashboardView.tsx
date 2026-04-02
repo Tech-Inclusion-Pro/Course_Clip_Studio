@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Plus, Upload, BookOpen, Search as SearchIcon, FolderOpen } from 'lucide-react'
+import { Plus, Upload, BookOpen, Search as SearchIcon, FolderOpen, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useDashboardStore } from '@/stores/useDashboardStore'
@@ -16,7 +16,8 @@ import { ContentAreasSection } from '@/components/dashboard/ContentAreasSection'
 import { WorkspacePickerDialog } from '@/components/dashboard/WorkspacePickerDialog'
 import { createCourse } from '@/lib/mock-data'
 import { saveCourseToWorkspace } from '@/lib/workspace'
-import type { CourseTemplate } from '@/types/course'
+import { uid } from '@/lib/uid'
+import type { CourseTemplate, UserTemplate } from '@/types/course'
 
 export function DashboardView(): JSX.Element {
   const workspacePath = useAppStore((s) => s.workspacePath)
@@ -28,6 +29,8 @@ export function DashboardView(): JSX.Element {
   const statusFilter = useDashboardStore((s) => s.statusFilter)
   const tagFilter = useDashboardStore((s) => s.tagFilter)
   const activeSection = useDashboardStore((s) => s.activeSection)
+  const userTemplates = useAppStore((s) => s.userTemplates)
+  const removeUserTemplate = useAppStore((s) => s.removeUserTemplate)
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
@@ -65,6 +68,38 @@ export function DashboardView(): JSX.Element {
       saveCourseToWorkspace(workspacePath, course).catch((err) =>
         console.error('Failed to save new course:', err)
       )
+    }
+  }
+
+  function handleUserTemplateCreate(template: UserTemplate) {
+    try {
+      const parsed = JSON.parse(template.courseJson)
+      // Generate fresh IDs
+      const now = new Date().toISOString()
+      const newCourse = {
+        ...parsed,
+        id: uid('course'),
+        createdAt: now,
+        updatedAt: now
+      }
+      // Regenerate module/lesson IDs
+      for (const mod of newCourse.modules ?? []) {
+        mod.id = uid('mod')
+        for (const lesson of mod.lessons ?? []) {
+          lesson.id = uid('les')
+          for (const block of lesson.blocks ?? []) {
+            block.id = uid('blk')
+          }
+        }
+      }
+      addCourse(newCourse)
+      if (workspacePath) {
+        saveCourseToWorkspace(workspacePath, newCourse).catch((err) =>
+          console.error('Failed to save new course:', err)
+        )
+      }
+    } catch (err) {
+      console.error('Failed to create course from template:', err)
     }
   }
 
@@ -176,6 +211,47 @@ export function DashboardView(): JSX.Element {
               </p>
             </div>
 
+            {/* User Templates */}
+            {userTemplates.length > 0 && (
+              <div className="mb-8">
+                <h3 className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-secondary)] uppercase tracking-wider mb-3">
+                  My Templates
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {userTemplates.map((tpl) => (
+                    <div key={tpl.id} className="relative group">
+                      <TemplateCard
+                        template={{
+                          id: tpl.id,
+                          name: tpl.name,
+                          description: tpl.description,
+                          icon: tpl.icon,
+                          tags: tpl.tags,
+                          factory: () => JSON.parse(tpl.courseJson)
+                        }}
+                        onSelect={() => handleUserTemplateCreate(tpl)}
+                      />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          removeUserTemplate(tpl.id)
+                        }}
+                        className="absolute top-2 right-2 p-1 rounded-md bg-[var(--bg-surface)] border border-[var(--border-default)] text-[var(--text-tertiary)] hover:text-red-500 hover:border-red-500 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                        aria-label={`Delete ${tpl.name}`}
+                        title="Delete template"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Built-in Templates */}
+            <h3 className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-secondary)] uppercase tracking-wider mb-3">
+              Built-in Templates
+            </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {COURSE_TEMPLATES.map((template) => (
                 <TemplateCard

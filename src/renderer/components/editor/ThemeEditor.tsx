@@ -6,10 +6,12 @@ import {
   ChevronDown,
   ChevronUp,
   X,
-  Eye
+  Eye,
+  Upload
 } from 'lucide-react'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { contrastRatio, formatRatio, contrastLabel } from '@/lib/contrast'
+import { useAssetUpload } from '@/hooks/useAssetUpload'
 import { GoogleFontPicker } from './GoogleFontPicker'
 import type { CourseTheme, PlayerShellConfig } from '@/types/course'
 
@@ -23,6 +25,7 @@ export function ThemeEditor({ onClose }: ThemeEditorProps): JSX.Element {
   const updateCourseTheme = useCourseStore((s) => s.updateCourseTheme)
 
   const [expandedSection, setExpandedSection] = useState<string | null>('colors')
+  const uploadAsset = useAssetUpload()
 
   if (!course || !activeCourseId) {
     return (
@@ -293,8 +296,36 @@ export function ThemeEditor({ onClose }: ThemeEditorProps): JSX.Element {
 
             <div>
               <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
-                Logo Path
+                Logo
               </label>
+              <div className="flex gap-2 items-center mb-1">
+                <button
+                  onClick={async () => {
+                    if (!window.electronAPI?.dialog?.openFile) return
+                    try {
+                      const result = await window.electronAPI.dialog.openFile({
+                        filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'svg'] }]
+                      })
+                      if (result?.filePath) {
+                        const assetPath = await uploadAsset(result.filePath)
+                        handleUpdate({ logoPath: assetPath })
+                      }
+                    } catch { /* ignore */ }
+                  }}
+                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] cursor-pointer"
+                >
+                  <Upload size={12} />
+                  Upload Logo
+                </button>
+                {theme.logoPath && (
+                  <button
+                    onClick={() => handleUpdate({ logoPath: null })}
+                    className="text-xs text-red-500 hover:underline cursor-pointer"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
               <input
                 type="text"
                 value={theme.logoPath ?? ''}

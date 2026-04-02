@@ -662,21 +662,54 @@ function AISettingsPanel(): JSX.Element {
 
 function BaseBrainSection(): JSX.Element {
   const [expanded, setExpanded] = useState(false)
+  const [viewingFile, setViewingFile] = useState<{ name: string; content: string } | null>(null)
   const baseBrain = useAppStore((s) => s.baseBrain)
   const updateBaseBrain = useAppStore((s) => s.updateBaseBrain)
   const addBaseBrainFile = useAppStore((s) => s.addBaseBrainFile)
   const removeBaseBrainFile = useAppStore((s) => s.removeBaseBrainFile)
 
-  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  type BrainCategory = 'accessibility' | 'udl' | 'inclusive' | 'general'
+
+  const CATEGORIES: Array<{ id: BrainCategory; label: string; description: string }> = [
+    { id: 'accessibility', label: 'Accessibility (WCAG)', description: 'WCAG compliance and digital accessibility standards' },
+    { id: 'udl', label: 'Universal Design for Learning', description: 'UDL principles for inclusive instructional design' },
+    { id: 'inclusive', label: 'Inclusive Teaching (DisCrit)', description: 'Disability critical race theory and intersectional inclusion' },
+    { id: 'general', label: 'General', description: 'Other reference files' }
+  ]
+
+  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>, category: BrainCategory) {
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
     reader.onload = () => {
-      addBaseBrainFile(file.name, reader.result as string)
+      addBaseBrainFile(file.name, reader.result as string, category)
     }
     reader.readAsText(file)
     e.target.value = ''
   }
+
+  function handleDrop(e: React.DragEvent, category: BrainCategory) {
+    e.preventDefault()
+    e.stopPropagation()
+    const file = e.dataTransfer.files?.[0]
+    if (!file) return
+    if (!/\.(md|markdown|txt|docx)$/i.test(file.name)) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      addBaseBrainFile(file.name, reader.result as string, category)
+    }
+    reader.readAsText(file)
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  const filesByCategory = (cat: BrainCategory) =>
+    baseBrain.referenceFiles
+      .map((f, i) => ({ ...f, originalIndex: i }))
+      .filter((f) => f.category === cat)
 
   return (
     <SettingsCard title="Base Brain" icon={Brain}>
@@ -704,39 +737,74 @@ function BaseBrainSection(): JSX.Element {
 
         {expanded && (
           <div className="space-y-4 pt-2">
-            {/* Reference Files */}
-            <div>
-              <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-2">
-                Reference Files
-              </label>
-              {baseBrain.referenceFiles.length > 0 && (
-                <div className="space-y-1 mb-2">
-                  {baseBrain.referenceFiles.map((file, i) => (
-                    <div key={i} className="flex items-center gap-2 p-2 rounded-md bg-[var(--bg-panel)] border border-[var(--border-default)]">
-                      <FileText size={14} className="text-[var(--brand-magenta)] shrink-0" />
-                      <span className="text-xs text-[var(--text-primary)] flex-1 truncate">{file.name}</span>
-                      <button
-                        onClick={() => removeBaseBrainFile(i)}
-                        className="p-1 rounded text-[var(--text-tertiary)] hover:text-red-500 cursor-pointer"
-                        aria-label={`Remove ${file.name}`}
-                      >
-                        <X size={12} />
-                      </button>
+            {/* Categorized Reference Files */}
+            {CATEGORIES.map((cat) => {
+              const files = filesByCategory(cat.id)
+              return (
+                <div
+                  key={cat.id}
+                  onDrop={(e) => handleDrop(e, cat.id)}
+                  onDragOver={handleDragOver}
+                >
+                  <div className="mb-1.5">
+                    <label className="block text-xs font-[var(--font-weight-semibold)] text-[var(--text-primary)]">
+                      {cat.label}
+                    </label>
+                    <p className="text-[10px] text-[var(--text-tertiary)]">{cat.description}</p>
+                  </div>
+                  {files.length > 0 && (
+                    <div className="space-y-1 mb-2">
+                      {files.map((file) => (
+                        <div key={file.originalIndex} className="flex items-center gap-2 p-2 rounded-md bg-[var(--bg-panel)] border border-[var(--border-default)]">
+                          <FileText size={14} className="text-[var(--brand-magenta)] shrink-0" />
+                          <span className="text-xs text-[var(--text-primary)] flex-1 truncate">{file.name}</span>
+                          <button
+                            onClick={() => setViewingFile({ name: file.name, content: file.content })}
+                            className="px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)] hover:text-[var(--brand-magenta)] cursor-pointer rounded border border-[var(--border-default)] hover:border-[var(--brand-magenta)]"
+                          >
+                            View
+                          </button>
+                          <button
+                            onClick={() => removeBaseBrainFile(file.originalIndex)}
+                            className="p-1 rounded text-[var(--text-tertiary)] hover:text-red-500 cursor-pointer"
+                            aria-label={`Remove ${file.name}`}
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
+                  <label className="w-full flex items-center justify-center gap-2 p-2 rounded-md border border-dashed border-[var(--border-default)] text-[10px] text-[var(--text-secondary)] hover:border-[var(--brand-magenta)] hover:text-[var(--brand-magenta)] transition-colors cursor-pointer">
+                    <Upload size={12} />
+                    <span>Upload or drop .md / .txt file</span>
+                    <input
+                      type="file"
+                      accept=".md,.markdown,.txt,.docx"
+                      onChange={(e) => handleFileUpload(e, cat.id)}
+                      className="hidden"
+                    />
+                  </label>
                 </div>
-              )}
-              <label className="w-full flex items-center justify-center gap-2 p-2.5 rounded-md border border-dashed border-[var(--border-default)] text-xs text-[var(--text-secondary)] hover:border-[var(--brand-magenta)] hover:text-[var(--brand-magenta)] transition-colors cursor-pointer">
-                <Upload size={14} />
-                <span>Upload .md or .docx file</span>
-                <input
-                  type="file"
-                  accept=".md,.markdown,.txt,.docx"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-              </label>
-            </div>
+              )
+            })}
+
+            {/* File Viewer Modal */}
+            {viewingFile && (
+              <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-8" onClick={() => setViewingFile(null)}>
+                <div className="bg-[var(--bg-surface)] rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-default)]">
+                    <span className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-primary)]">{viewingFile.name}</span>
+                    <button onClick={() => setViewingFile(null)} className="p-1 rounded text-[var(--text-tertiary)] hover:text-[var(--text-primary)] cursor-pointer">
+                      <X size={16} />
+                    </button>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-4">
+                    <pre className="text-xs text-[var(--text-primary)] whitespace-pre-wrap font-mono leading-relaxed">{viewingFile.content}</pre>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Text Areas */}
             <div>

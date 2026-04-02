@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useCourseStore } from '@/stores/useCourseStore'
+import { useAssetUpload } from '@/hooks/useAssetUpload'
 import {
   CERTIFICATE_TEMPLATES,
   renderCertificate,
@@ -42,6 +43,8 @@ export function CertificateDesigner({ onClose }: CertificateDesignerProps): JSX.
   const course = useCourseStore((s) => s.courses.find((c) => c.id === s.activeCourseId))
   const activeCourseId = useCourseStore((s) => s.activeCourseId)
   const updateCourse = useCourseStore((s) => s.updateCourse)
+
+  const uploadAsset = useAssetUpload()
 
   const cert = course?.certificate ?? null
   const [showPreview, setShowPreview] = useState(false)
@@ -108,10 +111,12 @@ export function CertificateDesigner({ onClose }: CertificateDesignerProps): JSX.
       const result = await window.electronAPI.dialog.openFile({
         filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'svg'] }]
       })
-      if (result?.data) {
+      if (result?.filePath) {
+        const assetPath = await uploadAsset(result.filePath)
+        updateCert({ backgroundImage: assetPath })
+      } else if (result?.data) {
         const ext = result.name?.split('.').pop()?.toLowerCase() ?? 'png'
         const mime = ext === 'svg' ? 'image/svg+xml' : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/png'
-        // Convert to base64 data URI
         const base64 = typeof result.data === 'string' ? result.data : btoa(String.fromCharCode(...new Uint8Array(result.data)))
         const dataUri = `data:${mime};base64,${base64}`
         updateCert({ backgroundImage: dataUri })
@@ -535,12 +540,38 @@ export function CertificateDesigner({ onClose }: CertificateDesignerProps): JSX.
             {/* Logo */}
             <div>
               <label
-                htmlFor="cert-logo"
                 className="text-xs font-[var(--font-weight-semibold)] text-[var(--text-secondary)] flex items-center gap-1 mb-1"
               >
                 <ImageIcon size={12} />
-                Logo Path
+                Logo
               </label>
+              <div className="flex gap-1.5 mb-1">
+                <button
+                  onClick={async () => {
+                    if (!window.electronAPI?.dialog?.openFile) return
+                    try {
+                      const result = await window.electronAPI.dialog.openFile({
+                        filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'svg'] }]
+                      })
+                      if (result?.filePath) {
+                        const assetPath = await uploadAsset(result.filePath)
+                        updateCert({ logoPath: assetPath })
+                      }
+                    } catch { /* ignore */ }
+                  }}
+                  className="flex items-center gap-1 px-2 py-1.5 text-[10px] text-[var(--text-secondary)] bg-[var(--bg-surface)] border border-[var(--border-default)] rounded hover:bg-[var(--bg-hover)] cursor-pointer"
+                >
+                  <Upload size={10} /> Upload Logo
+                </button>
+                {cert?.logoPath && (
+                  <button
+                    onClick={() => updateCert({ logoPath: null })}
+                    className="text-[10px] text-red-500 hover:underline cursor-pointer"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
               <input
                 id="cert-logo"
                 type="text"

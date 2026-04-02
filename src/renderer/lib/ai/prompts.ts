@@ -73,14 +73,31 @@ export function baseBrainContext(bb: BaseBrainSettings): string {
   if (bb.visualPreferences) parts.push(`Visual preferences: ${bb.visualPreferences}`)
   if (bb.goals) parts.push(`Goals: ${bb.goals}`)
   if (bb.designConsiderations) parts.push(`Design considerations: ${bb.designConsiderations}`)
-  for (const file of bb.referenceFiles) {
+
+  // Categorized reference files
+  const accessibilityFiles = bb.referenceFiles.filter((f) => 'category' in f && f.category === 'accessibility')
+  const udlFiles = bb.referenceFiles.filter((f) => 'category' in f && f.category === 'udl')
+  const inclusiveFiles = bb.referenceFiles.filter((f) => 'category' in f && f.category === 'inclusive')
+  const generalFiles = bb.referenceFiles.filter((f) => !('category' in f) || f.category === 'general')
+
+  if (accessibilityFiles.length > 0) {
+    parts.push(`\n## Accessibility Framework (WCAG)\nUse these standards when checking accessibility, evaluating contrast, alt text, keyboard navigation, and ARIA compliance:\n${accessibilityFiles.map((f) => f.content).join('\n\n')}`)
+  }
+  if (udlFiles.length > 0) {
+    parts.push(`\n## Universal Design for Learning (UDL) Framework\nUse these principles when suggesting multiple means of representation, action/expression, and engagement:\n${udlFiles.map((f) => f.content).join('\n\n')}`)
+  }
+  if (inclusiveFiles.length > 0) {
+    parts.push(`\n## Inclusive Teaching Framework (DisCrit)\nUse these principles when reviewing content for inclusive language, identity representation, and intersectional design:\n${inclusiveFiles.map((f) => f.content).join('\n\n')}`)
+  }
+  for (const file of generalFiles) {
     parts.push(`Reference file "${file.name}":\n${file.content}`)
   }
+
   if (parts.length === 0) return ''
   return `\n\n--- Base Brain Context ---\n${parts.join('\n\n')}`
 }
 
-export const SYSTEM_PROMPT = `You are an expert instructional designer and course author for LuminaUDL, an accessible course authoring application. You follow Universal Design for Learning (UDL) principles and WCAG 2.1 AA accessibility standards. Always write clear, structured, inclusive educational content. When generating JSON, output only valid JSON with no markdown fencing.`
+export const SYSTEM_PROMPT = `You are an expert instructional designer and course author for LuminaUDL, an accessible course authoring application. You follow Universal Design for Learning (UDL) principles and WCAG 2.1 AA accessibility standards. Always write clear, structured, inclusive educational content. When generating JSON, output only valid JSON with no markdown fencing. When Base Brain context is provided, ALWAYS apply those frameworks consistently: check accessibility against WCAG screener criteria, validate UDL alignment against UDL screener principles, and ensure inclusive language/identity standards from the DisCrit screener.`
 
 export function outlinePrompt(topic: string, answers: InterviewAnswers): string {
   return `Generate a course outline for the topic: "${topic}"

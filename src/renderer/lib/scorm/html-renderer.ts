@@ -5,6 +5,27 @@
 
 import type { Course, Lesson, ContentBlock, CourseTheme, SlideElement } from '@/types/course'
 
+/** Compute relative luminance of a hex color (WCAG formula). */
+function luminance(hex: string): number {
+  const h = hex.replace('#', '')
+  const r = parseInt(h.substring(0, 2), 16) / 255
+  const g = parseInt(h.substring(2, 4), 16) / 255
+  const b = parseInt(h.substring(4, 6), 16) / 255
+  const toLinear = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4))
+  return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b)
+}
+
+/** Ensure text has sufficient contrast (WCAG AA 4.5:1) against the background. */
+function ensureContrast(textHex: string, bgHex: string): string {
+  // Only process valid 6-digit hex colors
+  if (!/^#[0-9a-fA-F]{6}$/.test(textHex) || !/^#[0-9a-fA-F]{6}$/.test(bgHex)) return textHex
+  const bgLum = luminance(bgHex)
+  const textLum = luminance(textHex)
+  const ratio = (Math.max(bgLum, textLum) + 0.05) / (Math.min(bgLum, textLum) + 0.05)
+  if (ratio >= 4.5) return textHex
+  return bgLum > 0.5 ? '#1e293b' : '#f8fafc'
+}
+
 function escapeHtml(str: string): string {
   return str
     .replace(/&/g, '&amp;')
@@ -356,7 +377,9 @@ export function renderLessonHtml(
 function getPlayerStyles(theme: CourseTheme): string {
   const btnRadius = theme.playerShell.buttonStyle === 'pill' ? '999px' : theme.playerShell.buttonStyle === 'rounded' ? '8px' : '2px'
   const blockBg = theme.blockBackgroundColor || theme.surfaceColor
-  const blockText = theme.blockTextColor || theme.textColor
+  const blockText = ensureContrast(theme.blockTextColor || theme.textColor, blockBg)
+  const bodyText = ensureContrast(theme.textColor, theme.backgroundColor)
+  const footerText = ensureContrast(theme.textColor, blockBg)
 
   return `
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -364,7 +387,7 @@ function getPlayerStyles(theme: CourseTheme): string {
       font-family: ${theme.fontFamily || 'Arial, sans-serif'};
       font-size: 16px;
       line-height: 1.6;
-      color: ${theme.textColor};
+      color: ${bodyText};
       background: ${theme.backgroundColor};
     }
     h1, h2, h3, h4 { font-family: ${theme.fontFamilyHeading || theme.fontFamily || 'Arial, sans-serif'}; }
@@ -465,7 +488,7 @@ function getPlayerStyles(theme: CourseTheme): string {
 
     .player-footer {
       position: fixed; bottom: 0; left: 0; right: 0;
-      background: ${blockBg}; color: ${blockText}; border-top: 1px solid ${blockText}15;
+      background: ${blockBg}; color: ${footerText}; border-top: 1px solid ${footerText}15;
       padding: 12px 24px; z-index: 50;
     }
     .lesson-nav {
@@ -479,7 +502,7 @@ function getPlayerStyles(theme: CourseTheme): string {
     }
     .nav-btn:hover { opacity: 0.9; }
     .nav-finish { background: ${theme.accentColor}; }
-    .lesson-counter { font-size: 12px; color: ${theme.textColor}80; }
+    .lesson-counter { font-size: 12px; color: ${footerText}80; }
 
     /* Flashcard 3D flip */
     .block-flashcard .flashcard { perspective: 1000px; cursor: pointer; min-height: 200px; margin-bottom: 8px; }

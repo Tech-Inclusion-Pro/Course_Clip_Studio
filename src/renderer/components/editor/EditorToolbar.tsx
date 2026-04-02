@@ -25,13 +25,15 @@ import {
   Database,
   Columns,
   Grid3x3,
-  Magnet
+  Magnet,
+  BookmarkPlus
 } from 'lucide-react'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useEditorStore, type PreviewDevice } from '@/stores/useEditorStore'
 import { useHistoryStore } from '@/stores/useHistoryStore'
 import { serializeCourse, deserializeCourse } from '@/lib/course-helpers'
 import { ROUTES } from '@/lib/constants'
+import { SaveAsTemplateDialog } from './SaveAsTemplateDialog'
 
 const DEVICE_ICONS: Record<PreviewDevice, typeof Monitor> = {
   desktop: Monitor,
@@ -92,6 +94,7 @@ export function EditorToolbar(): JSX.Element {
 
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleValue, setTitleValue] = useState('')
+  const [saveTemplateOpen, setSaveTemplateOpen] = useState(false)
 
   function handleUndo() {
     if (!course) return
@@ -249,6 +252,11 @@ export function EditorToolbar(): JSX.Element {
           label="Publish"
           onClick={() => navigate(ROUTES.PUBLISH)}
         />
+        <ToolbarButton
+          icon={BookmarkPlus}
+          label="Save as Template"
+          onClick={() => setSaveTemplateOpen(true)}
+        />
       </div>
 
       {/* Right: Panel toggles */}
@@ -306,6 +314,14 @@ export function EditorToolbar(): JSX.Element {
           onClick={toggleRightPanel}
         />
       </div>
+
+      {course && (
+        <SaveAsTemplateDialog
+          course={course}
+          open={saveTemplateOpen}
+          onClose={() => setSaveTemplateOpen(false)}
+        />
+      )}
     </div>
   )
 }
