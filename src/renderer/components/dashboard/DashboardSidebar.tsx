@@ -1,4 +1,4 @@
-import { Clock, Layout, Palette, BookOpen, FileText, ClipboardList } from 'lucide-react'
+import { Clock, Layout, Palette, BookOpen, FileText, ClipboardList, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useDashboardStore, type DashboardSection } from '@/stores/useDashboardStore'
@@ -10,6 +10,8 @@ export function DashboardSidebar(): JSX.Element {
   const setActiveCourse = useCourseStore((s) => s.setActiveCourse)
   const activeSection = useDashboardStore((s) => s.activeSection)
   const setActiveSection = useDashboardStore((s) => s.setActiveSection)
+  const collapsed = useDashboardStore((s) => s.sidebarCollapsed)
+  const toggleSidebar = useDashboardStore((s) => s.toggleSidebar)
 
   // Last 5 courses sorted by updatedAt
   const recentCourses = [...courses]
@@ -30,24 +32,40 @@ export function DashboardSidebar(): JSX.Element {
 
   return (
     <aside
-      className="
-        w-60 shrink-0 border-r border-[var(--border-default)]
-        bg-[var(--bg-surface)] overflow-y-auto p-4
-        min-h-full self-stretch
-      "
+      className={`
+        shrink-0 border-r border-[var(--border-default)]
+        bg-[var(--bg-surface)] overflow-y-auto
+        flex flex-col
+        transition-[width] duration-200 ease-in-out
+        ${collapsed ? 'w-12' : 'w-60'}
+      `}
+      style={{ minHeight: '100%' }}
       aria-label="Dashboard navigation"
     >
+      {/* Collapse toggle */}
+      <div className={`flex items-center ${collapsed ? 'justify-center py-3' : 'justify-end px-3 pt-3 pb-1'}`}>
+        <button
+          onClick={toggleSidebar}
+          className="p-1.5 rounded-md text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+        </button>
+      </div>
+
       {/* Section navigation */}
-      <nav className="mb-6">
+      <nav className={`mb-6 ${collapsed ? 'px-1.5' : 'px-4'}`}>
         {sections.map((section) => (
           <button
             key={section.id}
             onClick={() => setActiveSection(section.id)}
             className={`
-              w-full flex items-center gap-2 px-3 py-2 mb-1
+              w-full flex items-center gap-2 mb-1
               rounded-md text-sm cursor-pointer
               font-[var(--font-weight-medium)]
               transition-colors duration-[var(--duration-fast)]
+              ${collapsed ? 'justify-center px-0 py-2' : 'px-3 py-2'}
               ${
                 activeSection === section.id
                   ? 'bg-[var(--bg-active)] text-[var(--text-brand)]'
@@ -55,57 +73,62 @@ export function DashboardSidebar(): JSX.Element {
               }
             `}
             aria-current={activeSection === section.id ? 'page' : undefined}
+            title={collapsed ? section.label : undefined}
           >
-            <section.icon size={16} />
-            {section.label}
+            <section.icon size={16} className="shrink-0" />
+            {!collapsed && section.label}
           </button>
         ))}
 
         <button
           onClick={() => navigate(ROUTES.SETTINGS)}
-          className="
-            w-full flex items-center gap-2 px-3 py-2 mb-1
+          className={`
+            w-full flex items-center gap-2 mb-1
             rounded-md text-sm cursor-pointer
             font-[var(--font-weight-medium)]
             text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]
             transition-colors duration-[var(--duration-fast)]
-          "
+            ${collapsed ? 'justify-center px-0 py-2' : 'px-3 py-2'}
+          `}
+          title={collapsed ? 'Brand Kit' : undefined}
         >
-          <Palette size={16} />
-          Brand Kit
+          <Palette size={16} className="shrink-0" />
+          {!collapsed && 'Brand Kit'}
         </button>
       </nav>
 
-      {/* Recent courses */}
-      <div>
-        <h3 className="flex items-center gap-1.5 text-xs font-[var(--font-weight-semibold)] text-[var(--text-tertiary)] uppercase tracking-wider mb-2 px-1">
-          <Clock size={12} aria-hidden="true" />
-          Recent
-        </h3>
-        {recentCourses.length === 0 ? (
-          <p className="text-xs text-[var(--text-tertiary)] px-1">No recent courses</p>
-        ) : (
-          <ul className="space-y-0.5">
-            {recentCourses.map((course) => (
-              <li key={course.id}>
-                <button
-                  onClick={() => handleOpenCourse(course.id)}
-                  className="
-                    w-full text-left px-3 py-1.5 text-sm cursor-pointer
-                    rounded-md truncate
-                    text-[var(--text-secondary)]
-                    hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]
-                    transition-colors duration-[var(--duration-fast)]
-                  "
-                  title={course.meta.title}
-                >
-                  {course.meta.title}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      {/* Recent courses — hidden when collapsed */}
+      {!collapsed && (
+        <div className="px-4 pb-4">
+          <h3 className="flex items-center gap-1.5 text-xs font-[var(--font-weight-semibold)] text-[var(--text-tertiary)] uppercase tracking-wider mb-2 px-1">
+            <Clock size={12} aria-hidden="true" />
+            Recent
+          </h3>
+          {recentCourses.length === 0 ? (
+            <p className="text-xs text-[var(--text-tertiary)] px-1">No recent courses</p>
+          ) : (
+            <ul className="space-y-0.5">
+              {recentCourses.map((course) => (
+                <li key={course.id}>
+                  <button
+                    onClick={() => handleOpenCourse(course.id)}
+                    className="
+                      w-full text-left px-3 py-1.5 text-sm cursor-pointer
+                      rounded-md truncate
+                      text-[var(--text-secondary)]
+                      hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]
+                      transition-colors duration-[var(--duration-fast)]
+                    "
+                    title={course.meta.title}
+                  >
+                    {course.meta.title}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </aside>
   )
 }
