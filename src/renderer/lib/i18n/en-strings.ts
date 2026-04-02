@@ -133,6 +133,12 @@ const hardcodedStrings: Record<string, string> = {
   'ai.wcagReview': 'WCAG Accessibility Review',
   'ai.udlSuggestions': 'UDL Improvement Suggestions',
 
+  // Onboarding
+  'onboarding.chooseLanguage': 'Choose Your Language',
+  'onboarding.languageDescription': 'Select the language for the application interface. The UI will be translated using AI.',
+  'onboarding.ltrLanguages': 'Languages (Left-to-Right)',
+  'onboarding.rtlLanguages': 'Languages (Right-to-Left)',
+
   // Common UI
   'common.loading': 'Loading...',
   'common.error': 'Error',

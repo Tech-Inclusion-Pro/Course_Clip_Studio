@@ -17,10 +17,14 @@ import {
   ChevronUp,
   Upload,
   FileText,
-  X
+  X,
+  Loader2
 } from 'lucide-react'
 import { useAppStore, type ThemeMode } from '@/stores/useAppStore'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { useLocaleStore } from '@/stores/useLocaleStore'
+import { LANGUAGES } from '@/lib/i18n/languages'
+import { useT } from '@/hooks/useT'
 import { SettingsCard } from '@/components/ui/SettingsCard'
 import { FieldRow } from '@/components/ui/FieldRow'
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch'
@@ -30,17 +34,18 @@ import { uid } from '@/lib/uid'
 import type { BrandKit } from '@/types/course'
 import logoSrc from '@/assets/logo.png'
 
-type Step = 'welcome' | 'general' | 'ai-llm' | 'visual-apis' | 'branding' | 'accessibility' | 'complete'
+type Step = 'welcome' | 'language' | 'accessibility' | 'general' | 'ai-llm' | 'visual-apis' | 'branding' | 'complete'
 
-const STEPS: Step[] = ['welcome', 'general', 'ai-llm', 'visual-apis', 'branding', 'accessibility', 'complete']
+const STEPS: Step[] = ['welcome', 'language', 'accessibility', 'general', 'ai-llm', 'visual-apis', 'branding', 'complete']
 
 const STEP_LABELS: Record<Step, string> = {
   welcome: 'Welcome',
+  language: 'Language',
+  accessibility: 'Access.',
   general: 'General',
   'ai-llm': 'AI / LLM',
   'visual-apis': 'Visual APIs',
   branding: 'Branding',
-  accessibility: 'Accessibility',
   complete: 'Complete'
 }
 
@@ -113,11 +118,12 @@ export function OnboardingWizard(): JSX.Element {
       <div className="flex-1 overflow-y-auto px-6 pb-6">
         <div className="max-w-2xl mx-auto">
           {currentStep === 'welcome' && <WelcomeStep />}
+          {currentStep === 'language' && <LanguageStep />}
+          {currentStep === 'accessibility' && <AccessibilityStep />}
           {currentStep === 'general' && <GeneralStep />}
           {currentStep === 'ai-llm' && <AILLMStep />}
           {currentStep === 'visual-apis' && <VisualApisStep />}
           {currentStep === 'branding' && <BrandingStep />}
-          {currentStep === 'accessibility' && <AccessibilityStep />}
           {currentStep === 'complete' && <CompleteStep onFinish={skipAll} />}
         </div>
       </div>
@@ -182,7 +188,121 @@ function WelcomeStep(): JSX.Element {
   )
 }
 
-// ─── Step 2: General ───
+// ─── Step 2: Language ───
+
+function LanguageStep(): JSX.Element {
+  const t = useT()
+  const uiLanguage = useAppStore((s) => s.uiLanguage)
+  const setUILanguage = useAppStore((s) => s.setUILanguage)
+  const isTranslating = useLocaleStore((s) => s.isTranslating)
+  const translationProgress = useLocaleStore((s) => s.translationProgress)
+
+  function handleLanguageChange(code: string) {
+    setUILanguage(code)
+    useLocaleStore.getState().setLanguage(code)
+  }
+
+  // Group languages: current selection first, then RTL group, then rest
+  const rtlLanguages = LANGUAGES.filter((l) => l.dir === 'rtl')
+  const ltrLanguages = LANGUAGES.filter((l) => l.dir === 'ltr')
+
+  return (
+    <div className="space-y-6 py-4">
+      <div className="mb-4 text-center">
+        <div className="w-14 h-14 rounded-2xl bg-[var(--bg-muted)] flex items-center justify-center mx-auto mb-4">
+          <Globe size={28} className="text-[var(--brand-magenta)]" />
+        </div>
+        <h2 className="text-xl font-[var(--font-weight-bold)] text-[var(--text-primary)]">
+          {t('onboarding.chooseLanguage', 'Choose Your Language')}
+        </h2>
+        <p className="text-sm text-[var(--text-secondary)] mt-1">
+          {t('onboarding.languageDescription', 'Select the language for the application interface. The UI will be translated using AI.')}
+        </p>
+      </div>
+
+      {/* Translation progress */}
+      {isTranslating && (
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--brand-magenta)]/10 border border-[var(--brand-magenta)]/20">
+          <Loader2 size={16} className="animate-spin text-[var(--brand-magenta)]" />
+          <div className="flex-1">
+            <p className="text-xs text-[var(--text-secondary)]">
+              {t('translation.translating', 'Translating...')} {translationProgress}%
+            </p>
+            <div className="mt-1 h-1.5 rounded-full bg-[var(--bg-muted)] overflow-hidden">
+              <div
+                className="h-full rounded-full bg-[var(--brand-magenta)] transition-[width] duration-300"
+                style={{ width: `${translationProgress}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Language grid */}
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-xs font-[var(--font-weight-semibold)] text-[var(--text-tertiary)] uppercase tracking-wider mb-2 px-1">
+            {t('onboarding.ltrLanguages', 'Languages (Left-to-Right)')}
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {ltrLanguages.map((lang) => (
+              <button
+                key={lang.code}
+                onClick={() => handleLanguageChange(lang.code)}
+                disabled={isTranslating}
+                className={`
+                  flex flex-col items-start px-3 py-2.5 rounded-lg border text-left cursor-pointer transition-all
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                  ${uiLanguage === lang.code
+                    ? 'border-[var(--brand-magenta)] bg-[var(--bg-active)] ring-2 ring-[var(--brand-magenta)]/30'
+                    : 'border-[var(--border-default)] hover:bg-[var(--bg-hover)] hover:border-[var(--text-tertiary)]'
+                  }
+                `}
+                aria-pressed={uiLanguage === lang.code}
+              >
+                <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+                  {lang.nativeName}
+                </span>
+                <span className="text-xs text-[var(--text-tertiary)]">{lang.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-xs font-[var(--font-weight-semibold)] text-[var(--text-tertiary)] uppercase tracking-wider mb-2 px-1">
+            {t('onboarding.rtlLanguages', 'Languages (Right-to-Left)')}
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {rtlLanguages.map((lang) => (
+              <button
+                key={lang.code}
+                onClick={() => handleLanguageChange(lang.code)}
+                disabled={isTranslating}
+                className={`
+                  flex flex-col items-start px-3 py-2.5 rounded-lg border text-left cursor-pointer transition-all
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                  ${uiLanguage === lang.code
+                    ? 'border-[var(--brand-magenta)] bg-[var(--bg-active)] ring-2 ring-[var(--brand-magenta)]/30'
+                    : 'border-[var(--border-default)] hover:bg-[var(--bg-hover)] hover:border-[var(--text-tertiary)]'
+                  }
+                `}
+                aria-pressed={uiLanguage === lang.code}
+              >
+                <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]" dir="rtl">
+                  {lang.nativeName}
+                </span>
+                <span className="text-xs text-[var(--text-tertiary)]">{lang.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Step 3: General ───
 
 function GeneralStep(): JSX.Element {
   const authorName = useAppStore((s) => s.authorName)
