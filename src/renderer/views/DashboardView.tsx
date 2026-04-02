@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Plus, Upload, BookOpen, Search as SearchIcon, FolderOpen, Trash2 } from 'lucide-react'
+import { Plus, Upload, BookOpen, Search as SearchIcon, FolderOpen, Trash2, X, Save } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useDashboardStore } from '@/stores/useDashboardStore'
@@ -19,6 +19,15 @@ import { saveCourseToWorkspace } from '@/lib/workspace'
 import { uid } from '@/lib/uid'
 import type { CourseTemplate, UserTemplate } from '@/types/course'
 
+const ICON_OPTIONS = [
+  'FileText',
+  'Briefcase',
+  'Users',
+  'ShieldCheck',
+  'GraduationCap',
+  'Accessibility'
+]
+
 export function DashboardView(): JSX.Element {
   const workspacePath = useAppStore((s) => s.workspacePath)
   const workspaceLoaded = useAppStore((s) => s.workspaceLoaded)
@@ -32,8 +41,11 @@ export function DashboardView(): JSX.Element {
   const userTemplates = useAppStore((s) => s.userTemplates)
   const removeUserTemplate = useAppStore((s) => s.removeUserTemplate)
 
+  const addUserTemplate = useAppStore((s) => s.addUserTemplate)
+
   const [dialogOpen, setDialogOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
+  const [createTemplateOpen, setCreateTemplateOpen] = useState(false)
 
   // Collect all unique tags
   const allTags = useMemo(() => {
@@ -212,41 +224,63 @@ export function DashboardView(): JSX.Element {
             </div>
 
             {/* User Templates */}
-            {userTemplates.length > 0 && (
-              <div className="mb-8">
-                <h3 className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-secondary)] uppercase tracking-wider mb-3">
-                  My Templates
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {userTemplates.map((tpl) => (
-                    <div key={tpl.id} className="relative group">
-                      <TemplateCard
-                        template={{
-                          id: tpl.id,
-                          name: tpl.name,
-                          description: tpl.description,
-                          icon: tpl.icon,
-                          tags: tpl.tags,
-                          factory: () => JSON.parse(tpl.courseJson)
-                        }}
-                        onSelect={() => handleUserTemplateCreate(tpl)}
-                      />
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          removeUserTemplate(tpl.id)
-                        }}
-                        className="absolute top-2 right-2 p-1 rounded-md bg-[var(--bg-surface)] border border-[var(--border-default)] text-[var(--text-tertiary)] hover:text-red-500 hover:border-red-500 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                        aria-label={`Delete ${tpl.name}`}
-                        title="Delete template"
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
+            <div className="mb-8">
+              <h3 className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-secondary)] uppercase tracking-wider mb-3">
+                My Templates
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {/* Create New Template card */}
+                <button
+                  onClick={() => setCreateTemplateOpen(true)}
+                  className="
+                    flex flex-col items-center justify-center gap-2 p-4
+                    rounded-xl border-2 border-dashed border-[var(--border-default)]
+                    bg-[var(--bg-surface)]
+                    hover:bg-[var(--bg-hover)] hover:border-[var(--brand-magenta)]
+                    transition-all duration-[var(--duration-fast)]
+                    cursor-pointer text-center
+                    focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]
+                  "
+                >
+                  <div className="w-10 h-10 rounded-lg bg-[var(--bg-muted)] flex items-center justify-center">
+                    <Plus size={20} className="text-[var(--brand-magenta)]" />
+                  </div>
+                  <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+                    Create Template
+                  </span>
+                  <span className="text-xs text-[var(--text-tertiary)] line-clamp-2">
+                    Build a custom template from scratch
+                  </span>
+                </button>
+
+                {userTemplates.map((tpl) => (
+                  <div key={tpl.id} className="relative group">
+                    <TemplateCard
+                      template={{
+                        id: tpl.id,
+                        name: tpl.name,
+                        description: tpl.description,
+                        icon: tpl.icon,
+                        tags: tpl.tags,
+                        factory: () => JSON.parse(tpl.courseJson)
+                      }}
+                      onSelect={() => handleUserTemplateCreate(tpl)}
+                    />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        removeUserTemplate(tpl.id)
+                      }}
+                      className="absolute top-2 right-2 p-1 rounded-md bg-[var(--bg-surface)] border border-[var(--border-default)] text-[var(--text-tertiary)] hover:text-red-500 hover:border-red-500 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                      aria-label={`Delete ${tpl.name}`}
+                      title="Delete template"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
 
             {/* Built-in Templates */}
             <h3 className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-secondary)] uppercase tracking-wider mb-3">
@@ -266,6 +300,14 @@ export function DashboardView(): JSX.Element {
 
         <NewCourseDialog open={dialogOpen} onClose={() => setDialogOpen(false)} />
         <ImportDialog open={importOpen} onClose={() => setImportOpen(false)} />
+        <CreateTemplateDialog
+          open={createTemplateOpen}
+          onClose={() => setCreateTemplateOpen(false)}
+          onSave={(tpl) => {
+            addUserTemplate(tpl)
+            setCreateTemplateOpen(false)
+          }}
+        />
 
         {/* Workspace path indicator */}
         <div className="mt-8 pt-4 border-t border-[var(--border-default)]">
@@ -273,6 +315,178 @@ export function DashboardView(): JSX.Element {
             <FolderOpen size={12} />
             {workspacePath}
           </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Create Template Dialog ───
+
+function CreateTemplateDialog({
+  open,
+  onClose,
+  onSave
+}: {
+  open: boolean
+  onClose: () => void
+  onSave: (tpl: UserTemplate) => void
+}): JSX.Element | null {
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [icon, setIcon] = useState('FileText')
+  const [moduleCount, setModuleCount] = useState(3)
+  const [lessonsPerModule, setLessonsPerModule] = useState(2)
+
+  if (!open) return null
+
+  function handleSave() {
+    const modules = Array.from({ length: moduleCount }, (_, mi) => ({
+      id: uid('mod'),
+      title: `Module ${mi + 1}`,
+      description: '',
+      lessons: Array.from({ length: lessonsPerModule }, (_, li) => ({
+        id: uid('les'),
+        title: `Lesson ${li + 1}`,
+        description: '',
+        blocks: []
+      }))
+    }))
+
+    const courseData = {
+      meta: {
+        title: name.trim() || 'Untitled Template',
+        description: description.trim(),
+        author: 'Course Author',
+        language: 'en',
+        estimatedDuration: 0,
+        tags: [],
+        thumbnail: null,
+        version: '1.0.0'
+      },
+      modules,
+      publishStatus: 'draft'
+    }
+
+    const template: UserTemplate = {
+      id: uid('tpl'),
+      name: name.trim() || 'Untitled Template',
+      description: description.trim(),
+      icon,
+      tags: [],
+      courseJson: JSON.stringify(courseData),
+      createdAt: new Date().toISOString()
+    }
+
+    onSave(template)
+    setName('')
+    setDescription('')
+    setIcon('FileText')
+    setModuleCount(3)
+    setLessonsPerModule(2)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
+      <div
+        className="bg-[var(--bg-surface)] rounded-xl shadow-2xl w-full max-w-md overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-default)]">
+          <h2 className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-primary)]">
+            Create Template
+          </h2>
+          <button
+            onClick={onClose}
+            className="p-1 rounded text-[var(--text-tertiary)] hover:text-[var(--text-primary)] cursor-pointer"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-4 space-y-4">
+          <div>
+            <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+              Template Name
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+              placeholder="My Template"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+              Description
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+              className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)] resize-none"
+              placeholder="Brief description of this template..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+              Icon
+            </label>
+            <select
+              value={icon}
+              onChange={(e) => setIcon(e.target.value)}
+              className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+            >
+              {ICON_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                Modules
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={10}
+                value={moduleCount}
+                onChange={(e) => setModuleCount(Math.max(1, Math.min(10, Number(e.target.value))))}
+                className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                Lessons per Module
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={10}
+                value={lessonsPerModule}
+                onChange={(e) => setLessonsPerModule(Math.max(1, Math.min(10, Number(e.target.value))))}
+                className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-2 px-4 py-3 border-t border-[var(--border-default)]">
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="primary" size="sm" onClick={handleSave}>
+            <Save size={14} />
+            Create Template
+          </Button>
         </div>
       </div>
     </div>
