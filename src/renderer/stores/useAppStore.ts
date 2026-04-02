@@ -99,7 +99,7 @@ interface AppState {
 
   // Content Area actions
   loadContentAreas: () => Promise<void>
-  addContentArea: (area: Omit<ContentArea, 'id' | 'createdAt' | 'updatedAt'>) => void
+  addContentArea: (area: Omit<ContentArea, 'id' | 'createdAt' | 'updatedAt'>) => string
   updateContentArea: (id: string, partial: Partial<ContentArea>) => void
   removeContentArea: (id: string) => void
   addContentAreaFile: (contentAreaId: string, file: ContentAreaFile) => void
@@ -390,11 +390,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   addContentArea: (area) => {
+    const newId = uid('ca')
     set((state) => {
       const now = new Date().toISOString()
       const newArea: ContentArea = {
         ...area,
-        id: uid('ca'),
+        id: newId,
         createdAt: now,
         updatedAt: now
       }
@@ -402,6 +403,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       window.electronAPI.settings.set('contentAreas', updated)
       return { contentAreas: updated }
     })
+    return newId
   },
 
   updateContentArea: (id, partial) => {

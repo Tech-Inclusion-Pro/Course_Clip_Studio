@@ -12,7 +12,68 @@ const EMPTY_FORM: ContentAreaFormData = {
   priorKnowledge: '',
   tone: '',
   format: '',
-  accessibilityNeeds: ''
+  accessibilityNeeds: '',
+  files: []
+}
+
+/**
+ * Copy a list of source file paths into the workspace under
+ * content-areas/{contentAreaId}/files/ and return ContentAreaFile[] with
+ * the new destination paths.
+ */
+async function copyFilesToWorkspace(
+  sourcePaths: string[],
+  contentAreaId: string,
+  existingFiles: ContentAreaFile[]
+): Promise<ContentAreaFile[]> {
+  const workspacePath = useAppStore.getState().workspacePath
+  if (!workspacePath || sourcePaths.length === 0) return []
+
+  const destDir = `${workspacePath}/content-areas/${contentAreaId}/files`
+
+  // Ensure directory tree exists
+  const caDir = `${workspacePath}/content-areas`
+  if (!(await window.electronAPI.fs.exists(caDir))) {
+    await window.electronAPI.fs.mkdir(caDir)
+  }
+  const idDir = `${workspacePath}/content-areas/${contentAreaId}`
+  if (!(await window.electronAPI.fs.exists(idDir))) {
+    await window.electronAPI.fs.mkdir(idDir)
+  }
+  if (!(await window.electronAPI.fs.exists(destDir))) {
+    await window.electronAPI.fs.mkdir(destDir)
+  }
+
+  const results: ContentAreaFile[] = []
+
+  for (const srcPath of sourcePaths) {
+    const fileName = srcPath.split(/[\\/]/).pop() || 'file'
+
+    // Deduplicate: if name already taken, add timestamp suffix
+    let destName = fileName
+    const allNames = [...existingFiles.map((f) => f.name), ...results.map((f) => f.name)]
+    if (allNames.includes(destName)) {
+      const ext = destName.includes('.') ? '.' + destName.split('.').pop() : ''
+      const base = ext ? destName.slice(0, -ext.length) : destName
+      destName = `${base}-${Date.now().toString(36)}${ext}`
+    }
+
+    const destPath = `${destDir}/${destName}`
+
+    try {
+      await window.electronAPI.fs.copyFile(srcPath, destPath)
+      results.push({
+        id: `caf-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        name: destName,
+        path: destPath,
+        priority: 2
+      })
+    } catch (err) {
+      console.error(`Failed to copy file ${srcPath}:`, err)
+    }
+  }
+
+  return results
 }
 
 export function ContentAreasSection(): JSX.Element {
@@ -28,10 +89,16 @@ export function ContentAreasSection(): JSX.Element {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<ContentAreaFormData>({ ...EMPTY_FORM })
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  // Pending files chosen during "New" form — source paths that need to be copied on save
+  const [pendingSourcePaths, setPendingSourcePaths] = useState<string[]>([])
+  const [pendingFileNames, setPendingFileNames] = useState<string[]>([])
+  const [isSaving, setIsSaving] = useState(false)
 
   function handleAdd() {
     setEditingId(null)
     setForm({ ...EMPTY_FORM })
+    setPendingSourcePaths([])
+    setPendingFileNames([])
     setShowForm(true)
   }
 
@@ -44,27 +111,59 @@ export function ContentAreasSection(): JSX.Element {
       priorKnowledge: ca.priorKnowledge,
       tone: ca.tone,
       format: ca.format,
-      accessibilityNeeds: ca.accessibilityNeeds
+      accessibilityNeeds: ca.accessibilityNeeds,
+      files: ca.files
     })
+    setPendingSourcePaths([])
+    setPendingFileNames([])
     setShowForm(true)
   }
 
-  function handleSave() {
-    if (!form.name.trim()) return
-    if (editingId) {
-      updateContentArea(editingId, form)
-    } else {
-      addContentArea(form)
+  async function handleSave() {
+    if (!form.name.trim() || isSaving) return
+    setIsSaving(true)
+
+    try {
+      if (editingId) {
+        // Editing existing content area — copy any new pending files
+        if (pendingSourcePaths.length > 0) {
+          const existingFiles = form.files ?? []
+          const newFiles = await copyFilesToWorkspace(pendingSourcePaths, editingId, existingFiles)
+          const allFiles = [...existingFiles, ...newFiles]
+          updateContentArea(editingId, { ...form, files: allFiles })
+        } else {
+          updateContentArea(editingId, form)
+        }
+      } else {
+        // Creating new content area
+        const newId = addContentArea({ ...form, files: [] })
+
+        // Copy pending files to workspace and attach to the new content area
+        if (pendingSourcePaths.length > 0) {
+          const copiedFiles = await copyFilesToWorkspace(pendingSourcePaths, newId, [])
+          if (copiedFiles.length > 0) {
+            updateContentArea(newId, { files: copiedFiles })
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to save content area:', err)
     }
+
     setShowForm(false)
     setEditingId(null)
     setForm({ ...EMPTY_FORM })
+    setPendingSourcePaths([])
+    setPendingFileNames([])
+    setIsSaving(false)
   }
 
   function handleCancel() {
     setShowForm(false)
     setEditingId(null)
     setForm({ ...EMPTY_FORM })
+    setPendingSourcePaths([])
+    setPendingFileNames([])
   }
 
   function handleDelete(id: string) {
@@ -72,30 +171,64 @@ export function ContentAreasSection(): JSX.Element {
     setConfirmDeleteId(null)
   }
 
-  async function handleFileUpload(contentAreaId: string) {
+  /** Open native file picker for the create/edit form — adds to pending list */
+  async function handleFormFileSelect() {
     try {
       const result = await window.electronAPI.dialog.openFile({
         properties: ['openFile', 'multiSelections'],
         filters: [{ name: 'All Files', extensions: ['*'] }]
       })
-      if (result && Array.isArray(result)) {
-        for (const filePath of result) {
-          const name = filePath.split(/[\\/]/).pop() || 'file'
-          const file: ContentAreaFile = {
-            id: `caf-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            name,
-            path: filePath,
-            priority: 2
-          }
-          addContentAreaFile(contentAreaId, file)
-        }
+      if (result.canceled || !result.filePaths?.length) return
+
+      const newPaths: string[] = []
+      const newNames: string[] = []
+      for (const fp of result.filePaths) {
+        // Skip duplicates
+        if (pendingSourcePaths.includes(fp)) continue
+        newPaths.push(fp)
+        newNames.push(fp.split(/[\\/]/).pop() || 'file')
+      }
+      setPendingSourcePaths((prev) => [...prev, ...newPaths])
+      setPendingFileNames((prev) => [...prev, ...newNames])
+    } catch (err) {
+      console.error('File selection failed:', err)
+    }
+  }
+
+  /** Remove a pending file from the form (not yet saved) */
+  function removePendingFile(index: number) {
+    setPendingSourcePaths((prev) => prev.filter((_, i) => i !== index))
+    setPendingFileNames((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  /** Remove an already-saved file from a form being edited */
+  function removeExistingFileFromForm(fileId: string) {
+    setForm((prev) => ({
+      ...prev,
+      files: (prev.files ?? []).filter((f) => f.id !== fileId)
+    }))
+  }
+
+  /** Add files to an existing (already-saved) content area card directly */
+  async function handleCardFileUpload(contentAreaId: string) {
+    try {
+      const result = await window.electronAPI.dialog.openFile({
+        properties: ['openFile', 'multiSelections'],
+        filters: [{ name: 'All Files', extensions: ['*'] }]
+      })
+      if (result.canceled || !result.filePaths?.length) return
+
+      const ca = contentAreas.find((c) => c.id === contentAreaId)
+      const existingFiles = ca?.files ?? []
+      const copiedFiles = await copyFilesToWorkspace(result.filePaths, contentAreaId, existingFiles)
+
+      for (const file of copiedFiles) {
+        addContentAreaFile(contentAreaId, file)
       }
     } catch (err) {
       console.error('File upload failed:', err)
     }
   }
-
-  const PRIORITY_LABELS: Record<number, string> = { 1: 'Low', 2: 'Medium', 3: 'High' }
 
   function filledFieldCount(ca: ContentArea): number {
     let count = 0
@@ -222,14 +355,106 @@ export function ContentAreasSection(): JSX.Element {
             />
           </div>
 
+          {/* ── File Upload Section ── */}
+          <div className="space-y-2 pt-1 border-t border-[var(--border-default)]">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)]">
+                Reference Files
+              </label>
+              <button
+                type="button"
+                onClick={handleFormFileSelect}
+                className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] rounded-md border border-[var(--border-default)] hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
+              >
+                <FileUp size={12} />
+                Choose Files
+              </button>
+            </div>
+            <p className="text-[10px] text-[var(--text-tertiary)]">
+              Upload reference documents, syllabi, rubrics, or any supporting files. They will be copied into the app workspace.
+            </p>
+
+            {/* Upload drop zone */}
+            <div
+              className="flex flex-col items-center justify-center py-4 border-2 border-dashed border-[var(--border-default)] rounded-lg bg-[var(--bg-muted)] hover:border-[var(--brand-magenta)] transition-colors cursor-pointer"
+              onClick={handleFormFileSelect}
+            >
+              <FileUp size={20} className="text-[var(--text-tertiary)] mb-1" />
+              <p className="text-xs text-[var(--text-tertiary)]">Click to browse or drag files here</p>
+              <p className="text-[10px] text-[var(--text-tertiary)] mt-0.5">Multiple files supported</p>
+            </div>
+
+            {/* Already-saved files (when editing) */}
+            {editingId && (form.files ?? []).length > 0 && (
+              <div className="space-y-1">
+                <p className="text-[10px] font-[var(--font-weight-medium)] text-[var(--text-tertiary)]">
+                  Saved files ({(form.files ?? []).length})
+                </p>
+                {(form.files ?? []).map((f) => (
+                  <div key={f.id} className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-[var(--bg-muted)] border border-[var(--border-default)]">
+                    <File size={12} className="text-[var(--text-tertiary)] shrink-0" />
+                    <span className="text-xs text-[var(--text-primary)] truncate flex-1" title={f.path}>{f.name}</span>
+                    <select
+                      value={f.priority}
+                      onChange={(e) => {
+                        const newPriority = Number(e.target.value) as 1 | 2 | 3
+                        setForm((prev) => ({
+                          ...prev,
+                          files: (prev.files ?? []).map((ff) =>
+                            ff.id === f.id ? { ...ff, priority: newPriority } : ff
+                          )
+                        }))
+                      }}
+                      className="px-1.5 py-0.5 text-[10px] rounded border border-[var(--border-default)] bg-[var(--bg-primary)] text-[var(--text-secondary)] cursor-pointer"
+                    >
+                      <option value={1}>Low</option>
+                      <option value={2}>Medium</option>
+                      <option value={3}>High</option>
+                    </select>
+                    <button
+                      onClick={() => removeExistingFileFromForm(f.id)}
+                      className="p-0.5 text-[var(--text-tertiary)] hover:text-red-500 cursor-pointer"
+                      title="Remove file"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Pending new files (not yet copied) */}
+            {pendingFileNames.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-[10px] font-[var(--font-weight-medium)] text-[var(--text-tertiary)]">
+                  New files to upload ({pendingFileNames.length})
+                </p>
+                {pendingFileNames.map((name, i) => (
+                  <div key={i} className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-[var(--bg-muted)] border border-dashed border-[var(--brand-magenta)]">
+                    <FileUp size={12} className="text-[var(--brand-magenta)] shrink-0" />
+                    <span className="text-xs text-[var(--text-primary)] truncate flex-1">{name}</span>
+                    <span className="text-[10px] text-[var(--text-tertiary)]">will be copied</span>
+                    <button
+                      onClick={() => removePendingFile(i)}
+                      className="p-0.5 text-[var(--text-tertiary)] hover:text-red-500 cursor-pointer"
+                      title="Remove"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="flex items-center gap-2 pt-1">
             <button
               onClick={handleSave}
-              disabled={!form.name.trim()}
+              disabled={!form.name.trim() || isSaving}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-[var(--font-weight-medium)] text-white rounded-md bg-gradient-to-r from-[var(--brand-indigo)] to-[var(--brand-magenta)] hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Check size={14} />
-              {editingId ? 'Save Changes' : 'Create'}
+              {isSaving ? 'Saving...' : editingId ? 'Save Changes' : 'Create'}
             </button>
             <button
               onClick={handleCancel}
@@ -328,14 +553,14 @@ export function ContentAreasSection(): JSX.Element {
                 </p>
               )}
 
-              {/* Files */}
+              {/* Files on card */}
               <div className="pt-1 border-t border-[var(--border-default)]">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-[10px] font-[var(--font-weight-medium)] text-[var(--text-tertiary)]">
                     Files ({ca.files?.length ?? 0})
                   </span>
                   <button
-                    onClick={() => handleFileUpload(ca.id)}
+                    onClick={() => handleCardFileUpload(ca.id)}
                     className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)] rounded hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
                     title="Upload files"
                   >
