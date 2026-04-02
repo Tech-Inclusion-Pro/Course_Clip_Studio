@@ -57,10 +57,15 @@ Each step is optional and can be skipped. All settings can be changed later from
 
 ### Course Authoring
 
-- **19 content block types** — Text, Image/Media, Video, Audio, Quiz, Drag & Drop, Matching, Accordion, Tabs, Flashcard, Branching Scenario, Embed, Code, Divider, Callout, H5P, HTML / Rich Text, Plugin, and Feedback Form
+- **20 content block types** — Text, Image/Media, Video, Audio, Quiz, Drag & Drop, Matching, Accordion, Tabs, Flashcard, Branching Scenario, URL/Embed, Code, Divider, Callout, H5P, HTML / Rich Text, Plugin, Feedback Form, and Slide
+- **Slide block** — Free-form canvas block (16:9) for placing buttons, embeds, quiz items, matching activities, text, and images with drag-to-position layout, background color/image, and per-element property editing
+- **URL / Embed block** — Insert any URL with two display modes: "Show in Course" (inline iframe) or "Open External" (opens in browser/new tab)
 - **HTML / Rich Text block** — Full code editor (HTML/CSS/JS tabs via Monaco) with live preview toggle, allowing users to add any custom content
 - **Block animations** — Fade-in, slide-up, slide-left, and scale with configurable duration and delay
-- **Rich text editing** — TipTap-powered editor with formatting toolbar
+- **Rich text editing** — TipTap-powered editor with formatting toolbar and font size control (10–48px dropdown)
+- **Drag-and-drop file uploads** — Drag image, video, and audio files directly onto their blocks; files are automatically copied into the course's assets folder for self-contained packaging
+- **SRT/VTT transcript upload** — Video and audio blocks support drag-and-drop or click-to-upload of .srt/.vtt caption files with automatic parsing to plain text and configurable words-per-line wrapping
+- **Block delete confirmation** — Deleting any block shows a confirmation dialog to prevent accidental content loss
 - **Drag-and-drop reordering** — Reorder blocks, lessons, and modules via drag and drop
 - **Question bank** — Reusable quiz question library per course with CSV import/export, downloadable template, and linking to quiz blocks
 - **Reading level analysis** — Automatic Flesch-Kincaid Grade Level calculation per text block and per course
@@ -135,7 +140,7 @@ API keys are encrypted via Electron's `safeStorage` API. Provider settings are m
 
 | Format | Description |
 |---|---|
-| SCORM 1.2 | Legacy SCORM packaging with API script, manifest, and lesson HTML |
+| SCORM 1.2 | Legacy SCORM packaging with API script, manifest, lesson HTML, and bundled media assets |
 | SCORM 2004 | Modern SCORM 2004 (2nd, 3rd, 4th edition) with updated API and manifest |
 | xAPI (Experience API) | LRS-compatible statements with configurable endpoint and authentication |
 | HTML5 | Self-contained ZIP with localStorage-based progress tracking — no server required |
@@ -226,6 +231,7 @@ All settings persist across sessions.
 #### Per-Course Theme Customization
 
 - Full color palette customization (primary, secondary, accent, background, surface, text)
+- Block-specific background and text colors for interactive elements (quiz, flashcard, matching, drag & drop, branching, accordion) with WCAG contrast indicator
 - Custom CSS injection
 - Dark mode toggle
 - Player shell configuration (header color, button style, progress bar color, logo display)
@@ -278,7 +284,8 @@ Start new courses from pre-designed templates:
 - **Workspace management** — Multi-course workspace with file system persistence
 - **Publish status tracking** — Draft, In Review, Published, Archived workflow
 - **Course metadata** — Title, description, author, language, estimated duration, tags, thumbnail, version
-- **Learner preview** — Full interactive preview with device modes (Desktop, Tablet, Mobile), with working flashcard 3D flip, drag & drop, matching, branching, and quiz interactions
+- **Asset management** — All uploaded files (images, audio, video, SRT/VTT) are automatically copied into the course's `assets/` folder, ensuring courses are fully self-contained for export and packaging
+- **Learner preview** — Full interactive preview with device modes (Desktop, Tablet, Mobile), with working flashcard 3D flip, drag & drop, matching, branching, quiz interactions, and in-iframe navigation buttons
 - **Learner notes** — Note-taking and bookmarking in preview mode
 - **UDL checklists** — Per-module tracking across Representation, Action & Expression, and Engagement pillars
 - **Reading level display** — Automatic Flesch-Kincaid Grade Level per text block
@@ -359,7 +366,7 @@ lumina-udl/
 │       │   └── ui/             # Button, ThemeToggle, SettingsCard, FieldRow, ToggleSwitch, ColorInput
 │       ├── views/              # Dashboard, Editor, Preview, Settings, SignIn, Publish
 │       ├── stores/             # Zustand stores (app, auth, course, editor)
-│       ├── hooks/              # useTheme, useAccessibility, useWorkspaceInit
+│       ├── hooks/              # useTheme, useAccessibility, useWorkspaceInit, useAssetUpload
 │       ├── lib/
 │       │   ├── export/         # HTML packager, PDF renderer
 │       │   ├── import/         # Markdown, PPTX, SCORM parsers
