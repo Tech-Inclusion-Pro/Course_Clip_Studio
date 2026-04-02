@@ -212,6 +212,15 @@ ${rubricType === 'holistic' ? 'Create 3-4 performance levels with overall descri
 ${rubricType === 'single-point' ? 'Create 3-4 criteria with proficient-level descriptions.' : ''}
 ${rubricType === 'checklist' ? 'Create 5-8 checklist items that must be present.' : ''}
 
+CRITICAL: You MUST provide a description for EVERY combination of criterion and level.
+If there are N criteria (rows) and M levels (columns), the "cells" object must have exactly N × M entries.
+Each key MUST use this exact format: "crit-gen-{rowIndex}:lvl-gen-{colIndex}" where rowIndex and colIndex are 0-based.
+For example, with 3 criteria and 3 levels, you need exactly 9 cells:
+  "crit-gen-0:lvl-gen-0", "crit-gen-0:lvl-gen-1", "crit-gen-0:lvl-gen-2",
+  "crit-gen-1:lvl-gen-0", "crit-gen-1:lvl-gen-1", "crit-gen-1:lvl-gen-2",
+  "crit-gen-2:lvl-gen-0", "crit-gen-2:lvl-gen-1", "crit-gen-2:lvl-gen-2"
+Do NOT leave any cell empty or missing. Every cell must have a meaningful, specific description.
+
 Requirements:
 - Criteria should align with the assignment objectives
 - Use clear, measurable language
@@ -231,7 +240,8 @@ Return a JSON object with this structure:
   ],
   "cells": {
     "crit-gen-0:lvl-gen-0": "Description for criterion 1 at beginning level",
-    "crit-gen-0:lvl-gen-1": "Description for criterion 1 at developing level"
+    "crit-gen-0:lvl-gen-1": "Description for criterion 1 at developing level",
+    "crit-gen-0:lvl-gen-2": "Description for criterion 1 at proficient level"
   }
 }
 

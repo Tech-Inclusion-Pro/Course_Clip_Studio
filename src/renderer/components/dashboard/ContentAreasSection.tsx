@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, X, Check } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Check, FileUp, File } from 'lucide-react'
 import { useAppStore } from '@/stores/useAppStore'
-import type { ContentArea } from '@/types/course'
+import type { ContentArea, ContentAreaFile } from '@/types/course'
 
 type ContentAreaFormData = Omit<ContentArea, 'id' | 'createdAt' | 'updatedAt'>
 
@@ -20,6 +20,9 @@ export function ContentAreasSection(): JSX.Element {
   const addContentArea = useAppStore((s) => s.addContentArea)
   const updateContentArea = useAppStore((s) => s.updateContentArea)
   const removeContentArea = useAppStore((s) => s.removeContentArea)
+  const addContentAreaFile = useAppStore((s) => s.addContentAreaFile)
+  const updateContentAreaFilePriority = useAppStore((s) => s.updateContentAreaFilePriority)
+  const removeContentAreaFile = useAppStore((s) => s.removeContentAreaFile)
 
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -68,6 +71,31 @@ export function ContentAreasSection(): JSX.Element {
     removeContentArea(id)
     setConfirmDeleteId(null)
   }
+
+  async function handleFileUpload(contentAreaId: string) {
+    try {
+      const result = await window.electronAPI.dialog.openFile({
+        properties: ['openFile', 'multiSelections'],
+        filters: [{ name: 'All Files', extensions: ['*'] }]
+      })
+      if (result && Array.isArray(result)) {
+        for (const filePath of result) {
+          const name = filePath.split(/[\\/]/).pop() || 'file'
+          const file: ContentAreaFile = {
+            id: `caf-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            name,
+            path: filePath,
+            priority: 2
+          }
+          addContentAreaFile(contentAreaId, file)
+        }
+      }
+    } catch (err) {
+      console.error('File upload failed:', err)
+    }
+  }
+
+  const PRIORITY_LABELS: Record<number, string> = { 1: 'Low', 2: 'Medium', 3: 'High' }
 
   function filledFieldCount(ca: ContentArea): number {
     let count = 0
@@ -299,6 +327,50 @@ export function ContentAreasSection(): JSX.Element {
                   <span className="font-[var(--font-weight-medium)]">Format:</span> {ca.format}
                 </p>
               )}
+
+              {/* Files */}
+              <div className="pt-1 border-t border-[var(--border-default)]">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-[var(--font-weight-medium)] text-[var(--text-tertiary)]">
+                    Files ({ca.files?.length ?? 0})
+                  </span>
+                  <button
+                    onClick={() => handleFileUpload(ca.id)}
+                    className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)] rounded hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
+                    title="Upload files"
+                  >
+                    <FileUp size={10} />
+                    Add
+                  </button>
+                </div>
+                {(ca.files ?? []).length > 0 && (
+                  <div className="space-y-1">
+                    {(ca.files ?? []).map((f) => (
+                      <div key={f.id} className="flex items-center gap-1.5 text-[10px]">
+                        <File size={10} className="text-[var(--text-tertiary)] shrink-0" />
+                        <span className="text-[var(--text-secondary)] truncate flex-1" title={f.path}>{f.name}</span>
+                        <select
+                          value={f.priority}
+                          onChange={(e) => updateContentAreaFilePriority(ca.id, f.id, Number(e.target.value) as 1 | 2 | 3)}
+                          className="px-1 py-0.5 text-[10px] rounded border border-[var(--border-default)] bg-[var(--bg-primary)] text-[var(--text-secondary)] cursor-pointer"
+                          title="Priority"
+                        >
+                          <option value={1}>Low</option>
+                          <option value={2}>Med</option>
+                          <option value={3}>High</option>
+                        </select>
+                        <button
+                          onClick={() => removeContentAreaFile(ca.id, f.id)}
+                          className="p-0.5 text-[var(--text-tertiary)] hover:text-red-500 cursor-pointer"
+                          title="Remove file"
+                        >
+                          <X size={10} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>

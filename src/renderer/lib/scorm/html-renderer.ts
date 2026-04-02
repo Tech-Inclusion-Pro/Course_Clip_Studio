@@ -54,30 +54,57 @@ function renderSlideElement(el: SlideElement): string {
   }
 }
 
+/** Build an inline animation style string if the block has an animation. */
+function getAnimationStyle(block: ContentBlock): string {
+  const anim = block.animation
+  if (!anim || anim.type === 'none') return ''
+  return ` style="animation: lumina-${anim.type} ${anim.duration}ms ease-out ${anim.delay}ms both;"`
+}
+
+/** Build an animation class if the block has an animation. */
+function getAnimationClass(block: ContentBlock): string {
+  const anim = block.animation
+  if (!anim || anim.type === 'none') return ''
+  return ' animated'
+}
+
 /**
  * Render a content block to HTML string.
  */
 function renderBlock(block: ContentBlock): string {
+  const animStyle = getAnimationStyle(block)
+  const animClass = getAnimationClass(block)
+  let html = renderBlockInner(block, animStyle, animClass)
+
+  // Append per-block feedback if present
+  if (block.feedback) {
+    html += `\n<details class="block-feedback"><summary>Feedback</summary><div>${escapeHtml(block.feedback)}</div></details>`
+  }
+
+  return html
+}
+
+function renderBlockInner(block: ContentBlock, animStyle: string, animClass: string): string {
   switch (block.type) {
     case 'text':
-      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-text">
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-text${animClass}"${animStyle}>
   ${block.content}
 </section>`
 
     case 'media':
-      return `<figure role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-media">
+      return `<figure role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-media${animClass}"${animStyle}>
   <img src="${escapeHtml(block.assetPath)}" alt="${escapeHtml(block.altText)}" loading="lazy" />
   ${block.caption ? `<figcaption>${escapeHtml(block.caption)}</figcaption>` : ''}
 </figure>`
 
     case 'video':
       if (block.source === 'embed') {
-        return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-video">
+        return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-video${animClass}"${animStyle}>
   <div class="video-embed"><iframe src="${escapeHtml(block.url)}" allowfullscreen title="${escapeHtml(block.ariaLabel)}"></iframe></div>
   ${block.transcript ? `<details class="transcript"><summary>View Transcript</summary><div>${escapeHtml(block.transcript)}</div></details>` : ''}
 </section>`
       }
-      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-video">
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-video${animClass}"${animStyle}>
   <video controls aria-label="${escapeHtml(block.ariaLabel)}"${block.poster ? ` poster="${escapeHtml(block.poster)}"` : ''}>
     <source src="${escapeHtml(block.url)}" />
     ${block.captions.map((c) => `<track kind="captions" src="${escapeHtml(c.src)}" srclang="${escapeHtml(c.language)}" label="${escapeHtml(c.label)}"${c.isDefault ? ' default' : ''} />`).join('\n    ')}
@@ -86,7 +113,7 @@ function renderBlock(block: ContentBlock): string {
 </section>`
 
     case 'audio':
-      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-audio">
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-audio${animClass}"${animStyle}>
   <audio controls aria-label="${escapeHtml(block.ariaLabel)}">
     <source src="${escapeHtml(block.assetPath)}" />
   </audio>
@@ -97,7 +124,7 @@ function renderBlock(block: ContentBlock): string {
       return renderQuiz(block)
 
     case 'accordion':
-      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-accordion">
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-accordion${animClass}"${animStyle}>
   ${block.items.map((item, i) => `<details${i === 0 ? ' open' : ''}>
     <summary>${escapeHtml(item.title)}</summary>
     <div class="accordion-content">${item.content}</div>
@@ -105,7 +132,7 @@ function renderBlock(block: ContentBlock): string {
 </section>`
 
     case 'tabs':
-      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-tabs">
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-tabs${animClass}"${animStyle}>
   <div role="tablist">
     ${block.tabs.map((tab, i) => `<button role="tab" aria-selected="${i === 0}" data-tab="${i}">${escapeHtml(tab.label)}</button>`).join('\n    ')}
   </div>
@@ -113,7 +140,7 @@ function renderBlock(block: ContentBlock): string {
 </section>`
 
     case 'flashcard':
-      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-flashcard">
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-flashcard${animClass}"${animStyle}>
   <div class="flashcard-deck" data-total="${block.cards.length}">
     ${block.cards.map((card, i) => `<div class="flashcard${i > 0 ? ' fc-hidden' : ''}" data-index="${i}">
       <div class="flashcard-inner">
@@ -121,21 +148,26 @@ function renderBlock(block: ContentBlock): string {
         <div class="flashcard-back">${escapeHtml(card.back)}</div>
       </div>
     </div>`).join('\n    ')}
+    <div class="fc-self-test" style="display:none;">
+      <button class="fc-got-it">Got It</button>
+      <button class="fc-review">Review Again</button>
+    </div>
     <div class="flashcard-nav">
       <button class="prev-btn" disabled>Previous</button>
       <span class="card-counter">1 / ${block.cards.length}</span>
       <button class="next-btn"${block.cards.length <= 1 ? ' disabled' : ''}>Next</button>
     </div>
+    <button class="fc-review-missed" style="display:none;">Review Missed (0)</button>
   </div>
 </section>`
 
     case 'callout':
-      return `<aside role="note" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-callout callout-${block.variant}">
+      return `<aside role="note" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-callout callout-${block.variant}${animClass}"${animStyle}>
   <div class="callout-content">${block.content}</div>
 </aside>`
 
     case 'code':
-      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-code">
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-code${animClass}"${animStyle}>
   <pre><code class="language-${escapeHtml(block.language)}">${escapeHtml(block.code)}</code></pre>
 </section>`
 
@@ -144,21 +176,26 @@ function renderBlock(block: ContentBlock): string {
 
     case 'embed':
       if (block.display === 'new-tab') {
-        return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-embed">
+        return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-embed${animClass}"${animStyle}>
   <a href="${escapeHtml(block.url)}" target="_blank" rel="noopener noreferrer" class="embed-link">${escapeHtml(block.title || block.url)}</a>
 </section>`
       }
-      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-embed">
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-embed${animClass}"${animStyle}>
   <iframe src="${escapeHtml(block.url)}" title="${escapeHtml(block.title || block.ariaLabel)}" sandbox="allow-scripts allow-same-origin"></iframe>
 </section>`
 
     case 'h5p':
-      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-h5p">
+      if (block.display === 'new-tab') {
+        return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-h5p${animClass}"${animStyle}>
+  <a href="${escapeHtml(block.embedUrl)}" target="_blank" rel="noopener noreferrer" class="embed-link">${escapeHtml(block.ariaLabel || 'Open H5P Content')}</a>
+</section>`
+      }
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-h5p${animClass}"${animStyle}>
   <iframe src="${escapeHtml(block.embedUrl)}" title="${escapeHtml(block.ariaLabel)}" sandbox="allow-scripts allow-same-origin" allowfullscreen></iframe>
 </section>`
 
     case 'branching':
-      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-branching">
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-branching${animClass}"${animStyle}>
   <div class="scenario">${block.scenario}</div>
   <div class="choices" role="group" aria-label="Choose an option">
     ${block.choices.map((c) => `<button class="branch-choice" data-next="${c.nextLessonId ?? ''}" data-consequence="${escapeHtml(c.consequence)}" data-action="${c.action ?? 'navigate'}">${escapeHtml(c.label)}${c.action === 'restart' ? ' ↺' : ''}</button>`).join('\n    ')}
@@ -168,14 +205,14 @@ function renderBlock(block: ContentBlock): string {
 </section>`
 
     case 'custom-html':
-      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-custom">
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-custom${animClass}"${animStyle}>
   <div class="custom-warning" role="alert">Custom content — accessibility may vary</div>
   <style>${block.css}</style>
   ${block.html}
 </section>`
 
     case 'drag-drop':
-      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-dragdrop">
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-dragdrop${animClass}"${animStyle}>
   <p class="instruction">${escapeHtml(block.instruction)}</p>
   <div class="drag-items" role="group" aria-label="Draggable items">
     ${block.items.map((item) => `<div class="dd-item" draggable="true" data-id="${item.id}" data-pair="${item.correctZoneId}">${escapeHtml(item.label)}</div>`).join('\n    ')}
@@ -191,7 +228,7 @@ function renderBlock(block: ContentBlock): string {
         pairMap.set(p.leftId, p.rightId)
         pairMap.set(p.rightId, p.leftId)
       }
-      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-matching" data-pairs='${escapeHtml(JSON.stringify(block.correctPairs))}'>
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-matching${animClass}" data-pairs='${escapeHtml(JSON.stringify(block.correctPairs))}'${animStyle}>
   <p class="instruction">${escapeHtml(block.instruction)}</p>
   <div class="matching-columns">
     <div class="left-column" role="list" aria-label="Items to match">
@@ -515,11 +552,18 @@ function getPlayerStyles(theme: CourseTheme): string {
     .flashcard.fc-hidden { display: none; }
     .flashcard-nav { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 12px; }
     .flashcard-nav button { padding: 4px 12px; border: 1px solid ${theme.textColor}30; border-radius: ${btnRadius}; background: none; color: ${theme.textColor}; cursor: pointer; }
+    .fc-self-test { display: flex; justify-content: center; gap: 12px; margin-top: 12px; }
+    .fc-got-it { padding: 8px 20px; border: none; border-radius: ${btnRadius}; background: #22c55e; color: #fff; font-weight: 600; cursor: pointer; font-size: 14px; }
+    .fc-got-it:hover { opacity: 0.9; }
+    .fc-review { padding: 8px 20px; border: none; border-radius: ${btnRadius}; background: #f59e0b; color: #fff; font-weight: 600; cursor: pointer; font-size: 14px; }
+    .fc-review:hover { opacity: 0.9; }
+    .fc-review-missed { display: block; margin: 16px auto 0; padding: 10px 24px; border: 2px solid ${theme.primaryColor}; border-radius: ${btnRadius}; background: ${theme.primaryColor}10; color: ${ensureContrast(theme.primaryColor, theme.backgroundColor)}; font-weight: 600; cursor: pointer; font-size: 14px; }
+    .fc-review-missed:hover { background: ${theme.primaryColor}20; }
 
     /* Matching — click-to-select */
     .block-matching .matching-columns { display: flex; gap: 24px; }
     .matching-columns > div { flex: 1; }
-    .match-item { padding: 8px 12px; margin: 4px 0; border: 2px solid ${blockText}20; border-radius: 6px; cursor: pointer; transition: all 0.2s; color: ${blockText}; }
+    .match-item { padding: 8px 12px; margin: 4px 0; border: 2px solid ${blockText}20; border-radius: 6px; cursor: pointer; transition: all 0.2s; color: ${blockText}; background: ${blockBg}; }
     .match-item:hover { background: ${theme.primaryColor}10; }
     .match-item.selected { border-color: ${theme.primaryColor}; background: ${theme.primaryColor}15; box-shadow: 0 0 0 2px ${theme.primaryColor}30; }
     .match-item.matched-correct { border-color: #22c55e; background: #dcfce7; color: #166534; cursor: default; }
@@ -531,7 +575,7 @@ function getPlayerStyles(theme: CourseTheme): string {
     .dd-item { padding: 8px 16px; background: ${blockBg}; color: ${blockText}; border: 2px solid ${blockText}20; border-radius: 6px; cursor: grab; transition: all 0.2s; }
     .dd-item:active { cursor: grabbing; }
     .dd-item.placed { opacity: 0.4; cursor: default; }
-    .dd-zone { min-height: 60px; padding: 12px; border: 2px dashed ${blockText}30; border-radius: 8px; margin-bottom: 8px; text-align: center; transition: all 0.2s; color: ${blockText}; }
+    .dd-zone { min-height: 60px; padding: 12px; border: 2px dashed ${blockText}30; border-radius: 8px; margin-bottom: 8px; text-align: center; transition: all 0.2s; color: ${blockText}; background: ${blockBg}; }
     .dd-zone.drag-over { border-color: ${theme.primaryColor}; background: ${theme.primaryColor}10; }
     .dd-zone.dd-correct { border-color: #22c55e; border-style: solid; background: #dcfce7; color: #166534; }
     .dd-zone.dd-incorrect { border-color: #ef4444; border-style: solid; background: #fee2e2; color: #991b1b; }
@@ -566,6 +610,21 @@ function getPlayerStyles(theme: CourseTheme): string {
       cursor: pointer; transition: opacity 0.2s;
     }
     .slide-btn:hover { opacity: 0.9; }
+
+    /* Block feedback */
+    .block-feedback { margin-top: 8px; border: 1px solid ${theme.primaryColor}30; border-radius: 8px; }
+    .block-feedback summary { padding: 8px 14px; cursor: pointer; font-weight: 600; font-size: 13px; color: ${ensureContrast(theme.primaryColor, theme.backgroundColor)}; background: ${theme.primaryColor}08; border-radius: 8px; }
+    .block-feedback[open] summary { border-radius: 8px 8px 0 0; }
+    .block-feedback > div { padding: 10px 14px; font-size: 13px; color: ${bodyText}; }
+
+    /* Lesson completion indicator */
+    .lesson-completed::after { content: ' \\2713'; color: #22c55e; font-weight: bold; }
+
+    /* Block animations */
+    @keyframes lumina-fade-in { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes lumina-slide-up { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes lumina-slide-left { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes lumina-scale { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
 
     @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
     @media (max-width: 600px) {

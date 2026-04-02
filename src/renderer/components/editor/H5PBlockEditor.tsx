@@ -36,6 +36,34 @@ export function H5PBlockEditor({ block, onUpdate }: H5PBlockEditorProps): JSX.El
           </p>
         </div>
 
+        <div>
+          <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1.5">
+            Display Mode
+          </label>
+          <div className="flex gap-3">
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="radio"
+                name={`h5p-display-${block.id}`}
+                checked={block.display !== 'new-tab'}
+                onChange={() => onUpdate({ display: 'inline' })}
+                className="text-[var(--brand-magenta)] focus:ring-[var(--ring-brand)]"
+              />
+              <span className="text-xs text-[var(--text-secondary)]">Embedded (iframe)</span>
+            </label>
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="radio"
+                name={`h5p-display-${block.id}`}
+                checked={block.display === 'new-tab'}
+                onChange={() => onUpdate({ display: 'new-tab' })}
+                className="text-[var(--brand-magenta)] focus:ring-[var(--ring-brand)]"
+              />
+              <span className="text-xs text-[var(--text-secondary)]">Open in New Tab</span>
+            </label>
+          </div>
+        </div>
+
         {/* Preview */}
         {block.embedUrl ? (
           <div className="rounded-md border border-[var(--border-default)] overflow-hidden">

@@ -101,6 +101,7 @@ export interface BaseBlock {
   altText?: string
   notes: string
   animation?: BlockAnimation
+  feedback?: string
 }
 
 export interface BlockAnimation {
@@ -282,6 +283,7 @@ export interface CalloutBlock extends BaseBlock {
 export interface H5PBlock extends BaseBlock {
   type: 'h5p'
   embedUrl: string
+  display?: 'inline' | 'new-tab'
 }
 
 export interface CustomHTMLBlock extends BaseBlock {
@@ -552,6 +554,13 @@ export const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
 
 // ─── Content Area ───
 
+export interface ContentAreaFile {
+  id: string
+  name: string
+  path: string
+  priority: 1 | 2 | 3
+}
+
 export interface ContentArea {
   id: string
   name: string
@@ -561,6 +570,7 @@ export interface ContentArea {
   tone: 'formal' | 'conversational' | 'scenario-based' | ''
   format: 'linear' | 'branching' | 'mixed' | ''
   accessibilityNeeds: string
+  files?: ContentAreaFile[]
   createdAt: string
   updatedAt: string
 }

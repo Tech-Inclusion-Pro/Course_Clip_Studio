@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { AISettings, AccessibilitySettings, BrandKit, VisualApiProvider, BaseBrainSettings, BaseBrainFile, ContentArea, UserTemplate } from '@/types/course'
+import type { AISettings, AccessibilitySettings, BrandKit, VisualApiProvider, BaseBrainSettings, BaseBrainFile, ContentArea, ContentAreaFile, UserTemplate } from '@/types/course'
 import { uid } from '@/lib/uid'
 import wcagScreener from '@/assets/base-brain/01_WCAG_Accessibility_Screener.md?raw'
 import udlScreener from '@/assets/base-brain/02_UDL_Screener.md?raw'
@@ -102,6 +102,9 @@ interface AppState {
   addContentArea: (area: Omit<ContentArea, 'id' | 'createdAt' | 'updatedAt'>) => void
   updateContentArea: (id: string, partial: Partial<ContentArea>) => void
   removeContentArea: (id: string) => void
+  addContentAreaFile: (contentAreaId: string, file: ContentAreaFile) => void
+  updateContentAreaFilePriority: (contentAreaId: string, fileId: string, priority: 1 | 2 | 3) => void
+  removeContentAreaFile: (contentAreaId: string, fileId: string) => void
 
   // Visual API actions
   loadVisualApiSettings: () => Promise<void>
@@ -414,6 +417,50 @@ export const useAppStore = create<AppState>((set, get) => ({
   removeContentArea: (id) => {
     set((state) => {
       const updated = state.contentAreas.filter((ca) => ca.id !== id)
+      window.electronAPI.settings.set('contentAreas', updated)
+      return { contentAreas: updated }
+    })
+  },
+
+  addContentAreaFile: (contentAreaId, file) => {
+    set((state) => {
+      const updated = state.contentAreas.map((ca) =>
+        ca.id === contentAreaId
+          ? { ...ca, files: [...(ca.files ?? []), file], updatedAt: new Date().toISOString() }
+          : ca
+      )
+      window.electronAPI.settings.set('contentAreas', updated)
+      return { contentAreas: updated }
+    })
+  },
+
+  updateContentAreaFilePriority: (contentAreaId, fileId, priority) => {
+    set((state) => {
+      const updated = state.contentAreas.map((ca) =>
+        ca.id === contentAreaId
+          ? {
+              ...ca,
+              files: (ca.files ?? []).map((f) => f.id === fileId ? { ...f, priority } : f),
+              updatedAt: new Date().toISOString()
+            }
+          : ca
+      )
+      window.electronAPI.settings.set('contentAreas', updated)
+      return { contentAreas: updated }
+    })
+  },
+
+  removeContentAreaFile: (contentAreaId, fileId) => {
+    set((state) => {
+      const updated = state.contentAreas.map((ca) =>
+        ca.id === contentAreaId
+          ? {
+              ...ca,
+              files: (ca.files ?? []).filter((f) => f.id !== fileId),
+              updatedAt: new Date().toISOString()
+            }
+          : ca
+      )
       window.electronAPI.settings.set('contentAreas', updated)
       return { contentAreas: updated }
     })

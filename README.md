@@ -57,11 +57,11 @@ Each step is optional and can be skipped. All settings can be changed later from
 
 ### Course Authoring
 
-- **20 content block types** — Text, Image/Media, Video, Audio, Quiz, Drag & Drop, Matching, Accordion, Tabs, Flashcard, Branching Scenario, URL/Embed, Code, Divider, Callout, H5P, HTML / Rich Text, Plugin, Feedback Form, and Slide
+- **20 content block types** — Text, Image/Media, Video, Audio, Quiz, Drag & Drop, Matching, Accordion, Tabs, Flashcard, Branching Scenario, URL/Embed, Code, Divider, Callout, H5P (with inline or new-tab display modes), HTML / Rich Text, Plugin, Feedback Form, and Slide
 - **Slide block** — Free-form canvas block (16:9) for placing buttons, embeds, quiz items, matching activities, text, and images with drag-to-position layout, background color/image, and per-element property editing
 - **URL / Embed block** — Insert any URL with two display modes: "Show in Course" (inline iframe) or "Open External" (opens in browser/new tab)
 - **HTML / Rich Text block** — Full code editor (HTML/CSS/JS tabs via Monaco) with live preview toggle, allowing users to add any custom content
-- **Block animations** — Fade-in, slide-up, slide-left, and scale with configurable duration and delay
+- **Block animations** — Fade-in, slide-up, slide-left, and scale with configurable duration and delay; animations now render in preview and exports with `@keyframes` and `prefers-reduced-motion` support
 - **Rich text editing** — TipTap-powered editor with formatting toolbar and font size control (10–48px dropdown)
 - **Drag-and-drop file uploads** — Drag image, video, and audio files directly onto their blocks; files are automatically copied into the course's assets folder for self-contained packaging
 - **SRT/VTT transcript upload** — Video and audio blocks support drag-and-drop or click-to-upload of .srt/.vtt caption files with automatic parsing to plain text and configurable words-per-line wrapping
@@ -114,7 +114,8 @@ A dedicated dashboard tab with a 6-step wizard for creating WCAG-compliant cours
 | Bloom's Taxonomy Integration | Interactive reference panel with 6 levels, 10 action verbs each, and color-coded badges on every objective |
 | AI-Generated Objectives | Generate 4–6 measurable learning objectives aligned to Bloom's Taxonomy from course context |
 | AI-Generated Assignments | Generate assignments with UDL accommodations linked to objectives |
-| AI-Generated Rubrics | Generate analytic, holistic, single-point, or checklist rubrics from assignment context |
+| AI-Generated Rubrics | Generate analytic, holistic, single-point, or checklist rubrics from assignment context; improved prompt ensures ALL criterion/level cells are filled |
+| Generate All Rubrics | One-click button to sequentially generate rubrics for every assignment with progress indicator |
 | UDL Accommodations | Per-assignment annotations across Representation, Action & Expression, and Engagement pillars with AI suggestions per pillar |
 | 4 Rubric Types | Analytic (full grid editor), Holistic (level descriptors), Single-Point (growth/proficient/strengths), Checklist (yes/no items) |
 | Reusable Pools | Save objectives, assignments, and rubrics to personal pools for reuse across syllabi |
@@ -256,6 +257,7 @@ All settings persist across sessions.
 - Full color palette customization (primary, secondary, accent, background, surface, text)
 - Block-specific background and text colors for interactive elements (quiz, flashcard, matching, drag & drop, branching, accordion) with WCAG contrast indicator
 - **Automatic contrast correction** — Preview and SCORM export automatically detect insufficient text/background contrast (below WCAG AA 4.5:1) and substitute readable dark or light text to ensure legibility
+- **Matching & Drag-Drop contrast** — Match items and drop zones now render with explicit background colors, ensuring text visibility on all themes
 - Custom CSS injection
 - Dark mode toggle
 - Player shell configuration (header color, button style, progress bar color, logo display)
@@ -318,12 +320,16 @@ Start new courses from pre-designed templates:
 - **Course metadata** — Title, description, author, language, estimated duration, tags, thumbnail, version
 - **Asset management** — All uploaded files (images, audio, video, SRT/VTT, theme logos, certificate backgrounds and logos) are automatically copied into the course's `assets/` folder, ensuring courses are fully self-contained for export and packaging
 - **Learner preview** — Full interactive preview with device modes (Desktop, Tablet, Mobile), with working flashcard 3D flip, drag & drop, matching, branching, quiz interactions, and in-iframe navigation buttons
+- **Flashcard self-test & review** — After flipping a flashcard, learners can mark "Got It" or "Review Again"; after completing the deck, a "Review Missed" button filters to only the missed cards for targeted study
+- **Per-block feedback** — Optional collapsible feedback section on any content block, shown to learners as a `<details>` element; configured via the "Block Feedback" field in the Properties panel
+- **Student progress saving** — HTML exports track per-lesson completion, quiz scores, and interactive block state in localStorage; SCORM exports persist progress via `cmi.suspend_data` across sessions
+- **Manual save** — Toolbar Save button creates a named "Manual save" snapshot in Version History with visual confirmation flash
 - **Learner notes** — Note-taking and bookmarking in preview mode
 - **UDL checklists** — Per-module tracking across Representation, Action & Expression, and Engagement pillars
 - **Reading level display** — Automatic Flesch-Kincaid Grade Level per text block
 - **Plugin system** — Extensible plugin block type for custom integrations
 - **Question bank CSV workflow** — Download a CSV template, fill it in Excel/Google Sheets/Numbers, and import questions in bulk; export existing questions to CSV
-- **Content areas** — Dashboard section for creating reusable content area profiles (audience, objectives, prior knowledge, tone, format, accessibility needs) that persist across sessions and can be selected per project to supplement AI generation
+- **Content areas** — Dashboard section for creating reusable content area profiles (audience, objectives, prior knowledge, tone, format, accessibility needs) that persist across sessions and can be selected per project to supplement AI generation; supports file uploads with priority levels (Low, Medium, High) per content area
 
 ## Getting Started
 

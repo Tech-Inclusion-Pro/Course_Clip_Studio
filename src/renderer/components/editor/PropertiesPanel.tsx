@@ -244,6 +244,17 @@ export function PropertiesPanel(): JSX.Element {
           />
         </FieldGroup>
 
+        {/* Global: Block Feedback */}
+        <FieldGroup label="Block Feedback">
+          <textarea
+            value={block.feedback ?? ''}
+            onChange={(e) => handleUpdate({ feedback: e.target.value || undefined })}
+            rows={2}
+            className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)] resize-none"
+            placeholder="Optional feedback shown to learners as a collapsible..."
+          />
+        </FieldGroup>
+
         {/* Type-specific fields */}
         <TypeSpecificFields block={block} onUpdate={handleUpdate} />
 

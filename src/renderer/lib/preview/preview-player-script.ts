@@ -112,36 +112,88 @@ export function getPreviewPlayerScript(): string {
     });
   }
 
-  // Flashcards — 3D flip
+  // Flashcards — 3D flip with self-test
   function initFlashcards() {
     document.querySelectorAll('.flashcard-deck').forEach(function(deck) {
       var cards = deck.querySelectorAll('.flashcard');
       var counter = deck.querySelector('.card-counter');
       var prevBtn = deck.querySelector('.prev-btn');
       var nextBtn = deck.querySelector('.next-btn');
+      var selfTest = deck.querySelector('.fc-self-test');
+      var gotItBtn = deck.querySelector('.fc-got-it');
+      var reviewBtn = deck.querySelector('.fc-review');
+      var reviewMissedBtn = deck.querySelector('.fc-review-missed');
       var current = 0;
+      var missedCards = [];
+      var activeIndices = [];
+      for (var i = 0; i < cards.length; i++) activeIndices.push(i);
 
       // Click to flip
       cards.forEach(function(card) {
         card.addEventListener('click', function() {
           card.classList.toggle('flipped');
+          if (selfTest && card.classList.contains('flipped')) {
+            selfTest.style.display = 'flex';
+          }
         });
       });
 
       function showCard(idx) {
-        cards.forEach(function(c, i) {
-          if (i !== idx) { c.classList.add('fc-hidden'); } else { c.classList.remove('fc-hidden'); }
+        cards.forEach(function(c, ci) {
+          if (ci !== idx) { c.classList.add('fc-hidden'); } else { c.classList.remove('fc-hidden'); }
         });
         current = idx;
-        counter.textContent = (idx + 1) + ' / ' + cards.length;
-        prevBtn.disabled = idx === 0;
-        nextBtn.disabled = idx === cards.length - 1;
-        // Reset flip state
+        var posInSet = activeIndices.indexOf(idx) + 1;
+        counter.textContent = posInSet + ' / ' + activeIndices.length;
+        prevBtn.disabled = activeIndices.indexOf(idx) === 0;
+        nextBtn.disabled = activeIndices.indexOf(idx) === activeIndices.length - 1;
         cards[idx].classList.remove('flipped');
+        if (selfTest) selfTest.style.display = 'none';
       }
 
-      if (prevBtn) prevBtn.addEventListener('click', function(e) { e.stopPropagation(); if (current > 0) showCard(current - 1); });
-      if (nextBtn) nextBtn.addEventListener('click', function(e) { e.stopPropagation(); if (current < cards.length - 1) showCard(current + 1); });
+      function advanceOrFinish() {
+        var pos = activeIndices.indexOf(current);
+        if (pos < activeIndices.length - 1) {
+          showCard(activeIndices[pos + 1]);
+        } else {
+          // All cards reviewed
+          if (selfTest) selfTest.style.display = 'none';
+          if (missedCards.length > 0 && reviewMissedBtn) {
+            reviewMissedBtn.style.display = 'block';
+            reviewMissedBtn.textContent = 'Review Missed (' + missedCards.length + ')';
+          }
+        }
+      }
+
+      if (gotItBtn) gotItBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        advanceOrFinish();
+      });
+
+      if (reviewBtn) reviewBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (missedCards.indexOf(current) === -1) missedCards.push(current);
+        advanceOrFinish();
+      });
+
+      if (reviewMissedBtn) reviewMissedBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        activeIndices = missedCards.slice();
+        missedCards = [];
+        reviewMissedBtn.style.display = 'none';
+        if (activeIndices.length > 0) showCard(activeIndices[0]);
+      });
+
+      if (prevBtn) prevBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var pos = activeIndices.indexOf(current);
+        if (pos > 0) showCard(activeIndices[pos - 1]);
+      });
+      if (nextBtn) nextBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var pos = activeIndices.indexOf(current);
+        if (pos < activeIndices.length - 1) showCard(activeIndices[pos + 1]);
+      });
     });
   }
 

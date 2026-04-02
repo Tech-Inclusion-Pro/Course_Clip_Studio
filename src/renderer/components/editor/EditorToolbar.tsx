@@ -18,6 +18,7 @@ import {
   Palette,
   ShieldCheck,
   Award,
+  Save,
   History,
   MessageSquare,
   LayoutGrid,
@@ -95,6 +96,7 @@ export function EditorToolbar(): JSX.Element {
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleValue, setTitleValue] = useState('')
   const [saveTemplateOpen, setSaveTemplateOpen] = useState(false)
+  const [saveFlash, setSaveFlash] = useState(false)
 
   function handleUndo() {
     if (!course) return
@@ -128,6 +130,13 @@ export function EditorToolbar(): JSX.Element {
       updateCourseMeta(activeCourseId, { title: titleValue.trim() })
     }
     setEditingTitle(false)
+  }
+
+  function handleManualSave() {
+    if (!course) return
+    pushSnapshot(serializeCourse(course), 'Manual save')
+    setSaveFlash(true)
+    setTimeout(() => setSaveFlash(false), 1200)
   }
 
   const DeviceIcon = DEVICE_ICONS[previewDevice]
@@ -288,6 +297,11 @@ export function EditorToolbar(): JSX.Element {
 
         <div className="w-px h-5 bg-[var(--border-default)] mx-1" aria-hidden="true" />
 
+        <ToolbarButton
+          icon={Save}
+          label={saveFlash ? 'Saved!' : 'Save'}
+          onClick={handleManualSave}
+        />
         <ToolbarButton
           icon={History}
           label="Version History"

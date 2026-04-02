@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Plus, Sparkles, Download } from 'lucide-react'
+import { useState, useCallback } from 'react'
+import { Plus, Sparkles, Download, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useSyllabusStore } from '@/stores/useSyllabusStore'
 import { useAppStore } from '@/stores/useAppStore'
@@ -23,6 +23,7 @@ export function RubricsStep(): JSX.Element {
   const [selectedAssignment, setSelectedAssignment] = useState<string>(
     activeSyllabus.assignments[0]?.id ?? ''
   )
+  const [generateAllProgress, setGenerateAllProgress] = useState<string | null>(null)
 
   async function handleGenerate(assignmentId: string): Promise<void> {
     const store = useSyllabusStore.getState()
@@ -69,6 +70,16 @@ export function RubricsStep(): JSX.Element {
     }
   }
 
+  const handleGenerateAll = useCallback(async () => {
+    const assignments = useSyllabusStore.getState().activeSyllabus?.assignments ?? []
+    if (assignments.length === 0) return
+    for (let i = 0; i < assignments.length; i++) {
+      setGenerateAllProgress(`Generating rubric ${i + 1} of ${assignments.length}...`)
+      await handleGenerate(assignments[i].id)
+    }
+    setGenerateAllProgress(null)
+  }, [])
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
@@ -108,6 +119,15 @@ export function RubricsStep(): JSX.Element {
           >
             <Sparkles size={14} />
             {isGenerating && generatingTarget?.startsWith('rubric-') ? 'Generating...' : 'Generate with AI'}
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleGenerateAll}
+            disabled={isGenerating || generateAllProgress !== null}
+          >
+            <Zap size={14} />
+            {generateAllProgress ? generateAllProgress : 'Generate All Rubrics'}
           </Button>
           <Button
             variant="ghost"
