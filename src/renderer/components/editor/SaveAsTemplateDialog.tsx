@@ -17,7 +17,7 @@ const ICON_OPTIONS = [
   'Users',
   'ShieldCheck',
   'GraduationCap',
-  'Accessibility'
+  'PersonStanding'
 ]
 
 export function SaveAsTemplateDialog({ course, open, onClose }: SaveAsTemplateDialogProps): JSX.Element | null {

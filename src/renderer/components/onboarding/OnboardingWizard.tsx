@@ -5,7 +5,7 @@ import {
   Brain,
   Image,
   Palette,
-  Accessibility,
+  PersonStanding,
   CheckCircle,
   ChevronRight,
   ChevronLeft,
@@ -766,7 +766,7 @@ function AccessibilityStep(): JSX.Element {
         <p className="text-sm text-[var(--text-secondary)] mt-1">Customize the authoring experience for your needs</p>
       </div>
 
-      <SettingsCard title="Display" icon={Accessibility}>
+      <SettingsCard title="Display" icon={PersonStanding}>
         <FieldRow label="High Contrast Mode" description="Increases contrast for better visibility">
           <ToggleSwitch
             checked={accessibility.highContrastMode}
@@ -797,7 +797,7 @@ function AccessibilityStep(): JSX.Element {
         </FieldRow>
       </SettingsCard>
 
-      <SettingsCard title="Color & Vision" icon={Accessibility}>
+      <SettingsCard title="Color & Vision" icon={PersonStanding}>
         <FieldRow label="Color Blind Mode" description="Simulates color vision deficiency">
           <div className="flex flex-wrap gap-1">
             {([
@@ -824,7 +824,7 @@ function AccessibilityStep(): JSX.Element {
         </FieldRow>
       </SettingsCard>
 
-      <SettingsCard title="Reading" icon={Accessibility}>
+      <SettingsCard title="Reading" icon={PersonStanding}>
         <FieldRow label="OpenDyslexic Font" description="Dyslexia-friendly typeface">
           <ToggleSwitch
             checked={accessibility.openDyslexic}

@@ -9,7 +9,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Eye,
-  Accessibility,
+  PersonStanding,
   CheckCircle2,
   Trophy,
   StickyNote
@@ -261,7 +261,7 @@ export function PreviewView(): JSX.Element {
               : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
           }`}
         >
-          <Accessibility size={16} />
+          <PersonStanding size={16} />
         </button>
 
         {/* Notes sidebar toggle */}

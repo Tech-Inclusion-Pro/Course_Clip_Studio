@@ -1,6 +1,7 @@
 // ─── Tippy Tour Manager ───
+// Tippy narrates each step in the chat panel as the user advances through the tour.
 
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useTippyStore } from '@/stores/useTippyStore'
 import { TOUR_STEPS } from '@/lib/tippy/tippyTourSteps'
 import { TippyHighlight } from './TippyHighlight'
@@ -14,18 +15,48 @@ export function TippyTour(): JSX.Element | null {
   const prevTourStep = useTippyStore((s) => s.prevTourStep)
   const endTour = useTippyStore((s) => s.endTour)
   const addMessage = useTippyStore((s) => s.addMessage)
+  const open = useTippyStore((s) => s.open)
   const t = useT()
 
   const currentStep = TOUR_STEPS[tourStepIndex]
   const isLast = tourStepIndex >= TOUR_STEPS.length - 1
   const isFirst = tourStepIndex === 0
 
+  // Track which step we last narrated so we don't duplicate messages
+  const lastNarratedStep = useRef(-1)
+
+  // Narrate the current step whenever it changes
+  useEffect(() => {
+    if (!tourActive || !currentStep) return
+    if (lastNarratedStep.current === tourStepIndex) return
+
+    lastNarratedStep.current = tourStepIndex
+
+    // Ensure panel is open so user can read Tippy's narration
+    open()
+
+    const stepLabel = `**Step ${tourStepIndex + 1} of ${TOUR_STEPS.length}: ${t(currentStep.title, currentStep.id)}**`
+    const stepMessage = t(currentStep.tippyMessage, t(currentStep.description, ''))
+
+    addMessage({
+      role: 'assistant',
+      content: `${stepLabel}\n\n${stepMessage}`
+    })
+  }, [tourActive, tourStepIndex, currentStep, addMessage, open, t])
+
+  // Reset narration tracker when tour ends
+  useEffect(() => {
+    if (!tourActive) {
+      lastNarratedStep.current = -1
+    }
+  }, [tourActive])
+
   const handleNext = useCallback(() => {
     if (isLast) {
       endTour()
       addMessage({
-        role: 'system',
-        content: t('tippy.tourComplete', 'Tour complete! Feel free to ask me anything as you explore.')
+        role: 'assistant',
+        content: t('tippy.tourComplete', "That's the tour! You now know your way around Course Clip Studio. Feel free to ask me anything as you explore.")
       })
     } else {
       nextTourStep()
@@ -39,8 +70,8 @@ export function TippyTour(): JSX.Element | null {
   const handleSkip = useCallback(() => {
     endTour()
     addMessage({
-      role: 'system',
-      content: t('tippy.tourSkipped', 'Tour skipped. Ask me anytime if you want to continue!')
+      role: 'assistant',
+      content: t('tippy.tourSkipped', 'No problem! The tour is always here if you want to pick it up later. Just ask me "Give me a tour" anytime.')
     })
   }, [endTour, addMessage, t])
 

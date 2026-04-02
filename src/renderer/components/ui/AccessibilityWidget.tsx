@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Accessibility, X, Minus, Plus, RotateCcw } from 'lucide-react'
+import { PersonStanding, X, Minus, Plus, RotateCcw } from 'lucide-react'
 import { useAppStore, type ThemeMode } from '@/stores/useAppStore'
 import type { ColorBlindMode, CursorStyle } from '@/types/course'
 
@@ -195,7 +195,7 @@ export function AccessibilityWidget(): JSX.Element {
         aria-haspopup="dialog"
         aria-controls="a11y-widget-panel"
       >
-        <Accessibility size={22} />
+        <PersonStanding size={22} />
         {activeCount > 0 && (
           <span
             className="absolute -top-1 -right-1 flex items-center justify-center rounded-full text-xs font-bold"

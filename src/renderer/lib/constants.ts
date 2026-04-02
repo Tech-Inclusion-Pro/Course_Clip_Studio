@@ -170,7 +170,7 @@ export const COURSE_TEMPLATES: CourseTemplate[] = [
     id: 'udl-demo',
     name: 'UDL Showcase',
     description: 'Demonstrates Universal Design for Learning principles.',
-    icon: 'Accessibility',
+    icon: 'PersonStanding',
     tags: ['UDL', 'accessibility', 'inclusive'],
     factory: () => {
       const c = createCourse({

@@ -27,7 +27,7 @@ const ICON_OPTIONS = [
   'Users',
   'ShieldCheck',
   'GraduationCap',
-  'Accessibility'
+  'PersonStanding'
 ]
 
 export function DashboardView(): JSX.Element {

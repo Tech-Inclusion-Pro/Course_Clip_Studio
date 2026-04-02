@@ -192,7 +192,19 @@ const hardcodedStrings: Record<string, string> = {
   'tippy.tour.previewTitle': 'Preview',
   'tippy.tour.previewDesc': 'Preview your course as a learner would see it. Switch between desktop, tablet, and mobile views.',
   'tippy.tour.publishTitle': 'Publish',
-  'tippy.tour.publishDesc': 'Export your course as SCORM, xAPI, or HTML5. Configure settings and download the package.'
+  'tippy.tour.publishDesc': 'Export your course as SCORM, xAPI, or HTML5. Configure settings and download the package.',
+
+  // Tippy Tour Narration Messages (what Tippy says in chat for each step)
+  'tippy.tour.sidebarMsg': "This is the **Sidebar** — your main navigation hub! From here you can jump between the Dashboard, Editor, Preview, Settings, and Publish views. Think of it as your home base for moving around the app. Ready? Let's move on!",
+  'tippy.tour.dashboardMsg': "Welcome to the **Dashboard**! This is where all your courses live. You can create new courses, open existing ones, import content, browse templates, manage content areas, and build syllabi. It's your course command center!",
+  'tippy.tour.toolbarMsg': "Here's the **Editor Toolbar** — packed with powerful tools! You'll find undo/redo, split preview, the AI assistant, theme editor, accessibility audit, save, and publish buttons. Pro tip: hover over any icon to see what it does.",
+  'tippy.tour.outlineMsg': "This is the **Course Outline** panel. It shows your entire course structure — modules, lessons, and content blocks — in a tree view. You can drag and drop to reorder anything. Click a lesson to open it in the canvas.",
+  'tippy.tour.canvasMsg': "This is the **Content Canvas** — your creative workspace! This is where you build lessons by adding and arranging content blocks. You can switch between **Block view** (stacked) and **Slide view** (presentation-style) using the toolbar toggle.",
+  'tippy.tour.propertiesMsg': "The **Properties Panel** appears when you select a content block. Here you can customize everything — text formatting, media settings, quiz options, accessibility attributes like alt text, and more. Each block type has its own set of properties.",
+  'tippy.tour.blockPaletteMsg': "The **Block Palette** is your content toolkit! Add text blocks, images, video, audio, quizzes, accordions, tabs, hotspots, timelines, and many more interactive elements. Just click or drag a block type to add it to your lesson.",
+  'tippy.tour.aiAssistantMsg': "Meet the **AI Assistant** panel! This is where AI-powered magic happens. Generate course outlines, lesson content, quiz questions, narration scripts, alt text, translations, and even WCAG accessibility reviews — all powered by your configured AI provider.",
+  'tippy.tour.previewMsg': "The **Preview** view lets you experience your course exactly as a learner would see it. Switch between desktop, tablet, and mobile views to test responsiveness. You can also add learner notes and bookmarks to test the full experience.",
+  'tippy.tour.publishMsg': "Finally, the **Publish** view! When your course is ready, export it as a **SCORM**, **xAPI**, or **HTML5** package. Configure your export settings and download — your course is ready to deploy to any LMS!"
 }
 
 export const EN_STRINGS: Record<string, string> = {

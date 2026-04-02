@@ -4,7 +4,7 @@ import {
   Users,
   ShieldCheck,
   GraduationCap,
-  Accessibility
+  PersonStanding
 } from 'lucide-react'
 import type { CourseTemplate } from '@/types/course'
 
@@ -14,7 +14,7 @@ const iconMap: Record<string, typeof FileText> = {
   Users,
   ShieldCheck,
   GraduationCap,
-  Accessibility
+  PersonStanding
 }
 
 interface TemplateCardProps {

@@ -3,7 +3,7 @@ import {
   Settings,
   Palette,
   Brain,
-  Accessibility,
+  PersonStanding,
   User,
   Globe,
   Plus,
@@ -42,7 +42,7 @@ const TABS: Array<{ id: SettingsTab; label: string; icon: typeof Settings }> = [
   { id: 'general', label: 'General', icon: User },
   { id: 'brand', label: 'Brand Kits', icon: Palette },
   { id: 'ai', label: 'AI / LLM', icon: Brain },
-  { id: 'accessibility', label: 'Accessibility', icon: Accessibility }
+  { id: 'accessibility', label: 'Accessibility', icon: PersonStanding }
 ]
 
 export function SettingsView(): JSX.Element {
@@ -1021,7 +1021,7 @@ function AccessibilitySettingsPanel(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      <SettingsCard title="Display" icon={Accessibility}>
+      <SettingsCard title="Display" icon={PersonStanding}>
         <FieldRow label="High Contrast Mode" description="Increases contrast for better visibility in the authoring UI">
           <ToggleSwitch
             checked={accessibility.highContrastMode}
@@ -1066,7 +1066,7 @@ function AccessibilitySettingsPanel(): JSX.Element {
         </FieldRow>
       </SettingsCard>
 
-      <SettingsCard title="Color Blind Support" icon={Accessibility}>
+      <SettingsCard title="Color Blind Support" icon={PersonStanding}>
         <FieldRow label="Color Blind Mode" description="Simulates color vision deficiency for accessible design">
           <div className="flex flex-wrap gap-1">
             {colorBlindOptions.map((opt) => (
@@ -1087,7 +1087,7 @@ function AccessibilitySettingsPanel(): JSX.Element {
         </FieldRow>
       </SettingsCard>
 
-      <SettingsCard title="Cursor" icon={Accessibility}>
+      <SettingsCard title="Cursor" icon={PersonStanding}>
         <FieldRow label="Cursor Style" description="Custom cursor for motor accessibility">
           <div className="flex flex-wrap gap-1">
             {cursorOptions.map((opt) => (
@@ -1115,7 +1115,7 @@ function AccessibilitySettingsPanel(): JSX.Element {
         </FieldRow>
       </SettingsCard>
 
-      <SettingsCard title="Reading" icon={Accessibility}>
+      <SettingsCard title="Reading" icon={PersonStanding}>
         <FieldRow label="OpenDyslexic Font" description="Dyslexia-friendly typeface (SIL Open Font License)">
           <ToggleSwitch
             checked={accessibility.openDyslexic}
