@@ -131,7 +131,7 @@ export function DashboardView(): JSX.Element {
   }
 
   return (
-    <div className="flex h-full -m-6">
+    <div className="flex min-h-full -m-6">
       <DashboardSidebar />
 
       <div className="flex-1 overflow-y-auto p-6">

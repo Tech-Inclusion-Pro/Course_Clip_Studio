@@ -33,6 +33,7 @@ export function DashboardSidebar(): JSX.Element {
       className="
         w-60 shrink-0 border-r border-[var(--border-default)]
         bg-[var(--bg-surface)] overflow-y-auto p-4
+        min-h-full self-stretch
       "
       aria-label="Dashboard navigation"
     >
