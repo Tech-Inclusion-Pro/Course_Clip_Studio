@@ -141,17 +141,31 @@ export function PreviewView(): JSX.Element {
     return () => window.removeEventListener('message', handleMessage)
   }, [handleMessage])
 
-  // Generate HTML for current lesson
-  const lessonHtml = useMemo(() => {
-    if (!course || !current) return ''
-    return renderPreviewHtml(
+  // Generate HTML for current lesson (async for data URI inlining)
+  const [lessonHtml, setLessonHtml] = useState('')
+  const [previewLoading, setPreviewLoading] = useState(false)
+
+  useEffect(() => {
+    if (!course || !current) {
+      setLessonHtml('')
+      return
+    }
+    let cancelled = false
+    setPreviewLoading(true)
+    renderPreviewHtml(
       course,
       current.lesson,
       current.moduleTitle,
       current.globalIdx,
       totalLessons,
       a11yMode ? A11Y_CSS : undefined
-    )
+    ).then((html) => {
+      if (!cancelled) {
+        setLessonHtml(html)
+        setPreviewLoading(false)
+      }
+    })
+    return () => { cancelled = true }
   }, [course, current, totalLessons, a11yMode])
 
   // No course selected

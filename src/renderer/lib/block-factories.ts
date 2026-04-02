@@ -22,7 +22,8 @@ import type {
   H5PBlock,
   CustomHTMLBlock,
   PluginBlock,
-  FeedbackFormBlock
+  FeedbackFormBlock,
+  SlideBlock
 } from '@/types/course'
 
 // ─── Individual Block Factories ───
@@ -62,6 +63,9 @@ export function createVideoBlock(overrides: Partial<VideoBlock> = {}): VideoBloc
     transcript: '',
     captions: [],
     poster: '',
+    srtFilePath: '',
+    srtFileName: '',
+    wordsPerLine: 10,
     ...overrides
   }
 }
@@ -176,6 +180,7 @@ export function createEmbedBlock(overrides: Partial<EmbedBlock> = {}): EmbedBloc
     notes: '',
     url: '',
     title: '',
+    display: 'inline',
     ...overrides
   }
 }
@@ -265,6 +270,19 @@ export function createFeedbackFormBlock(overrides: Partial<FeedbackFormBlock> = 
   }
 }
 
+export function createSlideBlock(overrides: Partial<SlideBlock> = {}): SlideBlock {
+  return {
+    id: uid('block'),
+    type: 'slide',
+    ariaLabel: 'Slide',
+    notes: '',
+    backgroundImage: '',
+    backgroundColor: '#ffffff',
+    elements: [],
+    ...overrides
+  }
+}
+
 // ─── Quiz Helpers ───
 
 export function createQuizChoice(overrides: Partial<QuizChoice> = {}): QuizChoice {
@@ -350,7 +368,8 @@ const factories: Record<BlockType, (overrides?: Record<string, unknown>) => Cont
   'h5p': createH5PBlock,
   'custom-html': createCustomHTMLBlock,
   'plugin': createPluginBlock,
-  'feedback-form': createFeedbackFormBlock
+  'feedback-form': createFeedbackFormBlock,
+  'slide': createSlideBlock
 }
 
 /**

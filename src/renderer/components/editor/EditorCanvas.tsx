@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { Layers } from 'lucide-react'
 import {
   DndContext,
@@ -39,8 +39,10 @@ import { CalloutBlockEditor } from './CalloutBlockEditor'
 import { H5PBlockEditor } from './H5PBlockEditor'
 import { CustomHTMLBlockEditor } from './CustomHTMLBlockEditor'
 import { FeedbackFormBlockEditor } from './FeedbackFormBlockEditor'
+import { SlideBlockEditor } from './SlideBlockEditor'
 import { BlockInserterButton } from './BlockInserter'
 import { SlideCanvas } from './SlideCanvas'
+import { BLOCK_TYPE_LABELS } from '@/types/course'
 import type { BlockType, ContentBlock } from '@/types/course'
 
 interface EditorCanvasProps {
@@ -66,6 +68,8 @@ export function EditorCanvas({ scrollContainerRef }: EditorCanvasProps): JSX.Ele
   const canvasMode = useEditorStore((s) => s.canvasMode)
 
   const authorName = useAppStore((s) => s.authorName)
+
+  const [deleteTarget, setDeleteTarget] = useState<{ blockId: string; label: string } | null>(null)
 
   const lessonData = useMemo(() => {
     if (!course || !activeLessonId) return null
@@ -129,8 +133,16 @@ export function EditorCanvas({ scrollContainerRef }: EditorCanvasProps): JSX.Ele
 
   function handleDeleteBlock(blockId: string) {
     if (!activeCourseId || !activeModuleId || !activeLessonId) return
-    removeBlock(activeCourseId, activeModuleId, activeLessonId, blockId)
+    const block = lessonData?.lesson.blocks.find((b) => b.id === blockId)
+    const label = block ? (BLOCK_TYPE_LABELS[block.type] || block.type) : 'Block'
+    setDeleteTarget({ blockId, label })
+  }
+
+  function confirmDelete() {
+    if (!deleteTarget || !activeCourseId || !activeModuleId || !activeLessonId) return
+    removeBlock(activeCourseId, activeModuleId, activeLessonId, deleteTarget.blockId)
     setSelectedBlock(null)
+    setDeleteTarget(null)
   }
 
   function handleDuplicateBlock(blockId: string) {
@@ -227,6 +239,8 @@ export function EditorCanvas({ scrollContainerRef }: EditorCanvasProps): JSX.Ele
         return <CustomHTMLBlockEditor block={block} onUpdate={updateFn} />
       case 'feedback-form':
         return <FeedbackFormBlockEditor block={block} onUpdate={updateFn} />
+      case 'slide':
+        return <SlideBlockEditor block={block} onUpdate={updateFn} />
       case 'divider':
         // Divider is simple enough to just show preview even when selected
         return <BlockPreview block={block} />
@@ -300,6 +314,42 @@ export function EditorCanvas({ scrollContainerRef }: EditorCanvasProps): JSX.Ele
       <div aria-live="polite" className="sr-only">
         {lesson.blocks.length} block{lesson.blocks.length !== 1 ? 's' : ''} in this lesson
       </div>
+
+      {/* Delete confirmation modal */}
+      {deleteTarget && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40"
+          onClick={() => setDeleteTarget(null)}
+        >
+          <div
+            className="bg-[var(--bg-surface)] rounded-xl shadow-xl border border-[var(--border-default)] p-6 w-full max-w-sm mx-4"
+            onClick={(e) => e.stopPropagation()}
+            role="alertdialog"
+            aria-label="Confirm deletion"
+          >
+            <h3 className="text-base font-[var(--font-weight-semibold)] text-[var(--text-primary)] mb-2">
+              Delete {deleteTarget.label}?
+            </h3>
+            <p className="text-sm text-[var(--text-secondary)] mb-5">
+              This block and its content will be permanently removed. This action cannot be undone.
+            </p>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="px-4 py-2 text-sm font-[var(--font-weight-medium)] rounded-lg border border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 text-sm font-[var(--font-weight-medium)] rounded-lg bg-[var(--color-danger-600)] text-white hover:opacity-90 cursor-pointer"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

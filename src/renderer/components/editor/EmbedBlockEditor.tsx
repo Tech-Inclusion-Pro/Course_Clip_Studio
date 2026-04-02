@@ -1,4 +1,4 @@
-import { Box, AlertTriangle } from 'lucide-react'
+import { Box, AlertTriangle, ExternalLink } from 'lucide-react'
 import type { EmbedBlock } from '@/types/course'
 
 interface EmbedBlockEditorProps {
@@ -60,6 +60,39 @@ export function EmbedBlockEditor({ block, onUpdate }: EmbedBlockEditorProps): JS
               </p>
             </div>
           )}
+        </div>
+
+        {/* Display mode */}
+        <div>
+          <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+            Display Mode
+          </label>
+          <div className="flex items-center gap-1 bg-[var(--bg-muted)] rounded-md border border-[var(--border-default)] p-0.5 w-fit">
+            <button
+              type="button"
+              onClick={() => onUpdate({ display: 'inline' })}
+              className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded cursor-pointer transition-colors ${
+                (block.display || 'inline') === 'inline'
+                  ? 'bg-[var(--bg-active)] text-[var(--text-brand)]'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              }`}
+              aria-pressed={(block.display || 'inline') === 'inline'}
+            >
+              <Box size={12} /> Inline
+            </button>
+            <button
+              type="button"
+              onClick={() => onUpdate({ display: 'new-tab' })}
+              className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded cursor-pointer transition-colors ${
+                block.display === 'new-tab'
+                  ? 'bg-[var(--bg-active)] text-[var(--text-brand)]'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              }`}
+              aria-pressed={block.display === 'new-tab'}
+            >
+              <ExternalLink size={12} /> New Tab
+            </button>
+          </div>
         </div>
 
         {/* Dimensions */}

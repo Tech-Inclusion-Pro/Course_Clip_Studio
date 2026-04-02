@@ -90,6 +90,7 @@ export type ContentBlock =
   | CustomHTMLBlock
   | PluginBlock
   | FeedbackFormBlock
+  | SlideBlock
 
 // ─── Base Block ───
 
@@ -130,6 +131,9 @@ export interface VideoBlock extends BaseBlock {
   transcript: string
   captions: CaptionTrack[]
   poster: string
+  srtFilePath?: string
+  srtFileName?: string
+  wordsPerLine?: number
 }
 
 export interface AudioBlock extends BaseBlock {
@@ -250,6 +254,7 @@ export interface EmbedBlock extends BaseBlock {
   title: string
   width?: number
   height?: number
+  display?: 'inline' | 'new-tab'
 }
 
 export interface CodeBlock extends BaseBlock {
@@ -306,6 +311,46 @@ export interface FeedbackQuestion {
   options?: string[] // for multiple-choice
   maxRating?: number // for rating (default 5)
   scale?: string[] // for likert
+}
+
+// ─── Slide Block ───
+
+export type SlideElementType = 'button' | 'embed' | 'quiz' | 'matching' | 'text' | 'image'
+
+export interface SlideElementData {
+  // button
+  buttonLabel?: string
+  buttonUrl?: string
+  // embed
+  embedUrl?: string
+  embedTitle?: string
+  // quiz
+  quizPrompt?: string
+  quizChoices?: { label: string; isCorrect: boolean }[]
+  // matching
+  matchingPairs?: { left: string; right: string }[]
+  // text
+  textContent?: string
+  // image
+  imagePath?: string
+  imageAlt?: string
+}
+
+export interface SlideElement {
+  id: string
+  type: SlideElementType
+  x: number
+  y: number
+  width: number
+  height: number
+  data: SlideElementData
+}
+
+export interface SlideBlock extends BaseBlock {
+  type: 'slide'
+  backgroundImage: string
+  backgroundColor: string
+  elements: SlideElement[]
 }
 
 // ─── UDL ───
@@ -473,7 +518,8 @@ export const BLOCK_TYPES: readonly BlockType[] = [
   'h5p',
   'custom-html',
   'plugin',
-  'feedback-form'
+  'feedback-form',
+  'slide'
 ] as const
 
 export const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
@@ -495,7 +541,8 @@ export const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
   'h5p': 'H5P',
   'custom-html': 'HTML / Rich Text',
   'plugin': 'Plugin',
-  'feedback-form': 'Feedback Form'
+  'feedback-form': 'Feedback Form',
+  'slide': 'Slide'
 }
 
 // ─── Content Area ───

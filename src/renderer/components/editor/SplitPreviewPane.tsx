@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Monitor, Tablet, Smartphone, Link, Unlink } from 'lucide-react'
 import { useEditorStore, type PreviewDevice } from '@/stores/useEditorStore'
 import { renderPreviewHtml } from '@/lib/preview/render-preview-html'
@@ -34,16 +34,16 @@ export function SplitPreviewPane({
   const [debouncedHtml, setDebouncedHtml] = useState('')
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
-  const html = useMemo(
-    () => renderPreviewHtml(course, lesson, moduleTitle, lessonIndex, totalLessons),
-    [course, lesson, moduleTitle, lessonIndex, totalLessons]
-  )
-
-  // Debounce HTML updates
+  // Async preview HTML generation with debounce
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedHtml(html), 300)
-    return () => clearTimeout(timer)
-  }, [html])
+    let cancelled = false
+    const timer = setTimeout(() => {
+      renderPreviewHtml(course, lesson, moduleTitle, lessonIndex, totalLessons).then((html) => {
+        if (!cancelled) setDebouncedHtml(html)
+      })
+    }, 300)
+    return () => { cancelled = true; clearTimeout(timer) }
+  }, [course, lesson, moduleTitle, lessonIndex, totalLessons])
 
   return (
     <div className="flex flex-col h-full border-l border-[var(--border-default)] bg-[var(--bg-muted)]">

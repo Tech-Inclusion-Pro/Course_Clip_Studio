@@ -1,7 +1,10 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webUtils } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
 const api = {
+  webUtils: {
+    getPathForFile: (file: File): string => webUtils.getPathForFile(file)
+  },
   theme: {
     get: (): Promise<string> => ipcRenderer.invoke('theme:get'),
     set: (theme: string): Promise<void> => ipcRenderer.invoke('theme:set', theme)

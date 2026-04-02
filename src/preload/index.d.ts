@@ -1,6 +1,9 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 
 interface LuminaAPI {
+  webUtils: {
+    getPathForFile(file: File): string
+  }
   theme: {
     get(): Promise<string>
     set(theme: string): Promise<void>

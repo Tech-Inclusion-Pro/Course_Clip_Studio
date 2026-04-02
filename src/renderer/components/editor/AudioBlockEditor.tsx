@@ -17,7 +17,8 @@ export function AudioBlockEditor({ block, onUpdate }: AudioBlockEditorProps): JS
     setDragOver(false)
     const files = e.dataTransfer.files
     if (files.length > 0 && files[0].type.startsWith('audio/')) {
-      onUpdate({ assetPath: files[0].path })
+      const filePath = window.electronAPI.webUtils.getPathForFile(files[0]) || files[0].path
+      onUpdate({ assetPath: filePath })
     }
   }
 
@@ -67,6 +68,11 @@ export function AudioBlockEditor({ block, onUpdate }: AudioBlockEditorProps): JS
       >
         {hasAudio ? (
           <div className="w-full p-3">
+            {/* Filename display */}
+            <div className="flex items-center gap-1.5 mb-2 text-xs text-[var(--text-secondary)]">
+              <AudioLines size={12} className="shrink-0 text-[var(--text-tertiary)]" />
+              <span className="truncate" title={block.assetPath}>{block.assetPath.split('/').pop()}</span>
+            </div>
             {/* Waveform visualizer placeholder */}
             <div className="flex items-center gap-3 mb-2">
               <AudioLines size={20} className="text-[var(--brand-magenta)]" />
@@ -81,7 +87,7 @@ export function AudioBlockEditor({ block, onUpdate }: AudioBlockEditorProps): JS
               </div>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-[var(--text-secondary)] truncate flex-1">{block.assetPath}</span>
+              <span className="text-xs text-[var(--text-secondary)] truncate flex-1" title={block.assetPath}>{block.assetPath.split('/').pop()}</span>
               <button
                 onClick={(e) => { e.stopPropagation(); handleFileSelect() }}
                 className="p-1.5 rounded-md text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"

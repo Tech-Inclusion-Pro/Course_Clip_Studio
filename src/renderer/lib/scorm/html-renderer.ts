@@ -3,7 +3,7 @@
  * Each lesson becomes one HTML file (one SCO).
  */
 
-import type { Course, Lesson, ContentBlock, CourseTheme } from '@/types/course'
+import type { Course, Lesson, ContentBlock, CourseTheme, SlideElement } from '@/types/course'
 
 function escapeHtml(str: string): string {
   return str
@@ -11,6 +11,26 @@ function escapeHtml(str: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+}
+
+function renderSlideElement(el: SlideElement): string {
+  const posStyle = `position: absolute; left: ${el.x}px; top: ${el.y}px; width: ${el.width}px; height: ${el.height}px;`
+  switch (el.type) {
+    case 'button':
+      return `<a href="${escapeHtml(el.data.buttonUrl || '#')}" class="slide-btn" style="${posStyle}" target="_blank" rel="noopener">${escapeHtml(el.data.buttonLabel || 'Button')}</a>`
+    case 'text':
+      return `<div style="${posStyle} display:flex; align-items:center; padding:8px; font-size:14px;">${escapeHtml(el.data.textContent || '')}</div>`
+    case 'image':
+      return `<img src="${escapeHtml(el.data.imagePath || '')}" alt="${escapeHtml(el.data.imageAlt || '')}" style="${posStyle} object-fit:contain;" />`
+    case 'embed':
+      return `<iframe src="${escapeHtml(el.data.embedUrl || '')}" title="${escapeHtml(el.data.embedTitle || 'Embed')}" style="${posStyle} border:none;" sandbox="allow-scripts allow-same-origin"></iframe>`
+    case 'quiz':
+      return `<div style="${posStyle} display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.9); border-radius:8px; padding:12px; font-size:13px;">${escapeHtml(el.data.quizPrompt || 'Quiz element')}</div>`
+    case 'matching':
+      return `<div style="${posStyle} display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.9); border-radius:8px; padding:12px; font-size:13px;">Matching (${el.data.matchingPairs?.length || 0} pairs)</div>`
+    default:
+      return ''
+  }
 }
 
 /**
@@ -102,6 +122,11 @@ function renderBlock(block: ContentBlock): string {
       return `<hr class="block block-divider divider-${block.style}" aria-hidden="true" />`
 
     case 'embed':
+      if (block.display === 'new-tab') {
+        return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-embed">
+  <a href="${escapeHtml(block.url)}" target="_blank" rel="noopener noreferrer" class="embed-link">${escapeHtml(block.title || block.url)}</a>
+</section>`
+      }
       return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-embed">
   <iframe src="${escapeHtml(block.url)}" title="${escapeHtml(block.title || block.ariaLabel)}" sandbox="allow-scripts allow-same-origin"></iframe>
 </section>`
@@ -154,6 +179,19 @@ function renderBlock(block: ContentBlock): string {
     <div class="right-column" role="list" aria-label="Match targets">
       ${block.rightItems.map((item) => `<div class="match-item match-right" role="listitem" data-id="${item.id}" data-pair="${pairMap.get(item.id) ?? ''}">${escapeHtml(item.label)}</div>`).join('\n      ')}
     </div>
+  </div>
+</section>`
+    }
+
+    case 'slide': {
+      const bgStyle = [
+        `background-color: ${block.backgroundColor || '#ffffff'}`,
+        block.backgroundImage ? `background-image: url('${escapeHtml(block.backgroundImage)}'); background-size: cover; background-position: center` : ''
+      ].filter(Boolean).join('; ')
+      const elements = block.elements.map((el) => renderSlideElement(el)).join('\n      ')
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-slide" style="${bgStyle}">
+  <div class="slide-container">
+      ${elements}
   </div>
 </section>`
     }
@@ -382,6 +420,14 @@ function getPlayerStyles(theme: CourseTheme): string {
     .callout-warning { background: #fffbeb; border-color: #f59e0b; }
     .callout-success { background: #f0fdf4; border-color: #16a34a; }
 
+    .embed-link {
+      display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px;
+      border: 2px solid ${theme.primaryColor}; border-radius: 8px; color: ${theme.primaryColor};
+      text-decoration: none; font-weight: 600; font-size: 14px; transition: all 0.2s;
+    }
+    .embed-link:hover { background: ${theme.primaryColor}10; }
+    .embed-link::after { content: '\\2197'; }
+
     .block-code pre {
       background: #1e1e2e; color: #cdd6f4; padding: 16px;
       border-radius: 8px; overflow-x: auto; font-size: 14px;
@@ -435,11 +481,11 @@ function getPlayerStyles(theme: CourseTheme): string {
 
     /* Flashcard 3D flip */
     .block-flashcard .flashcard { perspective: 1000px; cursor: pointer; min-height: 200px; margin-bottom: 8px; }
-    .flashcard-inner { transition: transform 0.6s; transform-style: preserve-3d; position: relative; min-height: 200px; width: 100%; }
+    .flashcard-inner { transition: transform 0.6s; transform-style: preserve-3d; -webkit-transform-style: preserve-3d; position: relative; min-height: 200px; width: 100%; }
     .flashcard.flipped .flashcard-inner { transform: rotateY(180deg); }
-    .flashcard-front, .flashcard-back { backface-visibility: hidden; display: flex; align-items: center; justify-content: center; padding: 32px; border: 1px solid ${theme.textColor}20; border-radius: 12px; text-align: center; min-height: 200px; width: 100%; }
-    .flashcard-front { position: relative; z-index: 2; }
-    .flashcard-back { transform: rotateY(180deg); position: absolute; inset: 0; background: ${theme.surfaceColor}; z-index: 1; }
+    .flashcard-front, .flashcard-back { backface-visibility: hidden; -webkit-backface-visibility: hidden; display: flex; align-items: center; justify-content: center; padding: 32px; border: 1px solid ${theme.textColor}20; border-radius: 12px; text-align: center; min-height: 200px; width: 100%; position: absolute; inset: 0; }
+    .flashcard-front { background: ${theme.backgroundColor}; z-index: 2; }
+    .flashcard-back { transform: rotateY(180deg); background: ${theme.surfaceColor}; z-index: 1; }
     .flashcard.fc-hidden { display: none; }
     .flashcard-nav { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 12px; }
     .flashcard-nav button { padding: 4px 12px; border: 1px solid ${theme.textColor}30; border-radius: ${btnRadius}; background: none; cursor: pointer; }
@@ -483,6 +529,17 @@ function getPlayerStyles(theme: CourseTheme): string {
     [role="tablist"] { display: flex; border-bottom: 2px solid ${theme.textColor}15; margin-bottom: 12px; }
     [role="tab"] { padding: 8px 16px; border: none; background: none; cursor: pointer; font-weight: 600; border-bottom: 2px solid transparent; margin-bottom: -2px; }
     [role="tab"][aria-selected="true"] { border-bottom-color: ${theme.primaryColor}; color: ${theme.primaryColor}; }
+
+    /* Slide block */
+    .block-slide { position: relative; border-radius: 12px; overflow: hidden; }
+    .slide-container { position: relative; width: 100%; padding-bottom: 56.25%; /* 16:9 */ }
+    .slide-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      background: ${theme.primaryColor}; color: #fff; border-radius: 6px;
+      text-decoration: none; font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: opacity 0.2s;
+    }
+    .slide-btn:hover { opacity: 0.9; }
 
     @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
     @media (max-width: 600px) {

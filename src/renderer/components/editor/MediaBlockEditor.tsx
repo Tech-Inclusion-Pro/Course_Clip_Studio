@@ -17,7 +17,8 @@ export function MediaBlockEditor({ block, onUpdate }: MediaBlockEditorProps): JS
     setDragOver(false)
     const files = e.dataTransfer.files
     if (files.length > 0 && files[0].type.startsWith('image/')) {
-      onUpdate({ assetPath: files[0].path })
+      const filePath = window.electronAPI.webUtils.getPathForFile(files[0]) || files[0].path
+      onUpdate({ assetPath: filePath })
     }
   }
 
@@ -106,6 +107,14 @@ export function MediaBlockEditor({ block, onUpdate }: MediaBlockEditorProps): JS
           </div>
         )}
       </div>
+
+      {/* Filename bar */}
+      {hasImage && (
+        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-muted)] border-t border-[var(--border-default)] text-xs text-[var(--text-secondary)]">
+          <Image size={12} className="shrink-0 text-[var(--text-tertiary)]" />
+          <span className="truncate" title={block.assetPath}>{block.assetPath.split('/').pop()}</span>
+        </div>
+      )}
 
       {/* Fields */}
       <div className="p-3 space-y-3 border-t border-[var(--border-default)]">

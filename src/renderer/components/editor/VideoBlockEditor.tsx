@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Video, Upload, AlertTriangle, Globe, HardDrive } from 'lucide-react'
+import { Video, Upload, AlertTriangle, Globe, HardDrive, FileText, Type } from 'lucide-react'
 import type { VideoBlock } from '@/types/course'
 
 interface VideoBlockEditorProps {
@@ -7,8 +7,32 @@ interface VideoBlockEditorProps {
   onUpdate: (partial: Partial<VideoBlock>) => void
 }
 
+/**
+ * Parse SRT/VTT file content to plain text, re-wrapping to N words per line.
+ */
+function parseSrtToPlainText(content: string, wordsPerLine: number): string {
+  // Remove VTT header
+  let text = content.replace(/^WEBVTT[\s\S]*?\n\n/, '')
+  // Remove cue indices (standalone numbers on their own line)
+  text = text.replace(/^\d+\s*$/gm, '')
+  // Remove timestamps (00:00:00,000 --> 00:00:00,000 or 00:00.000 --> 00:00.000)
+  text = text.replace(/[\d:.,-]+\s*-->\s*[\d:.,-]+/g, '')
+  // Remove HTML tags
+  text = text.replace(/<[^>]+>/g, '')
+  // Collapse whitespace
+  const words = text.split(/\s+/).filter(Boolean)
+  if (wordsPerLine <= 0) return words.join(' ')
+  const lines: string[] = []
+  for (let i = 0; i < words.length; i += wordsPerLine) {
+    lines.push(words.slice(i, i + wordsPerLine).join(' '))
+  }
+  return lines.join('\n')
+}
+
 export function VideoBlockEditor({ block, onUpdate }: VideoBlockEditorProps): JSX.Element {
   const [dragOver, setDragOver] = useState(false)
+  const [transcriptMode, setTranscriptMode] = useState<'text' | 'srt'>(block.srtFileName ? 'srt' : 'text')
+  const [srtDragOver, setSrtDragOver] = useState(false)
   const missingTranscript = !block.transcript
 
   function handleDrop(e: React.DragEvent) {
@@ -16,7 +40,8 @@ export function VideoBlockEditor({ block, onUpdate }: VideoBlockEditorProps): JS
     setDragOver(false)
     const files = e.dataTransfer.files
     if (files.length > 0 && files[0].type.startsWith('video/')) {
-      onUpdate({ url: files[0].path, source: 'upload' })
+      const filePath = window.electronAPI.webUtils.getPathForFile(files[0]) || files[0].path
+      onUpdate({ url: filePath, source: 'upload' })
     }
   }
 
@@ -31,6 +56,58 @@ export function VideoBlockEditor({ block, onUpdate }: VideoBlockEditorProps): JS
       }
     }
     input.click()
+  }
+
+  async function handleSrtFile(filePath: string, fileName: string) {
+    try {
+      const content = await window.electronAPI.fs.readFile(filePath, 'utf-8')
+      const plainText = parseSrtToPlainText(content, block.wordsPerLine || 10)
+      onUpdate({
+        srtFilePath: filePath,
+        srtFileName: fileName,
+        transcript: plainText
+      })
+    } catch {
+      // Failed to read file
+    }
+  }
+
+  function handleSrtDrop(e: React.DragEvent) {
+    e.preventDefault()
+    setSrtDragOver(false)
+    const files = e.dataTransfer.files
+    if (files.length > 0) {
+      const file = files[0]
+      const filePath = window.electronAPI.webUtils.getPathForFile(file) || file.path
+      handleSrtFile(filePath, file.name)
+    }
+  }
+
+  function handleSrtFileSelect() {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.srt,.vtt'
+    input.onchange = () => {
+      const file = input.files?.[0]
+      if (file) {
+        handleSrtFile(file.path, file.name)
+      }
+    }
+    input.click()
+  }
+
+  async function handleWordsPerLineChange(value: number) {
+    onUpdate({ wordsPerLine: value })
+    // Re-parse if we have an SRT file
+    if (block.srtFilePath) {
+      try {
+        const content = await window.electronAPI.fs.readFile(block.srtFilePath, 'utf-8')
+        const plainText = parseSrtToPlainText(content, value)
+        onUpdate({ wordsPerLine: value, transcript: plainText })
+      } catch {
+        // File may no longer exist
+      }
+    }
   }
 
   return (
@@ -144,20 +221,116 @@ export function VideoBlockEditor({ block, onUpdate }: VideoBlockEditorProps): JS
 
       {/* Transcript */}
       <div className="p-3 border-t border-[var(--border-default)]">
-        <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
-          Transcript <span className="text-[var(--color-danger-600)]">*</span>
-        </label>
-        <textarea
-          value={block.transcript}
-          onChange={(e) => onUpdate({ transcript: e.target.value })}
-          rows={3}
-          className={`w-full px-2.5 py-1.5 text-sm rounded-md border bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)] resize-y ${
-            missingTranscript ? 'border-[var(--color-danger-600)]' : 'border-[var(--border-default)]'
-          }`}
-          placeholder="Full transcript of the video..."
-          aria-required="true"
-          aria-invalid={missingTranscript}
-        />
+        {/* Transcript mode toggle */}
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)]">
+            Transcript <span className="text-[var(--color-danger-600)]">*</span>
+          </label>
+          <div className="flex items-center gap-1 bg-[var(--bg-muted)] rounded-md border border-[var(--border-default)] p-0.5">
+            <button
+              type="button"
+              onClick={() => setTranscriptMode('text')}
+              className={`flex items-center gap-1 px-2 py-0.5 text-[10px] rounded cursor-pointer transition-colors ${
+                transcriptMode === 'text'
+                  ? 'bg-[var(--bg-active)] text-[var(--text-brand)]'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              }`}
+              aria-pressed={transcriptMode === 'text'}
+            >
+              <Type size={10} /> Text
+            </button>
+            <button
+              type="button"
+              onClick={() => setTranscriptMode('srt')}
+              className={`flex items-center gap-1 px-2 py-0.5 text-[10px] rounded cursor-pointer transition-colors ${
+                transcriptMode === 'srt'
+                  ? 'bg-[var(--bg-active)] text-[var(--text-brand)]'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              }`}
+              aria-pressed={transcriptMode === 'srt'}
+            >
+              <FileText size={10} /> SRT/VTT
+            </button>
+          </div>
+        </div>
+
+        {transcriptMode === 'srt' ? (
+          <div className="space-y-2">
+            {/* SRT file upload zone */}
+            <div
+              className={`min-h-[60px] flex flex-col items-center justify-center border-2 border-dashed rounded-lg transition-colors cursor-pointer ${
+                srtDragOver
+                  ? 'border-[var(--brand-magenta)] bg-[var(--brand-magenta)]/10'
+                  : 'border-[var(--border-default)] hover:border-[var(--brand-magenta)]'
+              }`}
+              onDrop={handleSrtDrop}
+              onDragOver={(e) => { e.preventDefault(); setSrtDragOver(true) }}
+              onDragLeave={() => setSrtDragOver(false)}
+              onClick={handleSrtFileSelect}
+              role="button"
+              tabIndex={0}
+              aria-label="Upload SRT or VTT file"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  handleSrtFileSelect()
+                }
+              }}
+            >
+              {block.srtFileName ? (
+                <div className="flex items-center gap-2 p-2">
+                  <FileText size={14} className="text-[var(--brand-magenta)]" />
+                  <span className="text-xs text-[var(--text-primary)]">{block.srtFileName}</span>
+                  <span className="text-[10px] text-[var(--text-tertiary)]">(click to replace)</span>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-1 p-3">
+                  <FileText size={20} className="text-[var(--text-tertiary)]" />
+                  <p className="text-xs text-[var(--text-secondary)]">Drop .srt or .vtt file here</p>
+                </div>
+              )}
+            </div>
+
+            {/* Words per line */}
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-[var(--text-secondary)] whitespace-nowrap">Words per line:</label>
+              <input
+                type="number"
+                min={1}
+                max={50}
+                value={block.wordsPerLine || 10}
+                onChange={(e) => handleWordsPerLineChange(Number(e.target.value) || 10)}
+                className="w-16 px-2 py-1 text-xs rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+              />
+            </div>
+
+            {/* Parsed transcript preview */}
+            {block.transcript && (
+              <textarea
+                value={block.transcript}
+                onChange={(e) => onUpdate({ transcript: e.target.value })}
+                rows={3}
+                className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)] resize-y"
+                placeholder="Parsed transcript will appear here..."
+              />
+            )}
+          </div>
+        ) : (
+          <>
+            <textarea
+              value={block.transcript}
+              onChange={(e) => onUpdate({ transcript: e.target.value })}
+              rows={3}
+              className={`w-full px-2.5 py-1.5 text-sm rounded-md border bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)] resize-y ${
+                missingTranscript ? 'border-[var(--color-danger-600)]' : 'border-[var(--border-default)]'
+              }`}
+              placeholder="Full transcript of the video..."
+              aria-required="true"
+              aria-invalid={missingTranscript}
+            />
+          </>
+        )}
+
         {missingTranscript && (
           <div className="flex items-center gap-1 mt-1">
             <AlertTriangle size={12} className="text-[var(--color-danger-600)]" />

@@ -15,7 +15,8 @@ import {
   CheckCircle2,
   XCircle,
   Lightbulb,
-  Puzzle
+  Puzzle,
+  Presentation
 } from 'lucide-react'
 import { FeedbackFormPreview } from './FeedbackFormPreview'
 import type { ContentBlock, CalloutBlock } from '@/types/course'
@@ -354,6 +355,29 @@ export function BlockPreview({ block }: BlockPreviewProps): JSX.Element {
               Plugin: {block.pluginType || 'Unconfigured'}
             </p>
             <p className="text-xs text-[var(--text-secondary)]">Plugin block content</p>
+          </div>
+        </div>
+      )
+
+    case 'slide':
+      return (
+        <div className="p-3 rounded-lg bg-[var(--bg-muted)]">
+          <div className="flex items-center gap-2 mb-1.5">
+            <Presentation size={16} className="text-[var(--text-tertiary)]" />
+            <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+              Slide
+            </span>
+          </div>
+          <div
+            className="w-full aspect-video rounded border border-[var(--border-default)] overflow-hidden relative"
+            style={{
+              backgroundColor: block.backgroundColor || '#ffffff',
+              maxHeight: 80
+            }}
+          >
+            <p className="absolute bottom-1 right-1.5 text-[10px] text-[var(--text-tertiary)]">
+              {block.elements.length} element{block.elements.length !== 1 ? 's' : ''}
+            </p>
           </div>
         </div>
       )

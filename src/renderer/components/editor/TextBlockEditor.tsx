@@ -1,12 +1,36 @@
 import { useEffect, useMemo, useCallback } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
+import { Extension } from '@tiptap/core'
 import { Underline } from '@tiptap/extension-underline'
 import { Link } from '@tiptap/extension-link'
 import { TextStyle } from '@tiptap/extension-text-style'
 import { Color } from '@tiptap/extension-color'
 import { Highlight } from '@tiptap/extension-highlight'
 import { Placeholder } from '@tiptap/extension-placeholder'
+
+const FONT_SIZES = ['10', '12', '14', '16', '18', '20', '24', '28', '32', '36', '42', '48']
+
+const FontSize = Extension.create({
+  name: 'fontSize',
+  addGlobalAttributes() {
+    return [
+      {
+        types: ['textStyle'],
+        attributes: {
+          fontSize: {
+            default: null,
+            parseHTML: (element) => element.style.fontSize?.replace(/['"]+/g, '') || null,
+            renderHTML: (attributes) => {
+              if (!attributes.fontSize) return {}
+              return { style: `font-size: ${attributes.fontSize}` }
+            }
+          }
+        }
+      }
+    ]
+  }
+})
 import {
   Bold,
   Italic,
@@ -45,6 +69,7 @@ export function TextBlockEditor({ block, onUpdate }: TextBlockEditorProps): JSX.
         HTMLAttributes: { class: 'text-[var(--brand-magenta)] underline cursor-pointer' }
       }),
       TextStyle,
+      FontSize,
       Color,
       Highlight.configure({ multicolor: true }),
       Placeholder.configure({ placeholder: 'Start typing your content...' })
@@ -161,6 +186,29 @@ export function TextBlockEditor({ block, onUpdate }: TextBlockEditorProps): JSX.
           active={editor.isActive('heading', { level: 4 })}
           onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()}
         />
+
+        <ToolbarSep />
+
+        {/* Font size dropdown */}
+        <select
+          value={editor.getAttributes('textStyle').fontSize?.replace('px', '') || ''}
+          onChange={(e) => {
+            const size = e.target.value
+            if (size) {
+              editor.chain().focus().setMark('textStyle', { fontSize: `${size}px` }).run()
+            } else {
+              editor.chain().focus().unsetMark('textStyle').run()
+            }
+          }}
+          className="px-1.5 py-0.5 text-xs rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+          aria-label="Font size"
+          title="Font size"
+        >
+          <option value="">Size</option>
+          {FONT_SIZES.map((s) => (
+            <option key={s} value={s}>{s}px</option>
+          ))}
+        </select>
 
         <ToolbarSep />
 
