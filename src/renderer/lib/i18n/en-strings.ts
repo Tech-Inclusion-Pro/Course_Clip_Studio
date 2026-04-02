@@ -149,7 +149,50 @@ const hardcodedStrings: Record<string, string> = {
   'translation.translating': 'Translating to {{language}}...',
   'translation.complete': 'Translation complete',
   'translation.error': 'Translation failed. Using English.',
-  'translation.clearCache': 'Clear translation cache'
+  'translation.clearCache': 'Clear translation cache',
+
+  // Tippy AI Assistant
+  'tippy.label': 'Tippy',
+  'tippy.ariaLabel': 'Tippy AI Assistant',
+  'tippy.title': 'Tippy',
+  'tippy.placeholder': 'Ask Tippy anything...',
+  'tippy.inputLabel': 'Message Tippy',
+  'tippy.send': 'Send',
+  'tippy.clear': 'Clear chat',
+  'tippy.save': 'Save session',
+  'tippy.close': 'Close',
+  'tippy.sessions': 'Sessions',
+  'tippy.noSessions': 'No saved sessions',
+  'tippy.greeting': "Hi! I'm Tippy, your AI assistant. How can I help?",
+  'tippy.quickTour': 'Give me a tour',
+  'tippy.quickStart': 'Help me get started',
+  'tippy.quickContext': 'What can I do here?',
+  'tippy.generating': 'Thinking...',
+  'tippy.tourComplete': 'Tour complete! Feel free to ask me anything as you explore.',
+  'tippy.tourSkipped': 'Tour skipped. Ask me anytime if you want to continue!',
+  'tippy.errorNotice': 'I noticed an error. Would you like help?',
+
+  // Tippy Tour Steps
+  'tippy.tour.sidebarTitle': 'Sidebar Navigation',
+  'tippy.tour.sidebarDesc': 'Use the sidebar to switch between Dashboard, Editor, Preview, Settings, and Publish views.',
+  'tippy.tour.dashboardTitle': 'Dashboard',
+  'tippy.tour.dashboardDesc': 'Your home base — create, open, and manage courses, templates, content areas, and syllabi.',
+  'tippy.tour.toolbarTitle': 'Editor Toolbar',
+  'tippy.tour.toolbarDesc': 'Access undo/redo, preview, publish, AI assistant, theme editor, and more from the toolbar.',
+  'tippy.tour.outlineTitle': 'Course Outline',
+  'tippy.tour.outlineDesc': 'The outline panel shows your course structure — modules, lessons, and blocks. Drag to reorder.',
+  'tippy.tour.canvasTitle': 'Content Canvas',
+  'tippy.tour.canvasDesc': 'This is where you build lessons. Add content blocks, arrange them, and switch between Block and Slide views.',
+  'tippy.tour.propertiesTitle': 'Properties Panel',
+  'tippy.tour.propertiesDesc': 'Select a block to see its properties here. Customize text, media, quiz settings, and accessibility options.',
+  'tippy.tour.blockPaletteTitle': 'Block Palette',
+  'tippy.tour.blockPaletteDesc': 'Add new content blocks — text, images, video, audio, quizzes, accordions, tabs, and more.',
+  'tippy.tour.aiAssistantTitle': 'AI Assistant',
+  'tippy.tour.aiAssistantDesc': 'Use AI to generate outlines, lesson content, quizzes, narration, alt text, translations, and accessibility reviews.',
+  'tippy.tour.previewTitle': 'Preview',
+  'tippy.tour.previewDesc': 'Preview your course as a learner would see it. Switch between desktop, tablet, and mobile views.',
+  'tippy.tour.publishTitle': 'Publish',
+  'tippy.tour.publishDesc': 'Export your course as SCORM, xAPI, or HTML5. Configure settings and download the package.'
 }
 
 export const EN_STRINGS: Record<string, string> = {

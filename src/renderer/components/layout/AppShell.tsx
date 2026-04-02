@@ -9,6 +9,10 @@ import { useAutoSave } from '@/hooks/useAutoSave'
 import { useDeepLink } from '@/hooks/useDeepLink'
 import { useAccessibility } from '@/hooks/useAccessibility'
 import { AccessibilityWidget } from '@/components/ui/AccessibilityWidget'
+import { TippyButton } from '@/components/tippy/TippyButton'
+import { TippyPanel } from '@/components/tippy/TippyPanel'
+import { TippyTour } from '@/components/tippy/TippyTour'
+import { TippyErrorWatcher } from '@/components/tippy/TippyErrorWatcher'
 
 export function AppShell(): JSX.Element {
   useTheme()
@@ -36,6 +40,10 @@ export function AppShell(): JSX.Element {
         </div>
       </div>
       <AccessibilityWidget />
+      <TippyButton />
+      <TippyPanel />
+      <TippyTour />
+      <TippyErrorWatcher />
     </>
   )
 }
