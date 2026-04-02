@@ -6,7 +6,7 @@ import { useAppStore } from '@/stores/useAppStore'
 import { AssignmentCard } from '../cards/AssignmentCard'
 import { getProvider } from '@/lib/ai/ai-client'
 import { baseBrainContext } from '@/lib/ai/prompts'
-import { generateAssignmentPrompt, SYLLABUS_SYSTEM_PROMPT } from '@/lib/ai/syllabus-prompts'
+import { generateAssignmentPrompt, SYLLABUS_SYSTEM_PROMPT, extractJSON } from '@/lib/ai/syllabus-prompts'
 import { GRADE_LEVELS } from '@/lib/syllabus-constants'
 import type { AssignmentType } from '@/types/syllabus'
 
@@ -40,12 +40,11 @@ export function AssignmentsStep(): JSX.Element {
       )
 
       const result = await provider.generateText(prompt, systemPrompt)
-      const cleaned = result.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-      const parsed = JSON.parse(cleaned) as Array<{
+      const parsed = extractJSON<Array<{
         title: string; description: string; type: string
         linkedObjectiveIds?: string[]
         udl?: { representation: string; actionExpression: string; engagement: string }
-      }>
+      }>>(result)
 
       for (const asn of parsed) {
         store.addAssignment({
@@ -101,12 +100,16 @@ export function AssignmentsStep(): JSX.Element {
           <Sparkles size={14} />
           {isGenerating && generatingTarget === 'assignments' ? 'Generating...' : 'Generate with AI'}
         </Button>
-        {assignmentPool.length > 0 && (
-          <Button variant="ghost" size="sm" onClick={() => setShowPool(!showPool)}>
-            <Download size={14} />
-            Import from Pool ({assignmentPool.length})
-          </Button>
-        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowPool(!showPool)}
+          disabled={assignmentPool.length === 0}
+          title={assignmentPool.length === 0 ? 'Save assignments to your pool to reuse them across syllabi' : undefined}
+        >
+          <Download size={14} />
+          Import from Pool {assignmentPool.length > 0 ? `(${assignmentPool.length})` : ''}
+        </Button>
       </div>
 
       {/* AI status */}

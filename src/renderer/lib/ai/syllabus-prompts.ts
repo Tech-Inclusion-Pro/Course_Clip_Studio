@@ -2,6 +2,64 @@
 
 import type { SyllabusObjective, SyllabusAssignment } from '@/types/syllabus'
 
+/**
+ * Robustly extract JSON from AI responses that may contain
+ * markdown fencing, explanatory text before/after the JSON, etc.
+ */
+export function extractJSON<T>(raw: string): T {
+  // Strip markdown fencing
+  let text = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+
+  // Try direct parse first
+  try { return JSON.parse(text) as T } catch { /* continue */ }
+
+  // Find the first [ or { and match to closing bracket
+  const arrayStart = text.indexOf('[')
+  const objStart = text.indexOf('{')
+
+  let start: number
+  let openChar: string
+  let closeChar: string
+
+  if (arrayStart === -1 && objStart === -1) {
+    throw new Error('No JSON found in AI response')
+  } else if (arrayStart === -1) {
+    start = objStart; openChar = '{'; closeChar = '}'
+  } else if (objStart === -1) {
+    start = arrayStart; openChar = '['; closeChar = ']'
+  } else {
+    start = Math.min(arrayStart, objStart)
+    openChar = text[start]; closeChar = openChar === '[' ? ']' : '}'
+  }
+
+  // Walk through to find the matching closing bracket
+  let depth = 0
+  let inString = false
+  let escape = false
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i]
+    if (escape) { escape = false; continue }
+    if (ch === '\\') { escape = true; continue }
+    if (ch === '"') { inString = !inString; continue }
+    if (inString) continue
+    if (ch === openChar) depth++
+    else if (ch === closeChar) {
+      depth--
+      if (depth === 0) {
+        return JSON.parse(text.slice(start, i + 1)) as T
+      }
+    }
+  }
+
+  // Last resort: try to parse up to the last ] or }
+  const lastClose = Math.max(text.lastIndexOf(']'), text.lastIndexOf('}'))
+  if (lastClose > start) {
+    return JSON.parse(text.slice(start, lastClose + 1)) as T
+  }
+
+  throw new Error('Could not extract valid JSON from AI response')
+}
+
 export const SYLLABUS_SYSTEM_PROMPT = `You are an instructional design assistant helping educators create inclusive, accessible course syllabi.
 You follow Universal Design for Learning (UDL) principles and Bloom's Taxonomy.
 Always suggest concrete, actionable content. Use plain language unless the user's context indicates expertise.

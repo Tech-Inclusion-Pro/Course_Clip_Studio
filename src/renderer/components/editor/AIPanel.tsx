@@ -26,6 +26,7 @@ import { useAppStore } from '@/stores/useAppStore'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useEditorStore } from '@/stores/useEditorStore'
 import { useAIStore, type AIView } from '@/stores/useAIStore'
+import { useSyllabusStore } from '@/stores/useSyllabusStore'
 import {
   getProvider,
   AIClientError,
@@ -153,7 +154,10 @@ function HomeView(): JSX.Element {
   const updateReferenceFileCategories = useAIStore((s) => s.updateReferenceFileCategories)
   const selectedContentAreaId = useAIStore((s) => s.selectedContentAreaId)
   const setSelectedContentAreaId = useAIStore((s) => s.setSelectedContentAreaId)
+  const selectedSyllabusId = useAIStore((s) => s.selectedSyllabusId)
+  const setSelectedSyllabusId = useAIStore((s) => s.setSelectedSyllabusId)
   const contentAreas = useAppStore((s) => s.contentAreas)
+  const syllabi = useSyllabusStore((s) => s.syllabi)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const refFileInputRef = useRef<HTMLInputElement>(null)
 
@@ -207,6 +211,35 @@ function HomeView(): JSX.Element {
               <option key={ca.id} value={ca.id}>{ca.name}</option>
             ))}
           </select>
+        </div>
+      )}
+
+      {/* Syllabus Context Picker */}
+      {syllabi.length > 0 && (
+        <div className="space-y-1.5">
+          <label className="text-xs font-[var(--font-weight-semibold)] text-[var(--text-secondary)] uppercase tracking-wide">
+            Syllabus Context
+          </label>
+          <select
+            value={selectedSyllabusId || ''}
+            onChange={(e) => setSelectedSyllabusId(e.target.value || null)}
+            className="w-full px-2.5 py-1.5 text-xs rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--ring-brand)] cursor-pointer"
+          >
+            <option value="">None</option>
+            {syllabi.map((s) => (
+              <option key={s.id} value={s.id}>{s.name || 'Untitled Syllabus'}</option>
+            ))}
+          </select>
+          {selectedSyllabusId && (() => {
+            const syl = syllabi.find((s) => s.id === selectedSyllabusId)
+            if (!syl) return null
+            return (
+              <p className="text-[10px] text-[var(--text-tertiary)]">
+                {syl.objectives.length} objectives, {syl.assignments.length} assignments
+                {syl.audience.level ? ` · ${syl.audience.level}` : ''}
+              </p>
+            )
+          })()}
         </div>
       )}
 
@@ -930,6 +963,50 @@ async function runAction(action: AIAction): Promise<void> {
       }
       if (!effectiveAnswers.format && contentArea.format) {
         effectiveAnswers.format = contentArea.format
+      }
+    }
+  }
+
+  // Merge syllabus context if one is selected
+  if (aiStore.selectedSyllabusId) {
+    const syllabusStore = useSyllabusStore.getState()
+    const syllabus = syllabusStore.syllabi.find((s) => s.id === aiStore.selectedSyllabusId)
+    if (syllabus) {
+      // Merge audience info
+      if (syllabus.audience.context) {
+        if (effectiveAnswers.audience) {
+          effectiveAnswers.audience = `${effectiveAnswers.audience}\nSyllabus audience: ${syllabus.audience.level} — ${syllabus.audience.context}`
+        } else {
+          effectiveAnswers.audience = `${syllabus.audience.level} — ${syllabus.audience.context}`
+        }
+      }
+      // Merge objectives
+      if (syllabus.objectives.length > 0) {
+        const objectivesText = syllabus.objectives.map((o) => `• ${o.text} (Bloom's: ${o.bloomsLevel})`).join('\n')
+        if (effectiveAnswers.objectives) {
+          effectiveAnswers.objectives = `${effectiveAnswers.objectives}\nSyllabus objectives:\n${objectivesText}`
+        } else {
+          effectiveAnswers.objectives = `Syllabus objectives:\n${objectivesText}`
+        }
+      }
+      // Merge course goal as prior knowledge context
+      if (syllabus.courseGoal) {
+        if (effectiveAnswers.priorKnowledge) {
+          effectiveAnswers.priorKnowledge = `${effectiveAnswers.priorKnowledge}\nCourse goal: ${syllabus.courseGoal}`
+        } else {
+          effectiveAnswers.priorKnowledge = `Course goal: ${syllabus.courseGoal}`
+        }
+      }
+      // Merge assignment types as accessibility context
+      if (syllabus.assignments.length > 0) {
+        const assignmentsText = syllabus.assignments
+          .map((a) => `• ${a.title} (${a.type})${a.udl.representation ? ' — UDL: ' + a.udl.representation : ''}`)
+          .join('\n')
+        if (effectiveAnswers.accessibilityNeeds) {
+          effectiveAnswers.accessibilityNeeds = `${effectiveAnswers.accessibilityNeeds}\nSyllabus assignments:\n${assignmentsText}`
+        } else {
+          effectiveAnswers.accessibilityNeeds = `Syllabus assignments:\n${assignmentsText}`
+        }
       }
     }
   }

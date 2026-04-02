@@ -39,6 +39,9 @@ interface AIState {
   // Content area
   selectedContentAreaId: string | null
 
+  // Syllabus context
+  selectedSyllabusId: string | null
+
   // Generation
   isGenerating: boolean
   currentAction: AIAction | null
@@ -73,6 +76,9 @@ interface AIState {
   // Content area
   setSelectedContentAreaId: (id: string | null) => void
 
+  // Syllabus context
+  setSelectedSyllabusId: (id: string | null) => void
+
   // Generation
   startGeneration: (action: AIAction) => void
   finishGeneration: (result: string) => void
@@ -98,6 +104,7 @@ export const useAIStore = create<AIState>((set) => ({
   useMasterKey: true,
   referenceFiles: [],
   selectedContentAreaId: null,
+  selectedSyllabusId: null,
   isGenerating: false,
   currentAction: null,
   lastResult: null,
@@ -167,6 +174,9 @@ export const useAIStore = create<AIState>((set) => ({
   // Content area
   setSelectedContentAreaId: (id) => set({ selectedContentAreaId: id }),
 
+  // Syllabus context
+  setSelectedSyllabusId: (id) => set({ selectedSyllabusId: id }),
+
   // Generation
   startGeneration: (action) =>
     set({ isGenerating: true, currentAction: action, lastError: null, lastResult: null }),
@@ -203,6 +213,7 @@ export const useAIStore = create<AIState>((set) => ({
       useMasterKey: true,
       referenceFiles: [],
       selectedContentAreaId: null,
+      selectedSyllabusId: null,
       isGenerating: false,
       currentAction: null,
       lastResult: null,

@@ -7,7 +7,7 @@ import { BloomsReference } from '../BloomsReference'
 import { ObjectiveCard } from '../cards/ObjectiveCard'
 import { getProvider } from '@/lib/ai/ai-client'
 import { baseBrainContext } from '@/lib/ai/prompts'
-import { generateObjectivesPrompt, SYLLABUS_SYSTEM_PROMPT } from '@/lib/ai/syllabus-prompts'
+import { generateObjectivesPrompt, SYLLABUS_SYSTEM_PROMPT, extractJSON } from '@/lib/ai/syllabus-prompts'
 import { CONTENT_AREAS, GRADE_LEVELS } from '@/lib/syllabus-constants'
 import type { BloomsLevel } from '@/types/syllabus'
 
@@ -47,9 +47,7 @@ export function ObjectivesStep(): JSX.Element {
 
       const result = await provider.generateText(prompt, systemPrompt)
 
-      // Parse JSON from result
-      const cleaned = result.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-      const parsed = JSON.parse(cleaned) as Array<{ text: string; bloomsLevel: string; rationale: string }>
+      const parsed = extractJSON<Array<{ text: string; bloomsLevel: string; rationale: string }>>(result)
 
       for (const obj of parsed) {
         store.addObjective({
@@ -94,12 +92,16 @@ export function ObjectivesStep(): JSX.Element {
           <Sparkles size={14} />
           {isGenerating && generatingTarget === 'objectives' ? 'Generating...' : 'Generate with AI'}
         </Button>
-        {objectivePool.length > 0 && (
-          <Button variant="ghost" size="sm" onClick={() => setShowPool(!showPool)}>
-            <Download size={14} />
-            Import from Pool ({objectivePool.length})
-          </Button>
-        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowPool(!showPool)}
+          disabled={objectivePool.length === 0}
+          title={objectivePool.length === 0 ? 'Save objectives to your pool to reuse them across syllabi' : undefined}
+        >
+          <Download size={14} />
+          Import from Pool {objectivePool.length > 0 ? `(${objectivePool.length})` : ''}
+        </Button>
       </div>
 
       {/* AI status */}

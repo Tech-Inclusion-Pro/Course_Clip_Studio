@@ -6,7 +6,7 @@ import { useAppStore } from '@/stores/useAppStore'
 import { RubricEditor } from '../cards/RubricEditor'
 import { getProvider } from '@/lib/ai/ai-client'
 import { baseBrainContext } from '@/lib/ai/prompts'
-import { generateRubricPrompt, SYLLABUS_SYSTEM_PROMPT } from '@/lib/ai/syllabus-prompts'
+import { generateRubricPrompt, SYLLABUS_SYSTEM_PROMPT, extractJSON } from '@/lib/ai/syllabus-prompts'
 import { GRADE_LEVELS } from '@/lib/syllabus-constants'
 import type { RubricType } from '@/types/syllabus'
 
@@ -49,13 +49,12 @@ export function RubricsStep(): JSX.Element {
       )
 
       const result = await provider.generateText(prompt, systemPrompt)
-      const cleaned = result.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-      const parsed = JSON.parse(cleaned) as {
+      const parsed = extractJSON<{
         type?: string
         columns?: Array<{ label: string; points: number }>
         rows?: Array<{ label: string; weight?: number }>
         cells?: Record<string, string>
-      }
+      }>(result)
 
       store.addRubric(assignmentId, {
         type: (parsed.type || 'analytic') as RubricType,
@@ -110,12 +109,16 @@ export function RubricsStep(): JSX.Element {
             <Sparkles size={14} />
             {isGenerating && generatingTarget?.startsWith('rubric-') ? 'Generating...' : 'Generate with AI'}
           </Button>
-          {rubricPool.length > 0 && (
-            <Button variant="ghost" size="sm" onClick={() => setShowPool(!showPool)}>
-              <Download size={14} />
-              Import from Pool ({rubricPool.length})
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowPool(!showPool)}
+            disabled={rubricPool.length === 0}
+            title={rubricPool.length === 0 ? 'Save rubrics to your pool to reuse them across syllabi' : undefined}
+          >
+            <Download size={14} />
+            Import from Pool {rubricPool.length > 0 ? `(${rubricPool.length})` : ''}
+          </Button>
         </div>
       )}
 

@@ -5,7 +5,7 @@ import { useSyllabusStore } from '@/stores/useSyllabusStore'
 import { useAppStore } from '@/stores/useAppStore'
 import { getProvider } from '@/lib/ai/ai-client'
 import { baseBrainContext } from '@/lib/ai/prompts'
-import { generateUDLSuggestionsPrompt, SYLLABUS_SYSTEM_PROMPT } from '@/lib/ai/syllabus-prompts'
+import { generateUDLSuggestionsPrompt, SYLLABUS_SYSTEM_PROMPT, extractJSON } from '@/lib/ai/syllabus-prompts'
 import { GRADE_LEVELS } from '@/lib/syllabus-constants'
 import type { SyllabusAssignment, UDLAnnotation } from '@/types/syllabus'
 
@@ -56,8 +56,7 @@ export function UDLWizardPanel({ assignment }: UDLWizardPanelProps): JSX.Element
       const prompt = generateUDLSuggestionsPrompt(assignment, objectives, gradeLabel, pillar)
       const result = await provider.generateText(prompt, systemPrompt)
 
-      const cleaned = result.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-      const parsed = JSON.parse(cleaned) as { strategies: string[] }
+      const parsed = extractJSON<{ strategies: string[] }>(result)
       const combined = parsed.strategies?.join('\n') || result
 
       updateAssignmentUDL(assignment.id, { [pillar]: combined } as Partial<UDLAnnotation>)

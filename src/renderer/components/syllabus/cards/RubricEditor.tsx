@@ -1,4 +1,5 @@
-import { Plus, Trash2, X } from 'lucide-react'
+import { useState } from 'react'
+import { Plus, Trash2, X, Maximize2, Minimize2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useSyllabusStore } from '@/stores/useSyllabusStore'
 import { RUBRIC_TYPES } from '@/lib/syllabus-constants'
@@ -10,13 +11,46 @@ interface RubricEditorProps {
 }
 
 export function RubricEditor({ rubric, assignmentTitle }: RubricEditorProps): JSX.Element {
+  const [enlarged, setEnlarged] = useState(false)
+
+  const content = (
+    <RubricEditorInner
+      rubric={rubric}
+      assignmentTitle={assignmentTitle}
+      enlarged={enlarged}
+      onToggleEnlarge={() => setEnlarged(!enlarged)}
+    />
+  )
+
+  if (enlarged) {
+    return (
+      <div
+        className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+        onClick={() => setEnlarged(false)}
+      >
+        <div
+          className="bg-[var(--bg-surface)] rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {content}
+        </div>
+      </div>
+    )
+  }
+
+  return content
+}
+
+function RubricEditorInner({ rubric, assignmentTitle, enlarged, onToggleEnlarge }: {
+  rubric: SyllabusRubric
+  assignmentTitle: string
+  enlarged: boolean
+  onToggleEnlarge: () => void
+}): JSX.Element {
   const updateRubric = useSyllabusStore((s) => s.updateRubric)
   const removeRubric = useSyllabusStore((s) => s.removeRubric)
   const addRubricRow = useSyllabusStore((s) => s.addRubricRow)
   const addRubricColumn = useSyllabusStore((s) => s.addRubricColumn)
-  const removeRubricRow = useSyllabusStore((s) => s.removeRubricRow)
-  const removeRubricColumn = useSyllabusStore((s) => s.removeRubricColumn)
-  const updateRubricCell = useSyllabusStore((s) => s.updateRubricCell)
   const setRubricType = useSyllabusStore((s) => s.setRubricType)
   const saveRubricToPool = useSyllabusStore((s) => s.saveRubricToPool)
 
@@ -26,20 +60,34 @@ export function RubricEditor({ rubric, assignmentTitle }: RubricEditorProps): JS
     }
   }
 
+  const cellSize = enlarged ? 'text-xs' : 'text-[10px]'
+  const cellRows = enlarged ? 4 : 2
+  const padding = enlarged ? 'p-5' : 'p-3'
+
   return (
-    <div className="rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] p-3 space-y-3">
+    <div className={`rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] ${padding} space-y-3`}>
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-primary)]">
+        <h4 className={`${enlarged ? 'text-base' : 'text-sm'} font-[var(--font-weight-semibold)] text-[var(--text-primary)]`}>
           Rubric for: {assignmentTitle || 'Untitled Assignment'}
         </h4>
-        <button
-          onClick={() => removeRubric(rubric.id)}
-          className="p-1.5 rounded text-[var(--text-tertiary)] hover:text-[var(--color-danger-500)] cursor-pointer transition-colors"
-          aria-label="Remove rubric"
-        >
-          <Trash2 size={14} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={onToggleEnlarge}
+            className="p-1.5 rounded text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] cursor-pointer transition-colors"
+            aria-label={enlarged ? 'Minimize rubric' : 'Enlarge rubric for easier editing'}
+            title={enlarged ? 'Minimize' : 'Enlarge'}
+          >
+            {enlarged ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+          </button>
+          <button
+            onClick={() => removeRubric(rubric.id)}
+            className="p-1.5 rounded text-[var(--text-tertiary)] hover:text-[var(--color-danger-500)] cursor-pointer transition-colors"
+            aria-label="Remove rubric"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
       </div>
 
       {/* Type selector + Pool toggle */}
@@ -74,9 +122,9 @@ export function RubricEditor({ rubric, assignmentTitle }: RubricEditorProps): JS
       </div>
 
       {/* Rubric body by type */}
-      {rubric.type === 'analytic' && <AnalyticRubric rubric={rubric} />}
-      {rubric.type === 'holistic' && <HolisticRubric rubric={rubric} />}
-      {rubric.type === 'single-point' && <SinglePointRubric rubric={rubric} />}
+      {rubric.type === 'analytic' && <AnalyticRubric rubric={rubric} cellSize={cellSize} cellRows={cellRows} enlarged={enlarged} />}
+      {rubric.type === 'holistic' && <HolisticRubric rubric={rubric} enlarged={enlarged} />}
+      {rubric.type === 'single-point' && <SinglePointRubric rubric={rubric} enlarged={enlarged} />}
       {rubric.type === 'checklist' && <ChecklistRubric rubric={rubric} />}
 
       {/* Add row/column for analytic */}
@@ -101,7 +149,7 @@ export function RubricEditor({ rubric, assignmentTitle }: RubricEditorProps): JS
 
 // ─── Analytic Rubric (table) ───
 
-function AnalyticRubric({ rubric }: { rubric: SyllabusRubric }): JSX.Element {
+function AnalyticRubric({ rubric, cellSize, cellRows, enlarged }: { rubric: SyllabusRubric; cellSize: string; cellRows: number; enlarged: boolean }): JSX.Element {
   const updateRubricCell = useSyllabusStore((s) => s.updateRubricCell)
   const updateRubric = useSyllabusStore((s) => s.updateRubric)
   const removeRubricRow = useSyllabusStore((s) => s.removeRubricRow)
@@ -125,22 +173,25 @@ function AnalyticRubric({ rubric }: { rubric: SyllabusRubric }): JSX.Element {
     })
   }
 
+  const minColWidth = enlarged ? 'min-w-[180px]' : 'min-w-[120px]'
+  const minRowWidth = enlarged ? 'min-w-[140px]' : 'min-w-[100px]'
+
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-xs border-collapse">
+      <table className={`w-full ${cellSize} border-collapse`}>
         <thead>
           <tr>
-            <th scope="col" className="p-1.5 text-left bg-[var(--bg-muted)] border border-[var(--border-default)] min-w-[100px]">
+            <th scope="col" className={`p-1.5 text-left bg-[var(--bg-muted)] border border-[var(--border-default)] ${minRowWidth}`}>
               Criteria
             </th>
             {rubric.columns.map((col) => (
-              <th key={col.id} scope="col" className="p-1.5 bg-[var(--bg-muted)] border border-[var(--border-default)] min-w-[120px]">
+              <th key={col.id} scope="col" className={`p-1.5 bg-[var(--bg-muted)] border border-[var(--border-default)] ${minColWidth}`}>
                 <div className="flex items-center gap-1">
                   <input
                     type="text"
                     value={col.label}
                     onChange={(e) => updateColLabel(col.id, e.target.value)}
-                    className="w-full px-1 py-0.5 text-xs rounded border border-transparent hover:border-[var(--border-default)] bg-transparent text-[var(--text-primary)] font-[var(--font-weight-semibold)] focus:outline-none focus:ring-1 focus:ring-[var(--ring-brand)]"
+                    className={`w-full px-1 py-0.5 ${cellSize} rounded border border-transparent hover:border-[var(--border-default)] bg-transparent text-[var(--text-primary)] font-[var(--font-weight-semibold)] focus:outline-none focus:ring-1 focus:ring-[var(--ring-brand)]`}
                     aria-label={`Column label for ${col.label}`}
                   />
                   <input
@@ -174,7 +225,7 @@ function AnalyticRubric({ rubric }: { rubric: SyllabusRubric }): JSX.Element {
                     type="text"
                     value={row.label}
                     onChange={(e) => updateRowLabel(row.id, e.target.value)}
-                    className="w-full px-1 py-0.5 text-xs rounded border border-transparent hover:border-[var(--border-default)] bg-transparent text-[var(--text-primary)] font-[var(--font-weight-medium)] focus:outline-none focus:ring-1 focus:ring-[var(--ring-brand)]"
+                    className={`w-full px-1 py-0.5 ${cellSize} rounded border border-transparent hover:border-[var(--border-default)] bg-transparent text-[var(--text-primary)] font-[var(--font-weight-medium)] focus:outline-none focus:ring-1 focus:ring-[var(--ring-brand)]`}
                     aria-label={`Row label for ${row.label}`}
                   />
                   {rubric.rows.length > 1 && (
@@ -195,9 +246,9 @@ function AnalyticRubric({ rubric }: { rubric: SyllabusRubric }): JSX.Element {
                     <textarea
                       value={rubric.cells[key] || ''}
                       onChange={(e) => updateRubricCell(rubric.id, key, e.target.value)}
-                      rows={2}
+                      rows={cellRows}
                       placeholder="Describe performance..."
-                      className="w-full px-1.5 py-1 text-[10px] rounded border border-transparent hover:border-[var(--border-default)] bg-transparent text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--ring-brand)] resize-none"
+                      className={`w-full px-1.5 py-1 ${cellSize} rounded border border-transparent hover:border-[var(--border-default)] bg-transparent text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--ring-brand)] resize-none`}
                       aria-label={`${row.label} at ${col.label} level`}
                     />
                   </td>
@@ -213,7 +264,7 @@ function AnalyticRubric({ rubric }: { rubric: SyllabusRubric }): JSX.Element {
 
 // ─── Holistic Rubric ───
 
-function HolisticRubric({ rubric }: { rubric: SyllabusRubric }): JSX.Element {
+function HolisticRubric({ rubric, enlarged }: { rubric: SyllabusRubric; enlarged: boolean }): JSX.Element {
   const updateRubricCell = useSyllabusStore((s) => s.updateRubricCell)
   const updateRubric = useSyllabusStore((s) => s.updateRubric)
   const removeRubricRow = useSyllabusStore((s) => s.removeRubricRow)
@@ -223,21 +274,21 @@ function HolisticRubric({ rubric }: { rubric: SyllabusRubric }): JSX.Element {
       <p className="text-xs text-[var(--text-tertiary)]">Describe overall performance at each level:</p>
       {rubric.rows.map((row) => (
         <div key={row.id} className="flex items-start gap-2 p-2 rounded border border-[var(--border-default)]">
-          <div className="shrink-0 w-24">
+          <div className={`shrink-0 ${enlarged ? 'w-32' : 'w-24'}`}>
             <input
               type="text"
               value={row.label}
               onChange={(e) => updateRubric(rubric.id, { rows: rubric.rows.map((r) => r.id === row.id ? { ...r, label: e.target.value } : r) })}
               className="w-full px-1.5 py-1 text-xs font-[var(--font-weight-medium)] rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--ring-brand)]"
-              aria-label={`Level label`}
+              aria-label="Level label"
             />
           </div>
           <textarea
             value={rubric.cells[`${row.id}:holistic`] || ''}
             onChange={(e) => updateRubricCell(rubric.id, `${row.id}:holistic`, e.target.value)}
-            rows={2}
+            rows={enlarged ? 4 : 2}
             placeholder="Describe what this level looks like..."
-            className="flex-1 px-2 py-1 text-xs rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--ring-brand)] resize-none"
+            className={`flex-1 px-2 py-1 ${enlarged ? 'text-sm' : 'text-xs'} rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--ring-brand)] resize-none`}
             aria-label={`Description for ${row.label}`}
           />
           {rubric.rows.length > 1 && (
@@ -257,10 +308,12 @@ function HolisticRubric({ rubric }: { rubric: SyllabusRubric }): JSX.Element {
 
 // ─── Single-Point Rubric ───
 
-function SinglePointRubric({ rubric }: { rubric: SyllabusRubric }): JSX.Element {
+function SinglePointRubric({ rubric, enlarged }: { rubric: SyllabusRubric; enlarged: boolean }): JSX.Element {
   const updateRubricCell = useSyllabusStore((s) => s.updateRubricCell)
   const updateRubric = useSyllabusStore((s) => s.updateRubric)
   const removeRubricRow = useSyllabusStore((s) => s.removeRubricRow)
+
+  const fontSize = enlarged ? 'text-xs' : 'text-[10px]'
 
   return (
     <div className="space-y-2">
@@ -287,32 +340,32 @@ function SinglePointRubric({ rubric }: { rubric: SyllabusRubric }): JSX.Element 
           </div>
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <label className="text-[10px] text-[var(--text-tertiary)]">Areas for Growth</label>
+              <label className={`${fontSize} text-[var(--text-tertiary)]`}>Areas for Growth</label>
               <textarea
                 value={rubric.cells[`${row.id}:growth`] || ''}
                 onChange={(e) => updateRubricCell(rubric.id, `${row.id}:growth`, e.target.value)}
-                rows={2}
-                className="w-full px-1.5 py-1 text-[10px] rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--ring-brand)] resize-none"
+                rows={enlarged ? 4 : 2}
+                className={`w-full px-1.5 py-1 ${fontSize} rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--ring-brand)] resize-none`}
                 aria-label={`Areas for growth for ${row.label}`}
               />
             </div>
             <div>
-              <label className="text-[10px] text-[var(--text-tertiary)]">Proficient</label>
+              <label className={`${fontSize} text-[var(--text-tertiary)]`}>Proficient</label>
               <textarea
                 value={rubric.cells[`${row.id}:proficient`] || ''}
                 onChange={(e) => updateRubricCell(rubric.id, `${row.id}:proficient`, e.target.value)}
-                rows={2}
-                className="w-full px-1.5 py-1 text-[10px] rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--ring-brand)] resize-none"
+                rows={enlarged ? 4 : 2}
+                className={`w-full px-1.5 py-1 ${fontSize} rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--ring-brand)] resize-none`}
                 aria-label={`Proficient description for ${row.label}`}
               />
             </div>
             <div>
-              <label className="text-[10px] text-[var(--text-tertiary)]">Strengths</label>
+              <label className={`${fontSize} text-[var(--text-tertiary)]`}>Strengths</label>
               <textarea
                 value={rubric.cells[`${row.id}:strengths`] || ''}
                 onChange={(e) => updateRubricCell(rubric.id, `${row.id}:strengths`, e.target.value)}
-                rows={2}
-                className="w-full px-1.5 py-1 text-[10px] rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--ring-brand)] resize-none"
+                rows={enlarged ? 4 : 2}
+                className={`w-full px-1.5 py-1 ${fontSize} rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--ring-brand)] resize-none`}
                 aria-label={`Strengths for ${row.label}`}
               />
             </div>
