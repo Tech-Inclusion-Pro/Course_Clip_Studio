@@ -1,4 +1,7 @@
 import { Box, AlertTriangle, ExternalLink } from 'lucide-react'
+import { useAIGenerate } from '@/hooks/useAIGenerate'
+import { embedTitlePrompt } from '@/lib/ai'
+import { AIGenerateButton } from '@/components/ui/AIGenerateButton'
 import type { EmbedBlock } from '@/types/course'
 
 interface EmbedBlockEditorProps {
@@ -8,6 +11,13 @@ interface EmbedBlockEditorProps {
 
 export function EmbedBlockEditor({ block, onUpdate }: EmbedBlockEditorProps): JSX.Element {
   const missingTitle = !block.title
+  const { generate, isGenerating, isConfigured } = useAIGenerate()
+
+  async function handleGenerateTitle() {
+    if (!block.url) return
+    const text = await generate(embedTitlePrompt(block.url))
+    if (text) onUpdate({ title: text.replace(/^["']|["']$/g, '').trim() })
+  }
 
   return (
     <div
@@ -38,9 +48,20 @@ export function EmbedBlockEditor({ block, onUpdate }: EmbedBlockEditorProps): JS
 
         {/* Title (required for accessibility) */}
         <div>
-          <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
-            Title <span className="text-[var(--color-danger-600)]">*</span>
-          </label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)]">
+              Title <span className="text-[var(--color-danger-600)]">*</span>
+            </label>
+            {isConfigured && block.url && (
+              <AIGenerateButton
+                onClick={handleGenerateTitle}
+                isGenerating={isGenerating}
+                disabled={!block.url}
+                size="xs"
+                title="Generate title from URL"
+              />
+            )}
+          </div>
           <input
             type="text"
             value={block.title}

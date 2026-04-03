@@ -670,6 +670,121 @@ export interface VisualApiProvider {
   headerValuePrefix?: string
 }
 
+// ─── Video API Provider ───
+
+export interface VideoApiProvider {
+  id: string
+  name: string
+  type: 'pexels-video' | 'pixabay-video' | 'youtube-iframe' | 'vimeo-oembed' | 'custom'
+  enabled: boolean
+  apiKey: string | null
+  endpoint?: string
+  headerName?: string
+  headerValuePrefix?: string
+  notes?: string
+}
+
+// ─── Chart API Provider ───
+
+export interface ChartApiProvider {
+  id: string
+  name: string
+  type: 'quickchart' | 'chartjs' | 'd3' | 'recharts' | 'observable-plot' | 'custom'
+  enabled: boolean
+  apiKey: string | null
+  endpoint?: string
+  headerName?: string
+  headerValuePrefix?: string
+  notes?: string
+  local?: boolean
+}
+
+// ─── Audio API Provider ───
+
+export interface AudioApiProvider {
+  id: string
+  name: string
+  type: 'openai-whisper' | 'elevenlabs' | 'kokoro-piper' | 'custom'
+  enabled: boolean
+  apiKey: string | null
+  endpoint?: string
+  headerName?: string
+  headerValuePrefix?: string
+  notes?: string
+  local?: boolean
+}
+
+// ─── Diagram API Provider ───
+
+export interface DiagramApiProvider {
+  id: string
+  name: string
+  type: 'mermaid' | 'excalidraw' | 'kroki' | 'd3-diagrams' | 'custom'
+  enabled: boolean
+  apiKey: string | null
+  endpoint?: string
+  headerName?: string
+  headerValuePrefix?: string
+  notes?: string
+  local?: boolean
+}
+
+// ─── Interactive Video API Provider ───
+
+export interface InteractiveVideoApiProvider {
+  id: string
+  name: string
+  type: 'youtube-interactive' | 'vimeo-player' | 'h5p' | 'videojs' | 'custom'
+  enabled: boolean
+  apiKey: string | null
+  endpoint?: string
+  headerName?: string
+  headerValuePrefix?: string
+  notes?: string
+  local?: boolean
+}
+
+// ─── Math API Provider ───
+
+export interface MathApiProvider {
+  id: string
+  name: string
+  type: 'mathjax' | 'katex' | 'chemistry-rdkit' | 'custom'
+  enabled: boolean
+  apiKey: string | null
+  endpoint?: string
+  headerName?: string
+  headerValuePrefix?: string
+  notes?: string
+  local?: boolean
+}
+
+export interface ContentImportProvider {
+  id: string
+  name: string
+  type: 'mammoth' | 'pdfjs' | 'turndown' | 'pptxgenjs' | 'custom'
+  enabled: boolean
+  apiKey: string | null
+  endpoint?: string
+  headerName?: string
+  headerValuePrefix?: string
+  notes?: string
+  local?: boolean
+}
+
+export interface AssetManagementProvider {
+  id: string
+  name: string
+  type: 'pexels-unsplash' | 'noun-project' | 'font-awesome' | 'lottie-files' | 'custom'
+  enabled: boolean
+  apiKey: string | null
+  endpoint?: string
+  headerName?: string
+  headerValuePrefix?: string
+  notes?: string
+  local?: boolean
+}
+
 export type ColorBlindMode = 'none' | 'protanopia' | 'deuteranopia' | 'tritanopia' | 'achromatopsia'
 export type CursorStyle = 'default' | 'large' | 'crosshair' | 'high-contrast'
 

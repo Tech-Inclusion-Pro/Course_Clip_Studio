@@ -7,11 +7,13 @@ import {
   ChevronUp,
   X,
   Eye,
-  Upload
+  Upload,
+  Search
 } from 'lucide-react'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { contrastRatio, formatRatio, contrastLabel } from '@/lib/contrast'
 import { useAssetUpload } from '@/hooks/useAssetUpload'
+import { StockSearchDialog } from '@/components/ui/StockSearchDialog'
 import { GoogleFontPicker } from './GoogleFontPicker'
 import type { CourseTheme, PlayerShellConfig } from '@/types/course'
 
@@ -25,6 +27,7 @@ export function ThemeEditor({ onClose }: ThemeEditorProps): JSX.Element {
   const updateCourseTheme = useCourseStore((s) => s.updateCourseTheme)
 
   const [expandedSection, setExpandedSection] = useState<string | null>('colors')
+  const [stockLogoOpen, setStockLogoOpen] = useState(false)
   const uploadAsset = useAssetUpload()
 
   if (!course || !activeCourseId) {
@@ -317,6 +320,13 @@ export function ThemeEditor({ onClose }: ThemeEditorProps): JSX.Element {
                   <Upload size={12} />
                   Upload Logo
                 </button>
+                <button
+                  onClick={() => setStockLogoOpen(true)}
+                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-md border border-[var(--border-default)] text-[var(--brand-magenta)] hover:bg-[var(--brand-magenta)]/10 cursor-pointer"
+                >
+                  <Search size={12} />
+                  Search Logo
+                </button>
                 {theme.logoPath && (
                   <button
                     onClick={() => handleUpdate({ logoPath: null })}
@@ -337,6 +347,14 @@ export function ThemeEditor({ onClose }: ThemeEditorProps): JSX.Element {
           </div>
         </ThemeSection>
       </div>
+
+      <StockSearchDialog
+        open={stockLogoOpen}
+        onClose={() => setStockLogoOpen(false)}
+        onSelect={(localPath) => handleUpdate({ logoPath: localPath })}
+        mediaType="image"
+        title="Search Logo Images"
+      />
     </div>
   )
 }

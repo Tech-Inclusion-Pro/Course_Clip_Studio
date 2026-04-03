@@ -82,7 +82,13 @@ const api = {
       fieldName: string
       extraFields?: Record<string, string>
     }): Promise<{ status: number; statusText: string; body: string }> =>
-      ipcRenderer.invoke('net:uploadFile', opts)
+      ipcRenderer.invoke('net:uploadFile', opts),
+    downloadFile: (opts: {
+      url: string
+      destPath: string
+      headers?: Record<string, string>
+    }): Promise<{ ok: boolean; path: string }> =>
+      ipcRenderer.invoke('net:downloadFile', opts)
   },
   updater: {
     check: (): Promise<{ updateAvailable: boolean; version?: string }> =>

@@ -1,8 +1,11 @@
 import { useMemo } from 'react'
-import { SlidersHorizontal, Clock, CheckSquare, Target, UserPlus } from 'lucide-react'
+import { SlidersHorizontal, Clock, Target, UserPlus } from 'lucide-react'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useEditorStore } from '@/stores/useEditorStore'
 import { findBlock, findLesson } from '@/lib/course-helpers'
+import { useAIGenerate } from '@/hooks/useAIGenerate'
+import { imageDescriptionPrompt } from '@/lib/ai/prompts'
+import { AIGenerateButton } from '@/components/ui/AIGenerateButton'
 import { BLOCK_TYPE_LABELS } from '@/types/course'
 import type { ContentBlock, LessonCompletionCriteria } from '@/types/course'
 
@@ -307,6 +310,7 @@ function TypeSpecificFields({
   block: ContentBlock
   onUpdate: (partial: Partial<ContentBlock>) => void
 }): JSX.Element | null {
+  const { generate: generateAI, isGenerating: isGeneratingAlt, isConfigured: aiConfigured } = useAIGenerate()
   switch (block.type) {
     case 'text':
       return (
@@ -353,7 +357,25 @@ function TypeSpecificFields({
               placeholder="Path to image file..."
             />
           </FieldGroup>
-          <FieldGroup label="Alt Text (required)">
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)]">
+                Alt Text (required)
+              </label>
+              {block.assetPath && (
+                <AIGenerateButton
+                  onClick={async () => {
+                    const filename = block.assetPath?.split('/').pop() || ''
+                    const result = await generateAI(imageDescriptionPrompt(filename, block.caption || '', ''))
+                    if (result) onUpdate({ altText: result.trim() } as Partial<ContentBlock>)
+                  }}
+                  isGenerating={isGeneratingAlt}
+                  disabled={!aiConfigured}
+                  size="xs"
+                  title={aiConfigured ? 'Generate alt text with AI' : 'Configure AI provider in Settings'}
+                />
+              )}
+            </div>
             <input
               type="text"
               value={block.altText}
@@ -368,7 +390,7 @@ function TypeSpecificFields({
             {!block.altText && (
               <p className="text-xs text-[var(--color-danger-600)] mt-0.5">Required before publishing (WCAG 1.1.1)</p>
             )}
-          </FieldGroup>
+          </div>
           <FieldGroup label="Caption">
             <input
               type="text"

@@ -147,6 +147,35 @@ Supports **Anthropic (Claude)**, **OpenAI (GPT-4)**, and **Ollama (local models)
 | Base Brain Screener Files | Three bundled screener frameworks (WCAG Accessibility, UDL, DisCrit Inclusive Identity) auto-loaded on first launch — organized by category with view, delete, and drag-and-drop replacement |
 | Categorized Base Brain Context | AI prompts automatically group Base Brain reference files by framework (Accessibility, UDL, Inclusive Teaching, General) with framework-specific instructions for each category |
 
+### Inline AI Generation & Stock Media Search
+
+Every content block in the editor includes contextual "Generate with AI" buttons that appear when an AI provider is configured. Stock media search is integrated directly into image and video upload areas.
+
+| Block Type | AI Feature | Description |
+|---|---|---|
+| Image / Media | Search Stock Photo | Opens a stock photo search dialog (Pexels, Unsplash, Pixabay); downloads and inserts the selected image |
+| Image / Media | Generate Alt Text | Generates WCAG-compliant alt text from filename and context |
+| Video | Search Stock Video | Opens a stock video search dialog (Pexels, Pixabay); downloads and inserts the selected video |
+| Video | Generate Transcript | Generates a transcript from video context |
+| Audio | Generate Narration | Generates a narration script from lesson content |
+| Audio | Generate Transcript | Generates a transcript from audio context |
+| Quiz | Generate Questions | Generates multiple-choice and true/false questions with feedback |
+| Flashcard | Generate Cards | Generates front/back flashcard pairs from topic |
+| Accordion | Generate Sections | Generates accordion sections with titles and content |
+| Tabs | Generate Tabs | Generates tab labels and content |
+| Callout | Generate Content | Generates title and content matching the callout variant (info, warning, tip, etc.) |
+| Code | Generate Code | Generates code examples in the selected programming language |
+| Matching | Generate Pairs | Generates left/right matching pairs with correct pairings |
+| Drag & Drop | Generate Items | Generates drop zones and drag items with correct categorization |
+| Branching | Generate Scenario | Generates scenario text and branching choices with consequences |
+| Embed | Generate Title | Generates an accessible iframe title from the embed URL |
+| Slide | Search Background | Opens stock photo search for slide background images |
+| Theme | Search Logo | Opens stock photo search for course logo |
+| Certificate | Search Background | Opens stock photo search for certificate background images |
+| Properties Panel | Generate Alt Text | Generates alt text for any media block from the properties sidebar |
+
+The stock media search dialog supports paginated results, thumbnail previews, photographer attribution, and automatic download to the course assets folder.
+
 ### Tippy — Context-Aware AI Assistant
 
 <p align="center">
@@ -439,16 +468,17 @@ lumina-udl/
 │       │   ├── publish/        # Export wizard, LMS upload
 │       │   ├── auth/           # PinInput component
 │       │   ├── onboarding/     # First-launch setup wizard
-│       │   └── ui/             # Button, ThemeToggle, SettingsCard, FieldRow, ToggleSwitch, ColorInput
+│       │   └── ui/             # Button, ThemeToggle, SettingsCard, FieldRow, ToggleSwitch, ColorInput, AIGenerateButton, StockSearchDialog
 │       ├── views/              # Dashboard, Editor, Preview, Settings, SignIn, Publish
 │       ├── stores/             # Zustand stores (app, auth, course, editor)
-│       ├── hooks/              # useTheme, useAccessibility, useWorkspaceInit, useAssetUpload
+│       ├── hooks/              # useTheme, useAccessibility, useWorkspaceInit, useAssetUpload, useAIGenerate
 │       ├── lib/
 │       │   ├── export/         # HTML packager, PDF renderer, syllabus .docx export
 │       │   ├── import/         # Markdown, PPTX, SCORM parsers
 │       │   ├── scorm/          # SCORM 1.2 & 2004 packagers
 │       │   ├── xapi/           # xAPI packager
-│       │   ├── ai/             # LLM provider abstraction + syllabus AI prompts
+│       │   ├── ai/             # LLM provider abstraction + syllabus AI prompts + inline generation prompts
+│       │   ├── stock-api.ts   # Unified stock media API client (Pexels, Unsplash, Pixabay)
 │       │   ├── tippy/          # Tippy context gatherer, system prompt, tour steps
 │       │   └── accessibility/  # Audit engine, contrast checker
 │       ├── types/              # Course data model TypeScript types

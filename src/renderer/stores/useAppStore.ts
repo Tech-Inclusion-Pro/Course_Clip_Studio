@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { AISettings, AccessibilitySettings, BrandKit, VisualApiProvider, BaseBrainSettings, BaseBrainFile, ContentArea, ContentAreaFile, UserTemplate } from '@/types/course'
+import type { AISettings, AccessibilitySettings, BrandKit, VisualApiProvider, VideoApiProvider, ChartApiProvider, AudioApiProvider, DiagramApiProvider, InteractiveVideoApiProvider, MathApiProvider, ContentImportProvider, AssetManagementProvider, BaseBrainSettings, BaseBrainFile, ContentArea, ContentAreaFile, UserTemplate } from '@/types/course'
 import { uid } from '@/lib/uid'
 import wcagScreener from '@/assets/base-brain/01_WCAG_Accessibility_Screener.md?raw'
 import udlScreener from '@/assets/base-brain/02_UDL_Screener.md?raw'
@@ -42,6 +42,30 @@ interface AppState {
 
   // Visual API settings
   visualApis: { providers: VisualApiProvider[] }
+
+  // Video API settings
+  videoApis: { providers: VideoApiProvider[] }
+
+  // Chart API settings
+  chartApis: { providers: ChartApiProvider[] }
+
+  // Audio API settings
+  audioApis: { providers: AudioApiProvider[] }
+
+  // Diagram API settings
+  diagramApis: { providers: DiagramApiProvider[] }
+
+  // Interactive Video API settings
+  interactiveVideoApis: { providers: InteractiveVideoApiProvider[] }
+
+  // Math API settings
+  mathApis: { providers: MathApiProvider[] }
+
+  // Content Import settings
+  contentImportApis: { providers: ContentImportProvider[] }
+
+  // Asset Management settings
+  assetManagementApis: { providers: AssetManagementProvider[] }
 
   // Base Brain
   baseBrain: BaseBrainSettings
@@ -113,6 +137,54 @@ interface AppState {
   updateVisualApiProvider: (id: string, updates: Partial<VisualApiProvider>) => void
   addCustomVisualApi: () => void
   removeVisualApi: (id: string) => void
+
+  // Video API actions
+  loadVideoApiSettings: () => Promise<void>
+  updateVideoApiProvider: (id: string, updates: Partial<VideoApiProvider>) => void
+  addCustomVideoApi: () => void
+  removeVideoApi: (id: string) => void
+
+  // Chart API actions
+  loadChartApiSettings: () => Promise<void>
+  updateChartApiProvider: (id: string, updates: Partial<ChartApiProvider>) => void
+  addCustomChartApi: () => void
+  removeChartApi: (id: string) => void
+
+  // Audio API actions
+  loadAudioApiSettings: () => Promise<void>
+  updateAudioApiProvider: (id: string, updates: Partial<AudioApiProvider>) => void
+  addCustomAudioApi: () => void
+  removeAudioApi: (id: string) => void
+
+  // Diagram API actions
+  loadDiagramApiSettings: () => Promise<void>
+  updateDiagramApiProvider: (id: string, updates: Partial<DiagramApiProvider>) => void
+  addCustomDiagramApi: () => void
+  removeDiagramApi: (id: string) => void
+
+  // Interactive Video API actions
+  loadInteractiveVideoApiSettings: () => Promise<void>
+  updateInteractiveVideoApiProvider: (id: string, updates: Partial<InteractiveVideoApiProvider>) => void
+  addCustomInteractiveVideoApi: () => void
+  removeInteractiveVideoApi: (id: string) => void
+
+  // Math API actions
+  loadMathApiSettings: () => Promise<void>
+  updateMathApiProvider: (id: string, updates: Partial<MathApiProvider>) => void
+  addCustomMathApi: () => void
+  removeMathApi: (id: string) => void
+
+  // Content Import actions
+  loadContentImportApiSettings: () => Promise<void>
+  updateContentImportProvider: (id: string, updates: Partial<ContentImportProvider>) => void
+  addCustomContentImportApi: () => void
+  removeContentImportApi: (id: string) => void
+
+  // Asset Management actions
+  loadAssetManagementApiSettings: () => Promise<void>
+  updateAssetManagementProvider: (id: string, updates: Partial<AssetManagementProvider>) => void
+  addCustomAssetManagementApi: () => void
+  removeAssetManagementApi: (id: string) => void
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -183,6 +255,85 @@ export const useAppStore = create<AppState>((set, get) => ({
       { id: 'pexels', name: 'Pexels', type: 'pexels' as const, enabled: false, apiKey: null },
       { id: 'unsplash', name: 'Unsplash', type: 'unsplash' as const, enabled: false, apiKey: null },
       { id: 'pixabay', name: 'Pixabay', type: 'pixabay' as const, enabled: false, apiKey: null }
+    ]
+  },
+
+  // Video API defaults
+  videoApis: {
+    providers: [
+      { id: 'pexels-video', name: 'Pexels Video', type: 'pexels-video' as const, enabled: false, apiKey: null, notes: 'Fully free — same API as images' },
+      { id: 'pixabay-video', name: 'Pixabay Video', type: 'pixabay-video' as const, enabled: false, apiKey: null, notes: 'Free — short clips, good variety' },
+      { id: 'youtube-iframe', name: 'YouTube iFrame API', type: 'youtube-iframe' as const, enabled: false, apiKey: null, notes: 'Free — embed any public video, control playback via JS' },
+      { id: 'vimeo-oembed', name: 'Vimeo oEmbed', type: 'vimeo-oembed' as const, enabled: false, apiKey: null, notes: 'Free — cleaner player than YouTube, accessibility-friendly' }
+    ]
+  },
+
+  // Chart API defaults
+  chartApis: {
+    providers: [
+      { id: 'quickchart', name: 'QuickChart.io', type: 'quickchart' as const, enabled: false, apiKey: null, local: false, notes: 'Free, open source, no watermarks — create chart images via URL, supports all Chart.js types' },
+      { id: 'chartjs', name: 'Chart.js', type: 'chartjs' as const, enabled: false, apiKey: null, local: true, notes: 'Free (local) — client-side, no API call needed, highly customizable' },
+      { id: 'd3', name: 'D3.js', type: 'd3' as const, enabled: false, apiKey: null, local: true, notes: 'Free (local) — most powerful for custom data viz, SVG-based, WCAG-friendly' },
+      { id: 'recharts', name: 'Recharts', type: 'recharts' as const, enabled: false, apiKey: null, local: true, notes: 'Free (local) — React-native, great fit for Electron/React stack' },
+      { id: 'observable-plot', name: 'Observable Plot', type: 'observable-plot' as const, enabled: false, apiKey: null, local: true, notes: 'Free (local) — modern D3 abstraction, cleaner API' }
+    ]
+  },
+
+  // Audio API defaults
+  audioApis: {
+    providers: [
+      { id: 'openai-whisper', name: 'OpenAI Whisper', type: 'openai-whisper' as const, enabled: false, apiKey: null, local: true, notes: 'Free (local via Ollama) — auto-transcription for any uploaded audio/video, runs on your M3' },
+      { id: 'elevenlabs', name: 'ElevenLabs', type: 'elevenlabs' as const, enabled: false, apiKey: null, local: false, notes: 'Free tier (limited) — high-quality TTS for narration generation' },
+      { id: 'kokoro-piper', name: 'Kokoro / Piper TTS', type: 'kokoro-piper' as const, enabled: false, apiKey: null, local: true, notes: 'Fully free (local) — open source TTS that runs entirely on-device via Ollama' }
+    ]
+  },
+
+  // Diagram API defaults
+  diagramApis: {
+    providers: [
+      { id: 'mermaid', name: 'Mermaid.js', type: 'mermaid' as const, enabled: false, apiKey: null, local: true, notes: 'Fully free — text-to-diagram (flowcharts, sequence diagrams, Gantt charts), renders live from syntax' },
+      { id: 'excalidraw', name: 'Excalidraw', type: 'excalidraw' as const, enabled: false, apiKey: null, local: true, notes: 'Free (open source) — sketch-style whiteboards embeddable in Electron, great for visual learners' },
+      { id: 'kroki', name: 'Kroki API', type: 'kroki' as const, enabled: false, apiKey: null, local: false, notes: 'Fully free, self-hostable — unified diagram rendering for 20+ diagram types from plain text' },
+      { id: 'd3-diagrams', name: 'D3.js', type: 'd3-diagrams' as const, enabled: false, apiKey: null, local: true, notes: 'Fully free — custom data visualizations, already in your React stack' }
+    ]
+  },
+
+  // Interactive Video API defaults
+  interactiveVideoApis: {
+    providers: [
+      { id: 'youtube-interactive', name: 'YouTube iFrame API', type: 'youtube-interactive' as const, enabled: false, apiKey: null, local: false, notes: 'Fully free — programmatic playback control, chapter markers, caption toggling' },
+      { id: 'vimeo-player', name: 'Vimeo oEmbed + Player API', type: 'vimeo-player' as const, enabled: false, apiKey: null, local: false, notes: 'Free (basic) — cleaner accessibility controls than YouTube, custom captions' },
+      { id: 'h5p', name: 'H5P.org API', type: 'h5p' as const, enabled: false, apiKey: null, local: true, notes: 'Free (self-hosted) — interactive video, branching scenarios, quiz overlays, open source and WCAG-tested' },
+      { id: 'videojs', name: 'Video.js', type: 'videojs' as const, enabled: false, apiKey: null, local: true, notes: 'Fully free (open source) — WCAG-compliant video player you control entirely, better than embedding iframes' }
+    ]
+  },
+
+  // Math API defaults
+  mathApis: {
+    providers: [
+      { id: 'mathjax', name: 'MathJax', type: 'mathjax' as const, enabled: false, apiKey: null, local: true, notes: 'Fully free — renders LaTeX/MathML, accessible to screen readers, better than images of equations' },
+      { id: 'katex', name: 'KaTeX', type: 'katex' as const, enabled: false, apiKey: null, local: true, notes: 'Fully free — faster than MathJax, same accessibility output' },
+      { id: 'chemistry-rdkit', name: 'Chemistry.js / RDKit.js', type: 'chemistry-rdkit' as const, enabled: false, apiKey: null, local: true, notes: 'Free — for STEM course authors, molecular structure rendering' }
+    ]
+  },
+
+  // Content Import defaults
+  contentImportApis: {
+    providers: [
+      { id: 'mammoth', name: 'Mammoth.js', type: 'mammoth' as const, enabled: false, apiKey: null, local: true, notes: 'Fully free — convert .docx to clean HTML in the browser, auto-structure Word docs' },
+      { id: 'pdfjs', name: 'pdf.js (Mozilla)', type: 'pdfjs' as const, enabled: false, apiKey: null, local: true, notes: 'Fully free — parse PDFs client-side, extract text blocks with reading order' },
+      { id: 'turndown', name: 'Turndown', type: 'turndown' as const, enabled: false, apiKey: null, local: true, notes: 'Fully free — HTML to Markdown converter for clean content normalization' },
+      { id: 'pptxgenjs', name: 'PptxGenJS', type: 'pptxgenjs' as const, enabled: false, apiKey: null, local: true, notes: 'Fully free — already in your stack, export back to PPTX as a secondary deliverable' }
+    ]
+  },
+
+  // Asset Management defaults
+  assetManagementApis: {
+    providers: [
+      { id: 'pexels-unsplash', name: 'Pexels + Unsplash', type: 'pexels-unsplash' as const, enabled: false, apiKey: null, notes: 'Fully free — diverse, curated, accessible stock photos and videos' },
+      { id: 'noun-project', name: 'Noun Project API', type: 'noun-project' as const, enabled: false, apiKey: null, notes: 'Free tier (limited) — 5M+ icons, all SVG, searchable, colorable, accessible' },
+      { id: 'font-awesome', name: 'Font Awesome API', type: 'font-awesome' as const, enabled: false, apiKey: null, local: true, notes: 'Free (self-hosted) — icon system with ARIA labels baked in' },
+      { id: 'lottie-files', name: 'LottieFiles API', type: 'lottie-files' as const, enabled: false, apiKey: null, notes: 'Free tier — animation library, Lottie JSON files are lightweight, scalable, screen-reader compatible with ARIA' }
     ]
   },
 
@@ -568,6 +719,542 @@ export const useAppStore = create<AppState>((set, get) => ({
       const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
       window.electronAPI.settings.set('visualApis', { providers: nonSensitive })
       return { visualApis: { providers } }
+    })
+  },
+
+  // Video API actions
+  loadVideoApiSettings: async () => {
+    try {
+      const saved = (await window.electronAPI.settings.get('videoApis')) as { providers: Omit<VideoApiProvider, 'apiKey'>[] } | null
+      if (saved?.providers) {
+        const providers = await Promise.all(
+          saved.providers.map(async (p) => {
+            const apiKey = await window.electronAPI.secrets.get(`videoApi_${p.id}`)
+            return { ...p, apiKey } as VideoApiProvider
+          })
+        )
+        set({ videoApis: { providers } })
+      }
+    } catch (err) {
+      console.error('Failed to load video API settings:', err)
+    }
+  },
+
+  updateVideoApiProvider: (id, updates) => {
+    set((state) => {
+      const providers = state.videoApis.providers.map((p) =>
+        p.id === id ? { ...p, ...updates } : p
+      )
+
+      // Persist API key to secrets
+      if ('apiKey' in updates) {
+        if (updates.apiKey) {
+          window.electronAPI.secrets.set(`videoApi_${id}`, updates.apiKey)
+        } else {
+          window.electronAPI.secrets.delete(`videoApi_${id}`)
+        }
+      }
+
+      // Persist non-sensitive config to settings
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('videoApis', { providers: nonSensitive })
+
+      return { videoApis: { providers } }
+    })
+  },
+
+  addCustomVideoApi: () => {
+    set((state) => {
+      const newProvider: VideoApiProvider = {
+        id: uid('vidapi'),
+        name: 'Custom Video API',
+        type: 'custom',
+        enabled: false,
+        apiKey: null,
+        endpoint: '',
+        headerName: 'Authorization',
+        headerValuePrefix: 'Bearer '
+      }
+      const providers = [...state.videoApis.providers, newProvider]
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('videoApis', { providers: nonSensitive })
+      return { videoApis: { providers } }
+    })
+  },
+
+  removeVideoApi: (id) => {
+    set((state) => {
+      const providers = state.videoApis.providers.filter((p) => p.id !== id)
+      window.electronAPI.secrets.delete(`videoApi_${id}`)
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('videoApis', { providers: nonSensitive })
+      return { videoApis: { providers } }
+    })
+  },
+
+  // Chart API actions
+  loadChartApiSettings: async () => {
+    try {
+      const saved = (await window.electronAPI.settings.get('chartApis')) as { providers: Omit<ChartApiProvider, 'apiKey'>[] } | null
+      if (saved?.providers) {
+        const providers = await Promise.all(
+          saved.providers.map(async (p) => {
+            const apiKey = await window.electronAPI.secrets.get(`chartApi_${p.id}`)
+            return { ...p, apiKey } as ChartApiProvider
+          })
+        )
+        set({ chartApis: { providers } })
+      }
+    } catch (err) {
+      console.error('Failed to load chart API settings:', err)
+    }
+  },
+
+  updateChartApiProvider: (id, updates) => {
+    set((state) => {
+      const providers = state.chartApis.providers.map((p) =>
+        p.id === id ? { ...p, ...updates } : p
+      )
+
+      if ('apiKey' in updates) {
+        if (updates.apiKey) {
+          window.electronAPI.secrets.set(`chartApi_${id}`, updates.apiKey)
+        } else {
+          window.electronAPI.secrets.delete(`chartApi_${id}`)
+        }
+      }
+
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('chartApis', { providers: nonSensitive })
+
+      return { chartApis: { providers } }
+    })
+  },
+
+  addCustomChartApi: () => {
+    set((state) => {
+      const newProvider: ChartApiProvider = {
+        id: uid('chartapi'),
+        name: 'Custom Chart API',
+        type: 'custom',
+        enabled: false,
+        apiKey: null,
+        endpoint: '',
+        headerName: 'Authorization',
+        headerValuePrefix: 'Bearer '
+      }
+      const providers = [...state.chartApis.providers, newProvider]
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('chartApis', { providers: nonSensitive })
+      return { chartApis: { providers } }
+    })
+  },
+
+  removeChartApi: (id) => {
+    set((state) => {
+      const providers = state.chartApis.providers.filter((p) => p.id !== id)
+      window.electronAPI.secrets.delete(`chartApi_${id}`)
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('chartApis', { providers: nonSensitive })
+      return { chartApis: { providers } }
+    })
+  },
+
+  // Audio API actions
+  loadAudioApiSettings: async () => {
+    try {
+      const saved = (await window.electronAPI.settings.get('audioApis')) as { providers: Omit<AudioApiProvider, 'apiKey'>[] } | null
+      if (saved?.providers) {
+        const providers = await Promise.all(
+          saved.providers.map(async (p) => {
+            const apiKey = await window.electronAPI.secrets.get(`audioApi_${p.id}`)
+            return { ...p, apiKey } as AudioApiProvider
+          })
+        )
+        set({ audioApis: { providers } })
+      }
+    } catch (err) {
+      console.error('Failed to load audio API settings:', err)
+    }
+  },
+
+  updateAudioApiProvider: (id, updates) => {
+    set((state) => {
+      const providers = state.audioApis.providers.map((p) =>
+        p.id === id ? { ...p, ...updates } : p
+      )
+
+      if ('apiKey' in updates) {
+        if (updates.apiKey) {
+          window.electronAPI.secrets.set(`audioApi_${id}`, updates.apiKey)
+        } else {
+          window.electronAPI.secrets.delete(`audioApi_${id}`)
+        }
+      }
+
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('audioApis', { providers: nonSensitive })
+
+      return { audioApis: { providers } }
+    })
+  },
+
+  addCustomAudioApi: () => {
+    set((state) => {
+      const newProvider: AudioApiProvider = {
+        id: uid('audapi'),
+        name: 'Custom Audio API',
+        type: 'custom',
+        enabled: false,
+        apiKey: null,
+        endpoint: '',
+        headerName: 'Authorization',
+        headerValuePrefix: 'Bearer '
+      }
+      const providers = [...state.audioApis.providers, newProvider]
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('audioApis', { providers: nonSensitive })
+      return { audioApis: { providers } }
+    })
+  },
+
+  removeAudioApi: (id) => {
+    set((state) => {
+      const providers = state.audioApis.providers.filter((p) => p.id !== id)
+      window.electronAPI.secrets.delete(`audioApi_${id}`)
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('audioApis', { providers: nonSensitive })
+      return { audioApis: { providers } }
+    })
+  },
+
+  // Diagram API actions
+  loadDiagramApiSettings: async () => {
+    try {
+      const saved = (await window.electronAPI.settings.get('diagramApis')) as { providers: Omit<DiagramApiProvider, 'apiKey'>[] } | null
+      if (saved?.providers) {
+        const providers = await Promise.all(
+          saved.providers.map(async (p) => {
+            const apiKey = await window.electronAPI.secrets.get(`diagramApi_${p.id}`)
+            return { ...p, apiKey } as DiagramApiProvider
+          })
+        )
+        set({ diagramApis: { providers } })
+      }
+    } catch (err) {
+      console.error('Failed to load diagram API settings:', err)
+    }
+  },
+
+  updateDiagramApiProvider: (id, updates) => {
+    set((state) => {
+      const providers = state.diagramApis.providers.map((p) =>
+        p.id === id ? { ...p, ...updates } : p
+      )
+
+      if ('apiKey' in updates) {
+        if (updates.apiKey) {
+          window.electronAPI.secrets.set(`diagramApi_${id}`, updates.apiKey)
+        } else {
+          window.electronAPI.secrets.delete(`diagramApi_${id}`)
+        }
+      }
+
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('diagramApis', { providers: nonSensitive })
+
+      return { diagramApis: { providers } }
+    })
+  },
+
+  addCustomDiagramApi: () => {
+    set((state) => {
+      const newProvider: DiagramApiProvider = {
+        id: uid('diagapi'),
+        name: 'Custom Diagram API',
+        type: 'custom',
+        enabled: false,
+        apiKey: null,
+        endpoint: '',
+        headerName: 'Authorization',
+        headerValuePrefix: 'Bearer '
+      }
+      const providers = [...state.diagramApis.providers, newProvider]
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('diagramApis', { providers: nonSensitive })
+      return { diagramApis: { providers } }
+    })
+  },
+
+  removeDiagramApi: (id) => {
+    set((state) => {
+      const providers = state.diagramApis.providers.filter((p) => p.id !== id)
+      window.electronAPI.secrets.delete(`diagramApi_${id}`)
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('diagramApis', { providers: nonSensitive })
+      return { diagramApis: { providers } }
+    })
+  },
+
+  // Interactive Video API actions
+  loadInteractiveVideoApiSettings: async () => {
+    try {
+      const saved = (await window.electronAPI.settings.get('interactiveVideoApis')) as { providers: Omit<InteractiveVideoApiProvider, 'apiKey'>[] } | null
+      if (saved?.providers) {
+        const providers = await Promise.all(
+          saved.providers.map(async (p) => {
+            const apiKey = await window.electronAPI.secrets.get(`ivApi_${p.id}`)
+            return { ...p, apiKey } as InteractiveVideoApiProvider
+          })
+        )
+        set({ interactiveVideoApis: { providers } })
+      }
+    } catch (err) {
+      console.error('Failed to load interactive video API settings:', err)
+    }
+  },
+
+  updateInteractiveVideoApiProvider: (id, updates) => {
+    set((state) => {
+      const providers = state.interactiveVideoApis.providers.map((p) =>
+        p.id === id ? { ...p, ...updates } : p
+      )
+
+      if ('apiKey' in updates) {
+        if (updates.apiKey) {
+          window.electronAPI.secrets.set(`ivApi_${id}`, updates.apiKey)
+        } else {
+          window.electronAPI.secrets.delete(`ivApi_${id}`)
+        }
+      }
+
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('interactiveVideoApis', { providers: nonSensitive })
+
+      return { interactiveVideoApis: { providers } }
+    })
+  },
+
+  addCustomInteractiveVideoApi: () => {
+    set((state) => {
+      const newProvider: InteractiveVideoApiProvider = {
+        id: uid('ivapi'),
+        name: 'Custom Interactive Video API',
+        type: 'custom',
+        enabled: false,
+        apiKey: null,
+        endpoint: '',
+        headerName: 'Authorization',
+        headerValuePrefix: 'Bearer '
+      }
+      const providers = [...state.interactiveVideoApis.providers, newProvider]
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('interactiveVideoApis', { providers: nonSensitive })
+      return { interactiveVideoApis: { providers } }
+    })
+  },
+
+  removeInteractiveVideoApi: (id) => {
+    set((state) => {
+      const providers = state.interactiveVideoApis.providers.filter((p) => p.id !== id)
+      window.electronAPI.secrets.delete(`ivApi_${id}`)
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('interactiveVideoApis', { providers: nonSensitive })
+      return { interactiveVideoApis: { providers } }
+    })
+  },
+
+  // Math API actions
+  loadMathApiSettings: async () => {
+    try {
+      const saved = (await window.electronAPI.settings.get('mathApis')) as { providers: Omit<MathApiProvider, 'apiKey'>[] } | null
+      if (saved?.providers) {
+        const providers = await Promise.all(
+          saved.providers.map(async (p) => {
+            const apiKey = await window.electronAPI.secrets.get(`mathApi_${p.id}`)
+            return { ...p, apiKey } as MathApiProvider
+          })
+        )
+        set({ mathApis: { providers } })
+      }
+    } catch (err) {
+      console.error('Failed to load math API settings:', err)
+    }
+  },
+
+  updateMathApiProvider: (id, updates) => {
+    set((state) => {
+      const providers = state.mathApis.providers.map((p) =>
+        p.id === id ? { ...p, ...updates } : p
+      )
+
+      if ('apiKey' in updates) {
+        if (updates.apiKey) {
+          window.electronAPI.secrets.set(`mathApi_${id}`, updates.apiKey)
+        } else {
+          window.electronAPI.secrets.delete(`mathApi_${id}`)
+        }
+      }
+
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('mathApis', { providers: nonSensitive })
+
+      return { mathApis: { providers } }
+    })
+  },
+
+  addCustomMathApi: () => {
+    set((state) => {
+      const newProvider: MathApiProvider = {
+        id: uid('mathapi'),
+        name: 'Custom Math API',
+        type: 'custom',
+        enabled: false,
+        apiKey: null,
+        endpoint: '',
+        headerName: 'Authorization',
+        headerValuePrefix: 'Bearer '
+      }
+      const providers = [...state.mathApis.providers, newProvider]
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('mathApis', { providers: nonSensitive })
+      return { mathApis: { providers } }
+    })
+  },
+
+  removeMathApi: (id) => {
+    set((state) => {
+      const providers = state.mathApis.providers.filter((p) => p.id !== id)
+      window.electronAPI.secrets.delete(`mathApi_${id}`)
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('mathApis', { providers: nonSensitive })
+      return { mathApis: { providers } }
+    })
+  },
+
+  // Content Import actions
+  loadContentImportApiSettings: async () => {
+    try {
+      const saved = (await window.electronAPI.settings.get('contentImportApis')) as { providers: Omit<ContentImportProvider, 'apiKey'>[] } | null
+      if (saved?.providers) {
+        const providers = await Promise.all(
+          saved.providers.map(async (p) => {
+            const apiKey = await window.electronAPI.secrets.get(`contentImportApi_${p.id}`)
+            return { ...p, apiKey } as ContentImportProvider
+          })
+        )
+        set({ contentImportApis: { providers } })
+      }
+    } catch (err) {
+      console.error('Failed to load content import API settings:', err)
+    }
+  },
+
+  updateContentImportProvider: (id, updates) => {
+    set((state) => {
+      const providers = state.contentImportApis.providers.map((p) =>
+        p.id === id ? { ...p, ...updates } : p
+      )
+      if ('apiKey' in updates) {
+        if (updates.apiKey) {
+          window.electronAPI.secrets.set(`contentImportApi_${id}`, updates.apiKey)
+        } else {
+          window.electronAPI.secrets.delete(`contentImportApi_${id}`)
+        }
+      }
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('contentImportApis', { providers: nonSensitive })
+      return { contentImportApis: { providers } }
+    })
+  },
+
+  addCustomContentImportApi: () => {
+    set((state) => {
+      const newProvider: ContentImportProvider = {
+        id: uid('cimportapi'),
+        name: 'Custom Import API',
+        type: 'custom',
+        enabled: false,
+        apiKey: null,
+        endpoint: ''
+      }
+      const providers = [...state.contentImportApis.providers, newProvider]
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('contentImportApis', { providers: nonSensitive })
+      return { contentImportApis: { providers } }
+    })
+  },
+
+  removeContentImportApi: (id) => {
+    set((state) => {
+      const providers = state.contentImportApis.providers.filter((p) => p.id !== id)
+      window.electronAPI.secrets.delete(`contentImportApi_${id}`)
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('contentImportApis', { providers: nonSensitive })
+      return { contentImportApis: { providers } }
+    })
+  },
+
+  // Asset Management actions
+  loadAssetManagementApiSettings: async () => {
+    try {
+      const saved = (await window.electronAPI.settings.get('assetManagementApis')) as { providers: Omit<AssetManagementProvider, 'apiKey'>[] } | null
+      if (saved?.providers) {
+        const providers = await Promise.all(
+          saved.providers.map(async (p) => {
+            const apiKey = await window.electronAPI.secrets.get(`assetApi_${p.id}`)
+            return { ...p, apiKey } as AssetManagementProvider
+          })
+        )
+        set({ assetManagementApis: { providers } })
+      }
+    } catch (err) {
+      console.error('Failed to load asset management API settings:', err)
+    }
+  },
+
+  updateAssetManagementProvider: (id, updates) => {
+    set((state) => {
+      const providers = state.assetManagementApis.providers.map((p) =>
+        p.id === id ? { ...p, ...updates } : p
+      )
+      if ('apiKey' in updates) {
+        if (updates.apiKey) {
+          window.electronAPI.secrets.set(`assetApi_${id}`, updates.apiKey)
+        } else {
+          window.electronAPI.secrets.delete(`assetApi_${id}`)
+        }
+      }
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('assetManagementApis', { providers: nonSensitive })
+      return { assetManagementApis: { providers } }
+    })
+  },
+
+  addCustomAssetManagementApi: () => {
+    set((state) => {
+      const newProvider: AssetManagementProvider = {
+        id: uid('assetapi'),
+        name: 'Custom Asset API',
+        type: 'custom',
+        enabled: false,
+        apiKey: null,
+        endpoint: ''
+      }
+      const providers = [...state.assetManagementApis.providers, newProvider]
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('assetManagementApis', { providers: nonSensitive })
+      return { assetManagementApis: { providers } }
+    })
+  },
+
+  removeAssetManagementApi: (id) => {
+    set((state) => {
+      const providers = state.assetManagementApis.providers.filter((p) => p.id !== id)
+      window.electronAPI.secrets.delete(`assetApi_${id}`)
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('assetManagementApis', { providers: nonSensitive })
+      return { assetManagementApis: { providers } }
     })
   }
 }))

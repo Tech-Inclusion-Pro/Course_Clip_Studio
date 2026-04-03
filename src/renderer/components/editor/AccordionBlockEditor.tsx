@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import { Plus, Trash2, ChevronDown, ChevronRight, ChevronsUpDown, Rows3, Columns3 } from 'lucide-react'
+import { useAIGenerate } from '@/hooks/useAIGenerate'
+import { accordionContentPrompt } from '@/lib/ai'
+import { AIGenerateButton } from '@/components/ui/AIGenerateButton'
 import type { AccordionBlock } from '@/types/course'
 
 interface AccordionBlockEditorProps {
@@ -9,6 +12,24 @@ interface AccordionBlockEditorProps {
 
 export function AccordionBlockEditor({ block, onUpdate }: AccordionBlockEditorProps): JSX.Element {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(0)
+  const { generate, isGenerating, isConfigured } = useAIGenerate()
+
+  async function handleAIGenerate() {
+    const existing = block.items.filter((i) => i.title.trim()).map((i) => i.title).join(', ')
+    const topic = existing || 'educational content'
+    const text = await generate(accordionContentPrompt(topic, 3))
+    if (!text) return
+    try {
+      const parsed = JSON.parse(text.replace(/```json?\n?/g, '').replace(/```/g, '').trim())
+      const items = (Array.isArray(parsed) ? parsed : []).map((s: Record<string, string>) => ({
+        title: s.title || '',
+        content: s.content || ''
+      })).filter((s: { title: string }) => s.title)
+      if (items.length > 0) {
+        onUpdate({ items: [...block.items, ...items] })
+      }
+    } catch { /* ignore parse errors */ }
+  }
 
   function addItem() {
     onUpdate({
@@ -56,13 +77,23 @@ export function AccordionBlockEditor({ block, onUpdate }: AccordionBlockEditorPr
             </p>
           </div>
         </div>
-        <button
-          onClick={addItem}
-          className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] border border-[var(--border-default)] rounded-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
-          aria-label="Add accordion section"
-        >
-          <Plus size={12} /> Add Section
-        </button>
+        <div className="flex items-center gap-1">
+          {isConfigured && (
+            <AIGenerateButton
+              label="Generate Sections"
+              onClick={handleAIGenerate}
+              isGenerating={isGenerating}
+              size="sm"
+            />
+          )}
+          <button
+            onClick={addItem}
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] border border-[var(--border-default)] rounded-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+            aria-label="Add accordion section"
+          >
+            <Plus size={12} /> Add Section
+          </button>
+        </div>
       </div>
 
       {/* Layout Options */}

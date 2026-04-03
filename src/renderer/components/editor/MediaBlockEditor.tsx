@@ -1,6 +1,10 @@
 import { useState } from 'react'
-import { Image, Upload, AlertTriangle } from 'lucide-react'
+import { Image, Upload, AlertTriangle, Search } from 'lucide-react'
 import { useAssetUpload } from '@/hooks/useAssetUpload'
+import { useAIGenerate } from '@/hooks/useAIGenerate'
+import { imageDescriptionPrompt } from '@/lib/ai/prompts'
+import { AIGenerateButton } from '@/components/ui/AIGenerateButton'
+import { StockSearchDialog } from '@/components/ui/StockSearchDialog'
 import type { MediaBlock } from '@/types/course'
 
 interface MediaBlockEditorProps {
@@ -10,9 +14,17 @@ interface MediaBlockEditorProps {
 
 export function MediaBlockEditor({ block, onUpdate }: MediaBlockEditorProps): JSX.Element {
   const [dragOver, setDragOver] = useState(false)
+  const [stockOpen, setStockOpen] = useState(false)
   const copyAsset = useAssetUpload()
+  const { generate: generateAI, isGenerating: isGeneratingAlt, isConfigured: aiConfigured } = useAIGenerate()
   const hasImage = !!block.assetPath
   const missingAlt = !block.altText
+
+  async function handleGenerateAltText() {
+    const filename = block.assetPath?.split('/').pop() || ''
+    const result = await generateAI(imageDescriptionPrompt(filename, block.caption || '', ''))
+    if (result) onUpdate({ altText: result.trim() })
+  }
 
   async function handleDrop(e: React.DragEvent) {
     e.preventDefault()
@@ -108,6 +120,13 @@ export function MediaBlockEditor({ block, onUpdate }: MediaBlockEditorProps): JS
             <p className="text-xs text-[var(--text-tertiary)]">
               Supports JPG, PNG, GIF, SVG, WebP
             </p>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setStockOpen(true) }}
+              className="flex items-center gap-1 px-3 py-1.5 mt-1 text-xs font-medium text-[var(--brand-magenta)] border border-[var(--brand-magenta)] rounded-md hover:bg-[var(--brand-magenta)]/10 cursor-pointer"
+            >
+              <Search size={12} /> Search Stock Photo
+            </button>
           </div>
         )}
       </div>
@@ -116,7 +135,15 @@ export function MediaBlockEditor({ block, onUpdate }: MediaBlockEditorProps): JS
       {hasImage && (
         <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--bg-muted)] border-t border-[var(--border-default)] text-xs text-[var(--text-secondary)]">
           <Image size={12} className="shrink-0 text-[var(--text-tertiary)]" />
-          <span className="truncate" title={block.assetPath}>{block.assetPath.split('/').pop()}</span>
+          <span className="truncate flex-1" title={block.assetPath}>{block.assetPath.split('/').pop()}</span>
+          <button
+            type="button"
+            onClick={() => setStockOpen(true)}
+            className="shrink-0 flex items-center gap-1 px-1.5 py-0.5 text-[10px] text-[var(--brand-magenta)] hover:bg-[var(--brand-magenta)]/10 rounded cursor-pointer"
+            title="Search stock photos"
+          >
+            <Search size={10} /> Stock
+          </button>
         </div>
       )}
 
@@ -138,9 +165,21 @@ export function MediaBlockEditor({ block, onUpdate }: MediaBlockEditorProps): JS
 
         {/* Alt text (required) */}
         <div>
-          <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
-            Alt Text <span className="text-[var(--color-danger-600)]">*</span>
-          </label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)]">
+              Alt Text <span className="text-[var(--color-danger-600)]">*</span>
+            </label>
+            {hasImage && (
+              <AIGenerateButton
+                label="Generate"
+                onClick={handleGenerateAltText}
+                isGenerating={isGeneratingAlt}
+                disabled={!aiConfigured}
+                size="xs"
+                title={aiConfigured ? 'Generate alt text with AI' : 'Configure AI provider in Settings'}
+              />
+            )}
+          </div>
           <input
             type="text"
             value={block.altText}
@@ -176,6 +215,14 @@ export function MediaBlockEditor({ block, onUpdate }: MediaBlockEditorProps): JS
           />
         </div>
       </div>
+
+      <StockSearchDialog
+        open={stockOpen}
+        onClose={() => setStockOpen(false)}
+        onSelect={(localPath) => onUpdate({ assetPath: localPath })}
+        mediaType="image"
+        title="Search Stock Photos"
+      />
     </div>
   )
 }

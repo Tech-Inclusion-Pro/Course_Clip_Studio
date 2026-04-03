@@ -1,5 +1,8 @@
 import { Plus, Trash2, Link2 } from 'lucide-react'
 import { uid } from '@/lib/uid'
+import { useAIGenerate } from '@/hooks/useAIGenerate'
+import { matchingPairsPrompt } from '@/lib/ai'
+import { AIGenerateButton } from '@/components/ui/AIGenerateButton'
 import type { MatchingBlock, MatchItem } from '@/types/course'
 
 interface MatchingBlockEditorProps {
@@ -8,6 +11,32 @@ interface MatchingBlockEditorProps {
 }
 
 export function MatchingBlockEditor({ block, onUpdate }: MatchingBlockEditorProps): JSX.Element {
+  const { generate, isGenerating, isConfigured } = useAIGenerate()
+
+  async function handleAIGenerate() {
+    const existing = block.leftItems.filter((i) => i.label.trim()).map((i) => i.label).join(', ')
+    const topic = existing || block.instruction || 'educational matching activity'
+    const text = await generate(matchingPairsPrompt(topic, 4))
+    if (!text) return
+    try {
+      const parsed = JSON.parse(text.replace(/```json?\n?/g, '').replace(/```/g, '').trim())
+      if (parsed.instruction) onUpdate({ instruction: parsed.instruction })
+      const leftItems: MatchItem[] = (parsed.leftItems ?? []).map((label: string) => ({ id: uid('match'), label }))
+      const rightItems: MatchItem[] = (parsed.rightItems ?? []).map((label: string) => ({ id: uid('match'), label }))
+      const correctPairs = (parsed.pairs ?? []).map((p: number[]) => ({
+        leftId: leftItems[p[0]]?.id,
+        rightId: rightItems[p[1]]?.id
+      })).filter((p: { leftId?: string; rightId?: string }) => p.leftId && p.rightId)
+      if (leftItems.length > 0) {
+        onUpdate({
+          leftItems: [...block.leftItems, ...leftItems],
+          rightItems: [...block.rightItems, ...rightItems],
+          correctPairs: [...block.correctPairs, ...correctPairs]
+        })
+      }
+    } catch { /* ignore parse errors */ }
+  }
+
   function addLeftItem() {
     const item: MatchItem = { id: uid('match'), label: '' }
     onUpdate({ leftItems: [...block.leftItems, item] })
@@ -59,14 +88,24 @@ export function MatchingBlockEditor({ block, onUpdate }: MatchingBlockEditorProp
       aria-label="Matching block editor"
     >
       {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-3 bg-[var(--bg-muted)] border-b border-[var(--border-default)]">
-        <Link2 size={16} className="text-[var(--brand-magenta)]" />
-        <div>
-          <h3 className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-primary)]">Matching Activity</h3>
-          <p className="text-[10px] text-[var(--text-tertiary)]">
-            {block.leftItems.length} left, {block.rightItems.length} right, {block.correctPairs.length} pair{block.correctPairs.length !== 1 ? 's' : ''}
-          </p>
+      <div className="flex items-center justify-between px-4 py-3 bg-[var(--bg-muted)] border-b border-[var(--border-default)]">
+        <div className="flex items-center gap-2">
+          <Link2 size={16} className="text-[var(--brand-magenta)]" />
+          <div>
+            <h3 className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-primary)]">Matching Activity</h3>
+            <p className="text-[10px] text-[var(--text-tertiary)]">
+              {block.leftItems.length} left, {block.rightItems.length} right, {block.correctPairs.length} pair{block.correctPairs.length !== 1 ? 's' : ''}
+            </p>
+          </div>
         </div>
+        {isConfigured && (
+          <AIGenerateButton
+            label="Generate Pairs"
+            onClick={handleAIGenerate}
+            isGenerating={isGenerating}
+            size="sm"
+          />
+        )}
       </div>
 
       <div className="p-4 space-y-4">

@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { AudioLines, Upload, AlertTriangle, FileText, Type } from 'lucide-react'
 import { useAssetUpload } from '@/hooks/useAssetUpload'
+import { useAIGenerate } from '@/hooks/useAIGenerate'
+import { transcriptPrompt, narrationPrompt } from '@/lib/ai/prompts'
+import { AIGenerateButton } from '@/components/ui/AIGenerateButton'
 import type { AudioBlock } from '@/types/course'
 
 interface AudioBlockEditorProps {
@@ -27,8 +30,26 @@ export function AudioBlockEditor({ block, onUpdate }: AudioBlockEditorProps): JS
   const [transcriptMode, setTranscriptMode] = useState<'text' | 'srt'>(block.srtFileName ? 'srt' : 'text')
   const [srtDragOver, setSrtDragOver] = useState(false)
   const copyAsset = useAssetUpload()
+  const { generate: generateAI, isGenerating: isGeneratingTranscript, isConfigured: aiConfigured } = useAIGenerate()
+  const [isGeneratingNarration, setIsGeneratingNarration] = useState(false)
   const hasAudio = !!block.assetPath
   const missingTranscript = !block.transcript
+
+  async function handleGenerateTranscript() {
+    const filename = block.assetPath?.split('/').pop() || 'audio'
+    const result = await generateAI(transcriptPrompt(`Audio file: ${filename}`))
+    if (result) onUpdate({ transcript: result.trim() })
+  }
+
+  async function handleGenerateNarration() {
+    setIsGeneratingNarration(true)
+    try {
+      const result = await generateAI(narrationPrompt('Generate a narration script for this audio block. Context: educational course content.'))
+      if (result) onUpdate({ transcript: result.trim() })
+    } finally {
+      setIsGeneratingNarration(false)
+    }
+  }
 
   async function handleDrop(e: React.DragEvent) {
     e.preventDefault()
@@ -178,11 +199,35 @@ export function AudioBlockEditor({ block, onUpdate }: AudioBlockEditorProps): JS
 
       {/* Transcript */}
       <div className="p-3 border-t border-[var(--border-default)]">
+        {/* AI generate narration */}
+        {!block.transcript && (
+          <div className="mb-2">
+            <AIGenerateButton
+              label="Generate Narration"
+              onClick={handleGenerateNarration}
+              isGenerating={isGeneratingNarration}
+              disabled={!aiConfigured}
+              size="sm"
+              title={aiConfigured ? 'Generate narration script with AI' : 'Configure AI provider in Settings'}
+            />
+          </div>
+        )}
         {/* Transcript mode toggle */}
         <div className="flex items-center justify-between mb-2">
-          <label className="text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)]">
-            Transcript <span className="text-[var(--color-danger-600)]">*</span>
-          </label>
+          <div className="flex items-center gap-1">
+            <label className="text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)]">
+              Transcript <span className="text-[var(--color-danger-600)]">*</span>
+            </label>
+            {hasAudio && (
+              <AIGenerateButton
+                onClick={handleGenerateTranscript}
+                isGenerating={isGeneratingTranscript}
+                disabled={!aiConfigured}
+                size="xs"
+                title={aiConfigured ? 'Generate transcript with AI' : 'Configure AI provider in Settings'}
+              />
+            )}
+          </div>
           <div className="flex items-center gap-1 bg-[var(--bg-muted)] rounded-md border border-[var(--border-default)] p-0.5">
             <button
               type="button"

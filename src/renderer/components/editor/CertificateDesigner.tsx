@@ -11,11 +11,13 @@ import {
   Upload,
   Move,
   Plus,
-  Trash2
+  Trash2,
+  Search
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useAssetUpload } from '@/hooks/useAssetUpload'
+import { StockSearchDialog } from '@/components/ui/StockSearchDialog'
 import {
   CERTIFICATE_TEMPLATES,
   renderCertificate,
@@ -45,6 +47,7 @@ export function CertificateDesigner({ onClose }: CertificateDesignerProps): JSX.
   const uploadAsset = useAssetUpload()
 
   const cert = course?.certificate ?? null
+  const [stockBgOpen, setStockBgOpen] = useState(false)
   const [popoutMode, setPopoutMode] = useState<'closed' | 'preview' | 'edit'>('closed')
   const [designerMode, setDesignerMode] = useState(true)
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null)
@@ -515,6 +518,13 @@ export function CertificateDesigner({ onClose }: CertificateDesignerProps): JSX.
                 >
                   <ImageIcon size={10} /> Background Image
                 </button>
+                <button
+                  onClick={() => setStockBgOpen(true)}
+                  className="flex items-center justify-center gap-1 px-2 py-1.5 text-[10px] text-[var(--brand-magenta)] border border-[var(--border-default)] rounded hover:bg-[var(--brand-magenta)]/10 cursor-pointer"
+                  title="Search stock backgrounds"
+                >
+                  <Search size={10} /> Stock
+                </button>
               </div>
               <div className="p-2 rounded bg-[var(--bg-muted)] border border-[var(--border-default)]">
                 <p className="text-[9px] text-[var(--text-tertiary)] leading-relaxed">
@@ -880,6 +890,14 @@ export function CertificateDesigner({ onClose }: CertificateDesignerProps): JSX.
 
       {/* Unified Popout Modal */}
       {popoutModal}
+
+      <StockSearchDialog
+        open={stockBgOpen}
+        onClose={() => setStockBgOpen(false)}
+        onSelect={(localPath) => updateCert({ backgroundImage: localPath })}
+        mediaType="image"
+        title="Search Certificate Backgrounds"
+      />
     </div>
   )
 }

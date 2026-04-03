@@ -4,6 +4,14 @@ import {
   Settings,
   Brain,
   Image,
+  Video,
+  BarChart3,
+  Mic,
+  Workflow,
+  Clapperboard,
+  Sigma,
+  FileInput,
+  FolderSearch,
   Palette,
   PersonStanding,
   CheckCircle,
@@ -34,9 +42,9 @@ import { uid } from '@/lib/uid'
 import type { BrandKit } from '@/types/course'
 import logoSrc from '@/assets/logo.png'
 
-type Step = 'welcome' | 'language' | 'accessibility' | 'general' | 'ai-llm' | 'visual-apis' | 'branding' | 'complete'
+type Step = 'welcome' | 'language' | 'accessibility' | 'general' | 'ai-llm' | 'visual-apis' | 'video-apis' | 'chart-apis' | 'audio-apis' | 'diagram-apis' | 'interactive-video-apis' | 'math-apis' | 'content-import-apis' | 'asset-mgmt-apis' | 'branding' | 'complete'
 
-const STEPS: Step[] = ['welcome', 'language', 'accessibility', 'general', 'ai-llm', 'visual-apis', 'branding', 'complete']
+const STEPS: Step[] = ['welcome', 'language', 'accessibility', 'general', 'ai-llm', 'visual-apis', 'video-apis', 'chart-apis', 'audio-apis', 'diagram-apis', 'interactive-video-apis', 'math-apis', 'content-import-apis', 'asset-mgmt-apis', 'branding', 'complete']
 
 const STEP_LABELS: Record<Step, string> = {
   welcome: 'Welcome',
@@ -44,7 +52,15 @@ const STEP_LABELS: Record<Step, string> = {
   accessibility: 'Access.',
   general: 'General',
   'ai-llm': 'AI / LLM',
-  'visual-apis': 'Visual APIs',
+  'visual-apis': 'Images',
+  'video-apis': 'Video',
+  'chart-apis': 'Charts',
+  'audio-apis': 'Audio',
+  'diagram-apis': 'Diagrams',
+  'interactive-video-apis': 'Interact.',
+  'math-apis': 'Math',
+  'content-import-apis': 'Import',
+  'asset-mgmt-apis': 'Assets',
   branding: 'Branding',
   complete: 'Complete'
 }
@@ -123,6 +139,14 @@ export function OnboardingWizard(): JSX.Element {
           {currentStep === 'general' && <GeneralStep />}
           {currentStep === 'ai-llm' && <AILLMStep />}
           {currentStep === 'visual-apis' && <VisualApisStep />}
+          {currentStep === 'video-apis' && <VideoApisStep />}
+          {currentStep === 'chart-apis' && <ChartApisStep />}
+          {currentStep === 'audio-apis' && <AudioApisStep />}
+          {currentStep === 'diagram-apis' && <DiagramApisStep />}
+          {currentStep === 'interactive-video-apis' && <InteractiveVideoApisStep />}
+          {currentStep === 'math-apis' && <MathApisStep />}
+          {currentStep === 'content-import-apis' && <ContentImportApisStep />}
+          {currentStep === 'asset-mgmt-apis' && <AssetManagementApisStep />}
           {currentStep === 'branding' && <BrandingStep />}
           {currentStep === 'complete' && <CompleteStep onFinish={skipAll} />}
         </div>
@@ -672,7 +696,1065 @@ function VisualApisStep(): JSX.Element {
   )
 }
 
-// ─── Step 5: Branding ───
+// ─── Step 5: Video APIs ───
+
+function VideoApisStep(): JSX.Element {
+  const providers = useAppStore((s) => s.videoApis.providers)
+  const updateProvider = useAppStore((s) => s.updateVideoApiProvider)
+  const addCustom = useAppStore((s) => s.addCustomVideoApi)
+  const removeApi = useAppStore((s) => s.removeVideoApi)
+
+  return (
+    <div className="space-y-6 py-4">
+      <div className="mb-4">
+        <h2 className="text-xl font-[var(--font-weight-bold)] text-[var(--text-primary)]">Video APIs</h2>
+        <p className="text-sm text-[var(--text-secondary)] mt-1">Connect video providers that AI can use to search and embed video content (optional)</p>
+      </div>
+
+      <SettingsCard title="Video Providers" icon={Video}>
+        <div className="space-y-3">
+          {providers.map((provider) => (
+            <div
+              key={provider.id}
+              className="p-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] space-y-3"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+                    {provider.name}
+                  </span>
+                  {provider.type !== 'custom' && (
+                    <span className="px-1.5 py-0.5 text-[10px] font-[var(--font-weight-medium)] text-emerald-700 bg-emerald-100 rounded">
+                      Free
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {provider.type === 'custom' && (
+                    <button
+                      onClick={() => removeApi(provider.id)}
+                      className="p-1 rounded cursor-pointer text-[var(--text-tertiary)] hover:text-[var(--color-danger-600)]"
+                      aria-label="Delete custom video API"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                  <ToggleSwitch
+                    checked={provider.enabled}
+                    onChange={(v) => updateProvider(provider.id, { enabled: v })}
+                    label={`Enable ${provider.name}`}
+                  />
+                </div>
+              </div>
+
+              {provider.notes && (
+                <p className="text-[11px] text-[var(--text-tertiary)] italic">{provider.notes}</p>
+              )}
+
+              {provider.enabled && (
+                <div className="space-y-2">
+                  {(provider.type === 'pexels-video' || provider.type === 'pixabay-video' || provider.type === 'custom') && (
+                    <div>
+                      <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                        API Key
+                      </label>
+                      <input
+                        type="password"
+                        value={provider.apiKey ?? ''}
+                        onChange={(e) => updateProvider(provider.id, { apiKey: e.target.value || null })}
+                        className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                        placeholder="Enter API key..."
+                      />
+                    </div>
+                  )}
+
+                  {provider.type === 'custom' && (
+                    <>
+                      <div>
+                        <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                          Provider Name
+                        </label>
+                        <input
+                          type="text"
+                          value={provider.name}
+                          onChange={(e) => updateProvider(provider.id, { name: e.target.value })}
+                          className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                          placeholder="My Video API"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                          Endpoint URL
+                        </label>
+                        <input
+                          type="text"
+                          value={provider.endpoint ?? ''}
+                          onChange={(e) => updateProvider(provider.id, { endpoint: e.target.value })}
+                          className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                          placeholder="https://api.example.com/v1/videos"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                          Auth Header Name
+                        </label>
+                        <input
+                          type="text"
+                          value={provider.headerName ?? ''}
+                          onChange={(e) => updateProvider(provider.id, { headerName: e.target.value })}
+                          className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                          placeholder="Authorization"
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="pt-2">
+          <button
+            onClick={addCustom}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] border border-[var(--border-default)] rounded-md hover:bg-[var(--bg-hover)] cursor-pointer"
+          >
+            <Plus size={14} />
+            Add Custom Video API
+          </button>
+        </div>
+      </SettingsCard>
+    </div>
+  )
+}
+
+// ─── Step 6: Chart APIs ───
+
+function ChartApisStep(): JSX.Element {
+  const providers = useAppStore((s) => s.chartApis.providers)
+  const updateProvider = useAppStore((s) => s.updateChartApiProvider)
+  const addCustom = useAppStore((s) => s.addCustomChartApi)
+  const removeApi = useAppStore((s) => s.removeChartApi)
+
+  return (
+    <div className="space-y-6 py-4">
+      <div className="mb-4">
+        <h2 className="text-xl font-[var(--font-weight-bold)] text-[var(--text-primary)]">Charts & Data Visualization</h2>
+        <p className="text-sm text-[var(--text-secondary)] mt-1">Enable chart libraries that AI can use to generate data visualizations (optional)</p>
+      </div>
+
+      <SettingsCard title="Chart Providers" icon={BarChart3}>
+        <div className="space-y-3">
+          {providers.map((provider) => (
+            <div
+              key={provider.id}
+              className="p-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] space-y-3"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+                    {provider.name}
+                  </span>
+                  {provider.type !== 'custom' && (
+                    <span className="px-1.5 py-0.5 text-[10px] font-[var(--font-weight-medium)] text-emerald-700 bg-emerald-100 rounded">
+                      Free{provider.local ? ' (local)' : ''}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {provider.type === 'custom' && (
+                    <button
+                      onClick={() => removeApi(provider.id)}
+                      className="p-1 rounded cursor-pointer text-[var(--text-tertiary)] hover:text-[var(--color-danger-600)]"
+                      aria-label="Delete custom chart API"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                  <ToggleSwitch
+                    checked={provider.enabled}
+                    onChange={(v) => updateProvider(provider.id, { enabled: v })}
+                    label={`Enable ${provider.name}`}
+                  />
+                </div>
+              </div>
+
+              {provider.notes && (
+                <p className="text-[11px] text-[var(--text-tertiary)] italic">{provider.notes}</p>
+              )}
+
+              {provider.enabled && (
+                <div className="space-y-2">
+                  {(provider.type === 'quickchart' || provider.type === 'custom') && (
+                    <div>
+                      <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                        API Key {provider.type === 'quickchart' && <span className="text-[var(--text-tertiary)]">(optional)</span>}
+                      </label>
+                      <input
+                        type="password"
+                        value={provider.apiKey ?? ''}
+                        onChange={(e) => updateProvider(provider.id, { apiKey: e.target.value || null })}
+                        className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                        placeholder="Enter API key..."
+                      />
+                    </div>
+                  )}
+
+                  {provider.type === 'custom' && (
+                    <>
+                      <div>
+                        <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                          Provider Name
+                        </label>
+                        <input
+                          type="text"
+                          value={provider.name}
+                          onChange={(e) => updateProvider(provider.id, { name: e.target.value })}
+                          className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                          placeholder="My Chart API"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                          Endpoint URL
+                        </label>
+                        <input
+                          type="text"
+                          value={provider.endpoint ?? ''}
+                          onChange={(e) => updateProvider(provider.id, { endpoint: e.target.value })}
+                          className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                          placeholder="https://api.example.com/v1/charts"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                          Auth Header Name
+                        </label>
+                        <input
+                          type="text"
+                          value={provider.headerName ?? ''}
+                          onChange={(e) => updateProvider(provider.id, { headerName: e.target.value })}
+                          className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                          placeholder="Authorization"
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="pt-2">
+          <button
+            onClick={addCustom}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] border border-[var(--border-default)] rounded-md hover:bg-[var(--bg-hover)] cursor-pointer"
+          >
+            <Plus size={14} />
+            Add Custom Chart API
+          </button>
+        </div>
+      </SettingsCard>
+    </div>
+  )
+}
+
+// ─── Step 7: Audio APIs ───
+
+function AudioApisStep(): JSX.Element {
+  const providers = useAppStore((s) => s.audioApis.providers)
+  const updateProvider = useAppStore((s) => s.updateAudioApiProvider)
+  const addCustom = useAppStore((s) => s.addCustomAudioApi)
+  const removeApi = useAppStore((s) => s.removeAudioApi)
+
+  return (
+    <div className="space-y-6 py-4">
+      <div className="mb-4">
+        <h2 className="text-xl font-[var(--font-weight-bold)] text-[var(--text-primary)]">Audio / Voiceover</h2>
+        <p className="text-sm text-[var(--text-secondary)] mt-1">Configure transcription and text-to-speech providers for voiceover and captions (optional)</p>
+      </div>
+
+      <SettingsCard title="Audio Providers" icon={Mic}>
+        <div className="space-y-3">
+          {providers.map((provider) => (
+            <div
+              key={provider.id}
+              className="p-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] space-y-3"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+                    {provider.name}
+                  </span>
+                  {provider.type !== 'custom' && (
+                    <span className="px-1.5 py-0.5 text-[10px] font-[var(--font-weight-medium)] text-emerald-700 bg-emerald-100 rounded">
+                      {provider.local ? 'Free (local)' : 'Free tier'}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {provider.type === 'custom' && (
+                    <button
+                      onClick={() => removeApi(provider.id)}
+                      className="p-1 rounded cursor-pointer text-[var(--text-tertiary)] hover:text-[var(--color-danger-600)]"
+                      aria-label="Delete custom audio API"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                  <ToggleSwitch
+                    checked={provider.enabled}
+                    onChange={(v) => updateProvider(provider.id, { enabled: v })}
+                    label={`Enable ${provider.name}`}
+                  />
+                </div>
+              </div>
+
+              {provider.notes && (
+                <p className="text-[11px] text-[var(--text-tertiary)] italic">{provider.notes}</p>
+              )}
+
+              {provider.enabled && (
+                <div className="space-y-2">
+                  {(provider.type === 'elevenlabs' || provider.type === 'custom') && (
+                    <div>
+                      <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                        API Key
+                      </label>
+                      <input
+                        type="password"
+                        value={provider.apiKey ?? ''}
+                        onChange={(e) => updateProvider(provider.id, { apiKey: e.target.value || null })}
+                        className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                        placeholder="Enter API key..."
+                      />
+                    </div>
+                  )}
+
+                  {provider.type === 'custom' && (
+                    <>
+                      <div>
+                        <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                          Provider Name
+                        </label>
+                        <input
+                          type="text"
+                          value={provider.name}
+                          onChange={(e) => updateProvider(provider.id, { name: e.target.value })}
+                          className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                          placeholder="My Audio API"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                          Endpoint URL
+                        </label>
+                        <input
+                          type="text"
+                          value={provider.endpoint ?? ''}
+                          onChange={(e) => updateProvider(provider.id, { endpoint: e.target.value })}
+                          className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                          placeholder="https://api.example.com/v1/audio"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                          Auth Header Name
+                        </label>
+                        <input
+                          type="text"
+                          value={provider.headerName ?? ''}
+                          onChange={(e) => updateProvider(provider.id, { headerName: e.target.value })}
+                          className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                          placeholder="Authorization"
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="pt-2">
+          <button
+            onClick={addCustom}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] border border-[var(--border-default)] rounded-md hover:bg-[var(--bg-hover)] cursor-pointer"
+          >
+            <Plus size={14} />
+            Add Custom Audio API
+          </button>
+        </div>
+      </SettingsCard>
+    </div>
+  )
+}
+
+// ─── Step 8: Diagram APIs ───
+
+function DiagramApisStep(): JSX.Element {
+  const providers = useAppStore((s) => s.diagramApis.providers)
+  const updateProvider = useAppStore((s) => s.updateDiagramApiProvider)
+  const addCustom = useAppStore((s) => s.addCustomDiagramApi)
+  const removeApi = useAppStore((s) => s.removeDiagramApi)
+
+  return (
+    <div className="space-y-6 py-4">
+      <div className="mb-4">
+        <h2 className="text-xl font-[var(--font-weight-bold)] text-[var(--text-primary)]">Diagrams & Visual Thinking</h2>
+        <p className="text-sm text-[var(--text-secondary)] mt-1">Enable diagram tools that AI can use to generate flowcharts, whiteboards, and visualizations (optional)</p>
+      </div>
+
+      <SettingsCard title="Diagram Providers" icon={Workflow}>
+        <div className="space-y-3">
+          {providers.map((provider) => (
+            <div
+              key={provider.id}
+              className="p-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] space-y-3"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+                    {provider.name}
+                  </span>
+                  {provider.type !== 'custom' && (
+                    <span className="px-1.5 py-0.5 text-[10px] font-[var(--font-weight-medium)] text-emerald-700 bg-emerald-100 rounded">
+                      Free{provider.local ? ' (local)' : ''}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {provider.type === 'custom' && (
+                    <button
+                      onClick={() => removeApi(provider.id)}
+                      className="p-1 rounded cursor-pointer text-[var(--text-tertiary)] hover:text-[var(--color-danger-600)]"
+                      aria-label="Delete custom diagram API"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                  <ToggleSwitch
+                    checked={provider.enabled}
+                    onChange={(v) => updateProvider(provider.id, { enabled: v })}
+                    label={`Enable ${provider.name}`}
+                  />
+                </div>
+              </div>
+
+              {provider.notes && (
+                <p className="text-[11px] text-[var(--text-tertiary)] italic">{provider.notes}</p>
+              )}
+
+              {provider.enabled && provider.type === 'kroki' && (
+                <div>
+                  <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                    Endpoint URL <span className="text-[var(--text-tertiary)]">(default: https://kroki.io)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={provider.endpoint ?? ''}
+                    onChange={(e) => updateProvider(provider.id, { endpoint: e.target.value })}
+                    className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                    placeholder="https://kroki.io"
+                  />
+                </div>
+              )}
+
+              {provider.enabled && provider.type === 'custom' && (
+                <div className="space-y-2">
+                  <div>
+                    <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                      API Key
+                    </label>
+                    <input
+                      type="password"
+                      value={provider.apiKey ?? ''}
+                      onChange={(e) => updateProvider(provider.id, { apiKey: e.target.value || null })}
+                      className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                      placeholder="Enter API key..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                      Provider Name
+                    </label>
+                    <input
+                      type="text"
+                      value={provider.name}
+                      onChange={(e) => updateProvider(provider.id, { name: e.target.value })}
+                      className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                      placeholder="My Diagram API"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                      Endpoint URL
+                    </label>
+                    <input
+                      type="text"
+                      value={provider.endpoint ?? ''}
+                      onChange={(e) => updateProvider(provider.id, { endpoint: e.target.value })}
+                      className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                      placeholder="https://api.example.com/v1/diagrams"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                      Auth Header Name
+                    </label>
+                    <input
+                      type="text"
+                      value={provider.headerName ?? ''}
+                      onChange={(e) => updateProvider(provider.id, { headerName: e.target.value })}
+                      className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                      placeholder="Authorization"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="pt-2">
+          <button
+            onClick={addCustom}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] border border-[var(--border-default)] rounded-md hover:bg-[var(--bg-hover)] cursor-pointer"
+          >
+            <Plus size={14} />
+            Add Custom Diagram API
+          </button>
+        </div>
+      </SettingsCard>
+    </div>
+  )
+}
+
+// ─── Step 9: Interactive Video APIs ───
+
+function InteractiveVideoApisStep(): JSX.Element {
+  const providers = useAppStore((s) => s.interactiveVideoApis.providers)
+  const updateProvider = useAppStore((s) => s.updateInteractiveVideoApiProvider)
+  const addCustom = useAppStore((s) => s.addCustomInteractiveVideoApi)
+  const removeApi = useAppStore((s) => s.removeInteractiveVideoApi)
+
+  return (
+    <div className="space-y-6 py-4">
+      <div className="mb-4">
+        <h2 className="text-xl font-[var(--font-weight-bold)] text-[var(--text-primary)]">Interactive Video</h2>
+        <p className="text-sm text-[var(--text-secondary)] mt-1">Enable interactive video players for playback control, quiz overlays, and branching (optional)</p>
+      </div>
+
+      <SettingsCard title="Interactive Video Providers" icon={Clapperboard}>
+        <div className="space-y-3">
+          {providers.map((provider) => (
+            <div
+              key={provider.id}
+              className="p-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] space-y-3"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+                    {provider.name}
+                  </span>
+                  {provider.type !== 'custom' && (
+                    <span className="px-1.5 py-0.5 text-[10px] font-[var(--font-weight-medium)] text-emerald-700 bg-emerald-100 rounded">
+                      Free{provider.local ? ' (local)' : ''}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {provider.type === 'custom' && (
+                    <button
+                      onClick={() => removeApi(provider.id)}
+                      className="p-1 rounded cursor-pointer text-[var(--text-tertiary)] hover:text-[var(--color-danger-600)]"
+                      aria-label="Delete custom interactive video API"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                  <ToggleSwitch
+                    checked={provider.enabled}
+                    onChange={(v) => updateProvider(provider.id, { enabled: v })}
+                    label={`Enable ${provider.name}`}
+                  />
+                </div>
+              </div>
+
+              {provider.notes && (
+                <p className="text-[11px] text-[var(--text-tertiary)] italic">{provider.notes}</p>
+              )}
+
+              {provider.enabled && provider.type === 'h5p' && (
+                <div>
+                  <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                    H5P Server URL <span className="text-[var(--text-tertiary)]">(self-hosted instance)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={provider.endpoint ?? ''}
+                    onChange={(e) => updateProvider(provider.id, { endpoint: e.target.value })}
+                    className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                    placeholder="https://h5p.example.com"
+                  />
+                </div>
+              )}
+
+              {provider.enabled && provider.type === 'custom' && (
+                <div className="space-y-2">
+                  <div>
+                    <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                      API Key
+                    </label>
+                    <input
+                      type="password"
+                      value={provider.apiKey ?? ''}
+                      onChange={(e) => updateProvider(provider.id, { apiKey: e.target.value || null })}
+                      className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                      placeholder="Enter API key..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                      Provider Name
+                    </label>
+                    <input
+                      type="text"
+                      value={provider.name}
+                      onChange={(e) => updateProvider(provider.id, { name: e.target.value })}
+                      className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                      placeholder="My Interactive Video API"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                      Endpoint URL
+                    </label>
+                    <input
+                      type="text"
+                      value={provider.endpoint ?? ''}
+                      onChange={(e) => updateProvider(provider.id, { endpoint: e.target.value })}
+                      className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                      placeholder="https://api.example.com/v1/interactive"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                      Auth Header Name
+                    </label>
+                    <input
+                      type="text"
+                      value={provider.headerName ?? ''}
+                      onChange={(e) => updateProvider(provider.id, { headerName: e.target.value })}
+                      className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                      placeholder="Authorization"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="pt-2">
+          <button
+            onClick={addCustom}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] border border-[var(--border-default)] rounded-md hover:bg-[var(--bg-hover)] cursor-pointer"
+          >
+            <Plus size={14} />
+            Add Custom Interactive Video API
+          </button>
+        </div>
+      </SettingsCard>
+    </div>
+  )
+}
+
+// ─── Step 10: Math & Science Notation ───
+
+function MathApisStep(): JSX.Element {
+  const providers = useAppStore((s) => s.mathApis.providers)
+  const updateProvider = useAppStore((s) => s.updateMathApiProvider)
+  const addCustom = useAppStore((s) => s.addCustomMathApi)
+  const removeApi = useAppStore((s) => s.removeMathApi)
+
+  return (
+    <div className="space-y-6 py-4">
+      <div className="mb-4">
+        <h2 className="text-xl font-[var(--font-weight-bold)] text-[var(--text-primary)]">Math & Science Notation</h2>
+        <p className="text-sm text-[var(--text-secondary)] mt-1">Enable math/science rendering engines for equations, formulas, and chemical structures (optional)</p>
+      </div>
+
+      <SettingsCard title="Math & Science Providers" icon={Sigma}>
+        <div className="space-y-3">
+          {providers.map((provider) => (
+            <div
+              key={provider.id}
+              className="p-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] space-y-3"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+                    {provider.name}
+                  </span>
+                  {provider.type !== 'custom' && (
+                    <span className="px-1.5 py-0.5 text-[10px] font-[var(--font-weight-medium)] text-emerald-700 bg-emerald-100 rounded">
+                      Free (local)
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {provider.type === 'custom' && (
+                    <button
+                      onClick={() => removeApi(provider.id)}
+                      className="p-1 rounded cursor-pointer text-[var(--text-tertiary)] hover:text-[var(--color-danger-600)]"
+                      aria-label="Delete custom math API"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                  <ToggleSwitch
+                    checked={provider.enabled}
+                    onChange={(v) => updateProvider(provider.id, { enabled: v })}
+                    label={`Enable ${provider.name}`}
+                  />
+                </div>
+              </div>
+
+              {provider.notes && (
+                <p className="text-[11px] text-[var(--text-tertiary)] italic">{provider.notes}</p>
+              )}
+
+              {provider.enabled && provider.type === 'custom' && (
+                <div className="space-y-2">
+                  <div>
+                    <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                      API Key
+                    </label>
+                    <input
+                      type="password"
+                      value={provider.apiKey ?? ''}
+                      onChange={(e) => updateProvider(provider.id, { apiKey: e.target.value || null })}
+                      className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                      placeholder="Enter API key..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                      Provider Name
+                    </label>
+                    <input
+                      type="text"
+                      value={provider.name}
+                      onChange={(e) => updateProvider(provider.id, { name: e.target.value })}
+                      className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                      placeholder="My Math API"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                      Endpoint URL
+                    </label>
+                    <input
+                      type="text"
+                      value={provider.endpoint ?? ''}
+                      onChange={(e) => updateProvider(provider.id, { endpoint: e.target.value })}
+                      className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                      placeholder="https://api.example.com/v1/math"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                      Auth Header Name
+                    </label>
+                    <input
+                      type="text"
+                      value={provider.headerName ?? ''}
+                      onChange={(e) => updateProvider(provider.id, { headerName: e.target.value })}
+                      className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                      placeholder="Authorization"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="pt-2">
+          <button
+            onClick={addCustom}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] border border-[var(--border-default)] rounded-md hover:bg-[var(--bg-hover)] cursor-pointer"
+          >
+            <Plus size={14} />
+            Add Custom Math API
+          </button>
+        </div>
+      </SettingsCard>
+    </div>
+  )
+}
+
+// ─── Step 11: Content Import / Parsing ───
+
+function ContentImportApisStep(): JSX.Element {
+  const providers = useAppStore((s) => s.contentImportApis.providers)
+  const updateProvider = useAppStore((s) => s.updateContentImportProvider)
+  const addCustom = useAppStore((s) => s.addCustomContentImportApi)
+  const removeApi = useAppStore((s) => s.removeContentImportApi)
+
+  return (
+    <div className="space-y-6 py-4">
+      <div className="mb-4">
+        <h2 className="text-xl font-[var(--font-weight-bold)] text-[var(--text-primary)]">Content Import / Parsing</h2>
+        <p className="text-sm text-[var(--text-secondary)] mt-1">Enable content import libraries for converting documents, PDFs, and presentations (optional)</p>
+      </div>
+
+      <SettingsCard title="Content Import Providers" icon={FileInput}>
+        <div className="space-y-3">
+          {providers.map((provider) => (
+            <div
+              key={provider.id}
+              className="p-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] space-y-3"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+                    {provider.name}
+                  </span>
+                  {provider.type !== 'custom' && (
+                    <span className="px-1.5 py-0.5 text-[10px] font-[var(--font-weight-medium)] text-emerald-700 bg-emerald-100 rounded">
+                      Free (local)
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {provider.type === 'custom' && (
+                    <button
+                      onClick={() => removeApi(provider.id)}
+                      className="p-1 rounded cursor-pointer text-[var(--text-tertiary)] hover:text-[var(--color-danger-600)]"
+                      aria-label="Delete custom content import API"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                  <ToggleSwitch
+                    checked={provider.enabled}
+                    onChange={(v) => updateProvider(provider.id, { enabled: v })}
+                    label={`Enable ${provider.name}`}
+                  />
+                </div>
+              </div>
+
+              {provider.notes && (
+                <p className="text-[11px] text-[var(--text-tertiary)] italic">{provider.notes}</p>
+              )}
+
+              {provider.enabled && provider.type === 'custom' && (
+                <div className="space-y-2">
+                  <div>
+                    <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                      API Key
+                    </label>
+                    <input
+                      type="password"
+                      value={provider.apiKey ?? ''}
+                      onChange={(e) => updateProvider(provider.id, { apiKey: e.target.value || null })}
+                      className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                      placeholder="Enter API key..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                      Provider Name
+                    </label>
+                    <input
+                      type="text"
+                      value={provider.name}
+                      onChange={(e) => updateProvider(provider.id, { name: e.target.value })}
+                      className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                      placeholder="My Import API"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                      Endpoint URL
+                    </label>
+                    <input
+                      type="text"
+                      value={provider.endpoint ?? ''}
+                      onChange={(e) => updateProvider(provider.id, { endpoint: e.target.value })}
+                      className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                      placeholder="https://api.example.com/v1/import"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                      Auth Header Name
+                    </label>
+                    <input
+                      type="text"
+                      value={provider.headerName ?? ''}
+                      onChange={(e) => updateProvider(provider.id, { headerName: e.target.value })}
+                      className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                      placeholder="Authorization"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="pt-2">
+          <button
+            onClick={addCustom}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] border border-[var(--border-default)] rounded-md hover:bg-[var(--bg-hover)] cursor-pointer"
+          >
+            <Plus size={14} />
+            Add Custom Import API
+          </button>
+        </div>
+      </SettingsCard>
+    </div>
+  )
+}
+
+// ─── Step 12: Asset Management & Search ───
+
+function AssetManagementApisStep(): JSX.Element {
+  const providers = useAppStore((s) => s.assetManagementApis.providers)
+  const updateProvider = useAppStore((s) => s.updateAssetManagementProvider)
+  const addCustom = useAppStore((s) => s.addCustomAssetManagementApi)
+  const removeApi = useAppStore((s) => s.removeAssetManagementApi)
+
+  return (
+    <div className="space-y-6 py-4">
+      <div className="mb-4">
+        <h2 className="text-xl font-[var(--font-weight-bold)] text-[var(--text-primary)]">Asset Management & Search</h2>
+        <p className="text-sm text-[var(--text-secondary)] mt-1">Enable asset search APIs for icons, illustrations, animations, and stock media (optional)</p>
+      </div>
+
+      <SettingsCard title="Asset Providers" icon={FolderSearch}>
+        <div className="space-y-3">
+          {providers.map((provider) => (
+            <div
+              key={provider.id}
+              className="p-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] space-y-3"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+                    {provider.name}
+                  </span>
+                  {provider.type !== 'custom' && (
+                    <span className="px-1.5 py-0.5 text-[10px] font-[var(--font-weight-medium)] text-emerald-700 bg-emerald-100 rounded">
+                      {provider.local ? 'Free (self-hosted)' : provider.type === 'pexels-unsplash' ? 'Free' : 'Free tier'}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {provider.type === 'custom' && (
+                    <button
+                      onClick={() => removeApi(provider.id)}
+                      className="p-1 rounded cursor-pointer text-[var(--text-tertiary)] hover:text-[var(--color-danger-600)]"
+                      aria-label="Delete custom asset API"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                  <ToggleSwitch
+                    checked={provider.enabled}
+                    onChange={(v) => updateProvider(provider.id, { enabled: v })}
+                    label={`Enable ${provider.name}`}
+                  />
+                </div>
+              </div>
+
+              {provider.notes && (
+                <p className="text-[11px] text-[var(--text-tertiary)] italic">{provider.notes}</p>
+              )}
+
+              {provider.enabled && !provider.local && provider.type !== 'pexels-unsplash' && provider.type !== 'custom' && (
+                <div>
+                  <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                    API Key
+                  </label>
+                  <input
+                    type="password"
+                    value={provider.apiKey ?? ''}
+                    onChange={(e) => updateProvider(provider.id, { apiKey: e.target.value || null })}
+                    className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                    placeholder="Enter API key..."
+                  />
+                </div>
+              )}
+
+              {provider.enabled && provider.type === 'custom' && (
+                <div className="space-y-2">
+                  <div>
+                    <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                      API Key
+                    </label>
+                    <input
+                      type="password"
+                      value={provider.apiKey ?? ''}
+                      onChange={(e) => updateProvider(provider.id, { apiKey: e.target.value || null })}
+                      className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                      placeholder="Enter API key..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                      Provider Name
+                    </label>
+                    <input
+                      type="text"
+                      value={provider.name}
+                      onChange={(e) => updateProvider(provider.id, { name: e.target.value })}
+                      className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                      placeholder="My Asset API"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                      Endpoint URL
+                    </label>
+                    <input
+                      type="text"
+                      value={provider.endpoint ?? ''}
+                      onChange={(e) => updateProvider(provider.id, { endpoint: e.target.value })}
+                      className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                      placeholder="https://api.example.com/v1/assets"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                      Auth Header Name
+                    </label>
+                    <input
+                      type="text"
+                      value={provider.headerName ?? ''}
+                      onChange={(e) => updateProvider(provider.id, { headerName: e.target.value })}
+                      className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                      placeholder="Authorization"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="pt-2">
+          <button
+            onClick={addCustom}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] border border-[var(--border-default)] rounded-md hover:bg-[var(--bg-hover)] cursor-pointer"
+          >
+            <Plus size={14} />
+            Add Custom Asset API
+          </button>
+        </div>
+      </SettingsCard>
+    </div>
+  )
+}
+
+// ─── Step 13: Branding ───
 
 function BrandingStep(): JSX.Element {
   const brandKits = useAppStore((s) => s.brandKits)

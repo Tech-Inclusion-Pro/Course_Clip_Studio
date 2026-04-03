@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { Plus, Trash2, GitBranch, ChevronDown, ChevronUp, Target } from 'lucide-react'
 import { uid } from '@/lib/uid'
 import { useCourseStore } from '@/stores/useCourseStore'
+import { useAIGenerate } from '@/hooks/useAIGenerate'
+import { branchingScenarioPrompt } from '@/lib/ai'
+import { AIGenerateButton } from '@/components/ui/AIGenerateButton'
 import type { BranchingBlock, BranchChoice, BranchCriteria } from '@/types/course'
 
 interface BranchingBlockEditorProps {
@@ -13,6 +16,27 @@ export function BranchingBlockEditor({ block, onUpdate }: BranchingBlockEditorPr
   const course = useCourseStore((s) => s.courses.find((c) => c.id === s.activeCourseId))
   const modules = course?.modules ?? []
   const [expandedChoiceId, setExpandedChoiceId] = useState<string | null>(null)
+  const { generate, isGenerating, isConfigured } = useAIGenerate()
+
+  async function handleAIGenerate() {
+    const topic = block.scenario || 'educational decision-making scenario'
+    const text = await generate(branchingScenarioPrompt(topic))
+    if (!text) return
+    try {
+      const parsed = JSON.parse(text.replace(/```json?\n?/g, '').replace(/```/g, '').trim())
+      if (parsed.scenario) onUpdate({ scenario: parsed.scenario })
+      const choices: BranchChoice[] = (parsed.choices ?? []).map((c: { label: string; consequence: string }) => ({
+        id: uid('branch'),
+        label: c.label || '',
+        consequence: c.consequence || '',
+        nextLessonId: null,
+        criteria: mode === 'criteria-based' ? { type: 'quiz-score' as const, operator: 'gte' as const, value: 70 } : null
+      }))
+      if (choices.length > 0) {
+        onUpdate({ choices: [...block.choices, ...choices] })
+      }
+    } catch { /* ignore parse errors */ }
+  }
 
   const mode = block.mode ?? 'user-choice'
 
@@ -78,15 +102,25 @@ export function BranchingBlockEditor({ block, onUpdate }: BranchingBlockEditorPr
             </p>
           </div>
         </div>
-        {block.choices.length < 6 && (
-          <button
-            onClick={addChoice}
-            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] border border-[var(--border-default)] rounded-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
-            aria-label="Add branch"
-          >
-            <Plus size={12} /> Add Branch
-          </button>
-        )}
+        <div className="flex items-center gap-1">
+          {isConfigured && (
+            <AIGenerateButton
+              label="Generate Scenario"
+              onClick={handleAIGenerate}
+              isGenerating={isGenerating}
+              size="sm"
+            />
+          )}
+          {block.choices.length < 6 && (
+            <button
+              onClick={addChoice}
+              className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] border border-[var(--border-default)] rounded-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+              aria-label="Add branch"
+            >
+              <Plus size={12} /> Add Branch
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="p-4 space-y-4">

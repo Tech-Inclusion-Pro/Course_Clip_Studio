@@ -1,4 +1,7 @@
 import { Code2 } from 'lucide-react'
+import { useAIGenerate } from '@/hooks/useAIGenerate'
+import { codeGenerationPrompt } from '@/lib/ai'
+import { AIGenerateButton } from '@/components/ui/AIGenerateButton'
 import type { CodeBlock } from '@/types/course'
 
 interface CodeBlockEditorProps {
@@ -13,6 +16,16 @@ const LANGUAGES = [
 ]
 
 export function CodeBlockEditor({ block, onUpdate }: CodeBlockEditorProps): JSX.Element {
+  const { generate, isGenerating, isConfigured } = useAIGenerate()
+
+  async function handleAIGenerate() {
+    const description = block.code.trim()
+      ? `Improve or extend this ${block.language} code: ${block.code.slice(0, 200)}`
+      : `a simple ${block.language} example demonstrating a useful concept`
+    const text = await generate(codeGenerationPrompt(block.language, description))
+    if (text) onUpdate({ code: text })
+  }
+
   return (
     <div
       className="rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] overflow-hidden"
@@ -34,15 +47,25 @@ export function CodeBlockEditor({ block, onUpdate }: CodeBlockEditorProps): JSX.
             ))}
           </select>
         </div>
-        <label className="flex items-center gap-1.5 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={block.runnable}
-            onChange={(e) => onUpdate({ runnable: e.target.checked })}
-            className="rounded border-[#45475a] text-[var(--brand-magenta)] focus:ring-[var(--ring-brand)]"
-          />
-          <span className="text-[10px] text-[#a6adc8]">Runnable</span>
-        </label>
+        <div className="flex items-center gap-2">
+          {isConfigured && (
+            <AIGenerateButton
+              label="Generate"
+              onClick={handleAIGenerate}
+              isGenerating={isGenerating}
+              size="sm"
+            />
+          )}
+          <label className="flex items-center gap-1.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={block.runnable}
+              onChange={(e) => onUpdate({ runnable: e.target.checked })}
+              className="rounded border-[#45475a] text-[var(--brand-magenta)] focus:ring-[var(--ring-brand)]"
+            />
+            <span className="text-[10px] text-[#a6adc8]">Runnable</span>
+          </label>
+        </div>
       </div>
 
       {/* Code editor */}

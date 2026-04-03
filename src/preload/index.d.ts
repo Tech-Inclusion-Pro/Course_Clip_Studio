@@ -62,6 +62,11 @@ interface LuminaAPI {
       fieldName: string
       extraFields?: Record<string, string>
     }): Promise<{ status: number; statusText: string; body: string }>
+    downloadFile(opts: {
+      url: string
+      destPath: string
+      headers?: Record<string, string>
+    }): Promise<{ ok: boolean; path: string }>
   }
   updater: {
     check(): Promise<{ updateAvailable: boolean; version?: string }>

@@ -306,6 +306,205 @@ Check for:
 Severity levels: critical (must fix), serious (should fix), moderate (consider fixing), minor (nice to fix).`
 }
 
+export function transcriptPrompt(mediaContext: string): string {
+  return `Generate a transcript for this media content.
+
+Media context: ${mediaContext}
+
+Write a natural, accurate transcript of what the spoken content would be for this media. Include:
+- Clear, well-structured sentences
+- Appropriate paragraph breaks for different topics/segments
+- Speaker identification if multiple speakers are implied
+
+Return only the transcript text, no JSON or formatting markers.`
+}
+
+export function srtCaptionPrompt(transcript: string, durationEstimate: string): string {
+  return `Convert this transcript into SRT subtitle format.
+
+Transcript:
+${transcript}
+
+Estimated duration: ${durationEstimate}
+
+Requirements:
+- Use standard SRT format (sequence number, timestamp, text, blank line)
+- Timestamps in HH:MM:SS,mmm format
+- Keep each subtitle to 1-2 lines, max 42 characters per line
+- Distribute timing evenly across the estimated duration
+- Ensure natural reading pace (around 20 characters per second)
+
+Return only the SRT content, no extra text.`
+}
+
+export function imageDescriptionPrompt(filename: string, caption: string, context: string): string {
+  return `Generate accessible alt text for an image.
+
+Filename: ${filename}
+${caption ? `Caption: ${caption}` : ''}
+${context ? `Context: ${context}` : ''}
+
+Based on the filename and context clues, generate appropriate alt text.
+
+Requirements:
+- Be concise but descriptive (under 125 characters preferred)
+- Describe the likely content and function, not just appearance
+- Follow WCAG 1.1.1 guidelines
+- Do not start with "Image of" or "Picture of"
+
+Return only the alt text string, no JSON.`
+}
+
+export function flashcardPrompt(topic: string, count = 5): string {
+  return `Generate ${count} flashcard pairs for the topic: "${topic}"
+
+Return a JSON array of objects:
+[
+  { "front": "Question or term", "back": "Answer or definition" }
+]
+
+Requirements:
+- Each front should be a clear question or key term
+- Each back should be a concise, accurate answer or definition
+- Cover different aspects of the topic
+- Suitable for study and review
+
+Return only valid JSON, no markdown fencing.`
+}
+
+export function accordionContentPrompt(topic: string, sectionCount = 3): string {
+  return `Generate ${sectionCount} accordion sections for the topic: "${topic}"
+
+Return a JSON array of objects:
+[
+  { "title": "Section title", "content": "Section content (1-2 paragraphs)" }
+]
+
+Requirements:
+- Each section should cover a distinct subtopic
+- Content should be informative and well-structured
+- Use clear, accessible language
+
+Return only valid JSON, no markdown fencing.`
+}
+
+export function tabContentPrompt(topic: string, tabCount = 3): string {
+  return `Generate ${tabCount} tab sections for the topic: "${topic}"
+
+Return a JSON array of objects:
+[
+  { "label": "Tab label (short)", "content": "Tab content (1-2 paragraphs)" }
+]
+
+Requirements:
+- Each tab should cover a different perspective or subtopic
+- Labels should be concise (1-3 words)
+- Content should be informative
+
+Return only valid JSON, no markdown fencing.`
+}
+
+export function calloutContentPrompt(topic: string, variant: string): string {
+  return `Generate a ${variant} callout for the topic: "${topic}"
+
+Return a JSON object:
+{ "title": "Callout title", "content": "Callout content (1-2 sentences)" }
+
+The callout variant is "${variant}", so the tone should match:
+- info: factual, informative
+- warning: cautionary, important caveat
+- success: positive outcome, achievement
+- danger: critical error, common mistake
+- tip: helpful advice, pro tip
+
+Return only valid JSON, no markdown fencing.`
+}
+
+export function codeGenerationPrompt(language: string, description: string): string {
+  return `Generate a ${language} code example for: "${description}"
+
+Requirements:
+- Write clean, well-commented code
+- Include helpful comments explaining key parts
+- Follow ${language} best practices and conventions
+- Keep it educational and easy to understand
+- Do not include markdown fencing, return only the code
+
+Return only the code, no explanations or JSON.`
+}
+
+export function matchingPairsPrompt(topic: string, count = 4): string {
+  return `Generate ${count} matching pairs for an educational matching activity about: "${topic}"
+
+Return a JSON object:
+{
+  "instruction": "A clear instruction for the matching activity",
+  "leftItems": ["Term 1", "Term 2", ...],
+  "rightItems": ["Definition 1", "Definition 2", ...],
+  "pairs": [[0, 0], [1, 1], ...]
+}
+
+The pairs array maps left item indices to right item indices. Shuffle the right items so pairs are not in obvious order.
+
+Return only valid JSON, no markdown fencing.`
+}
+
+export function dragDropPrompt(topic: string): string {
+  return `Generate a drag-and-drop categorization activity about: "${topic}"
+
+Return a JSON object:
+{
+  "instruction": "A clear instruction for the drag-and-drop activity",
+  "zones": ["Category A", "Category B", ...],
+  "items": [
+    { "label": "Item 1", "correctZone": 0 },
+    { "label": "Item 2", "correctZone": 1 }
+  ]
+}
+
+Requirements:
+- Create 2-4 distinct categories (zones)
+- Generate 6-8 items distributed across zones
+- Each item should clearly belong to one category
+- Make it educational and engaging
+
+Return only valid JSON, no markdown fencing.`
+}
+
+export function branchingScenarioPrompt(topic: string): string {
+  return `Generate a branching scenario for the topic: "${topic}"
+
+Return a JSON object:
+{
+  "scenario": "A realistic scenario description (2-3 sentences) presenting a decision point for the learner",
+  "choices": [
+    {
+      "label": "Choice text the learner sees",
+      "consequence": "Feedback/outcome if this choice is selected"
+    }
+  ]
+}
+
+Requirements:
+- Create 2-4 meaningful choices
+- Each choice should have a distinct consequence
+- The scenario should test understanding, not just recall
+- Make consequences realistic and educational
+
+Return only valid JSON, no markdown fencing.`
+}
+
+export function embedTitlePrompt(url: string): string {
+  return `Generate a concise, accessible title for an embedded iframe with this URL: "${url}"
+
+The title is used for accessibility (screen readers). It should:
+- Describe what the embedded content is
+- Be concise (3-8 words)
+- Not include "iframe" or "embed" in the title
+
+Return only the title text, no JSON or quotes.`
+}
+
 export function udlSuggestionsPrompt(lessonContent: string): string {
   return `Analyze this lesson for Universal Design for Learning (UDL) compliance and suggest improvements:
 

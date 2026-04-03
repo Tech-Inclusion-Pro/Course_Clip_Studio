@@ -1,6 +1,10 @@
 import { useState } from 'react'
-import { Video, Upload, AlertTriangle, Globe, HardDrive, FileText, Type } from 'lucide-react'
+import { Video, Upload, AlertTriangle, Globe, HardDrive, FileText, Type, Search } from 'lucide-react'
 import { useAssetUpload } from '@/hooks/useAssetUpload'
+import { useAIGenerate } from '@/hooks/useAIGenerate'
+import { transcriptPrompt } from '@/lib/ai/prompts'
+import { AIGenerateButton } from '@/components/ui/AIGenerateButton'
+import { StockSearchDialog } from '@/components/ui/StockSearchDialog'
 import type { VideoBlock } from '@/types/course'
 
 interface VideoBlockEditorProps {
@@ -34,8 +38,16 @@ export function VideoBlockEditor({ block, onUpdate }: VideoBlockEditorProps): JS
   const [dragOver, setDragOver] = useState(false)
   const [transcriptMode, setTranscriptMode] = useState<'text' | 'srt'>(block.srtFileName ? 'srt' : 'text')
   const [srtDragOver, setSrtDragOver] = useState(false)
+  const [stockOpen, setStockOpen] = useState(false)
   const copyAsset = useAssetUpload()
+  const { generate: generateAI, isGenerating: isGeneratingTranscript, isConfigured: aiConfigured } = useAIGenerate()
   const missingTranscript = !block.transcript
+
+  async function handleGenerateTranscript() {
+    const filename = block.url?.split('/').pop() || 'video'
+    const result = await generateAI(transcriptPrompt(`Video file: ${filename}. Source: ${block.source}.`))
+    if (result) onUpdate({ transcript: result.trim() })
+  }
 
   async function handleDrop(e: React.DragEvent) {
     e.preventDefault()
@@ -192,6 +204,13 @@ export function VideoBlockEditor({ block, onUpdate }: VideoBlockEditorProps): JS
               <Video size={32} className="text-[var(--text-tertiary)]" />
               <p className="text-sm text-[var(--text-secondary)]">Click or drag a video file here</p>
               <p className="text-xs text-[var(--text-tertiary)]">Supports MP4, WebM, OGG</p>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setStockOpen(true) }}
+                className="flex items-center gap-1 px-3 py-1.5 mt-1 text-xs font-medium text-[var(--brand-magenta)] border border-[var(--brand-magenta)] rounded-md hover:bg-[var(--brand-magenta)]/10 cursor-pointer"
+              >
+                <Search size={12} /> Search Stock Video
+              </button>
             </div>
           )}
         </div>
@@ -228,9 +247,18 @@ export function VideoBlockEditor({ block, onUpdate }: VideoBlockEditorProps): JS
       <div className="p-3 border-t border-[var(--border-default)]">
         {/* Transcript mode toggle */}
         <div className="flex items-center justify-between mb-2">
-          <label className="text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)]">
-            Transcript <span className="text-[var(--color-danger-600)]">*</span>
-          </label>
+          <div className="flex items-center gap-1">
+            <label className="text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)]">
+              Transcript <span className="text-[var(--color-danger-600)]">*</span>
+            </label>
+            <AIGenerateButton
+              onClick={handleGenerateTranscript}
+              isGenerating={isGeneratingTranscript}
+              disabled={!aiConfigured || !block.url}
+              size="xs"
+              title={aiConfigured ? 'Generate transcript with AI' : 'Configure AI provider in Settings'}
+            />
+          </div>
           <div className="flex items-center gap-1 bg-[var(--bg-muted)] rounded-md border border-[var(--border-default)] p-0.5">
             <button
               type="button"
@@ -345,6 +373,14 @@ export function VideoBlockEditor({ block, onUpdate }: VideoBlockEditorProps): JS
           </div>
         )}
       </div>
+
+      <StockSearchDialog
+        open={stockOpen}
+        onClose={() => setStockOpen(false)}
+        onSelect={(localPath) => onUpdate({ url: localPath, source: 'upload' })}
+        mediaType="video"
+        title="Search Stock Videos"
+      />
     </div>
   )
 }

@@ -1,10 +1,12 @@
 import { useState, useRef, useCallback } from 'react'
 import {
   Trash2,
-  Plus
+  Plus,
+  Search
 } from 'lucide-react'
 import { uid } from '@/lib/uid'
 import { useAssetUpload } from '@/hooks/useAssetUpload'
+import { StockSearchDialog } from '@/components/ui/StockSearchDialog'
 import type { SlideBlock, SlideElement, SlideElementType } from '@/types/course'
 
 interface SlideBlockEditorProps {
@@ -36,6 +38,7 @@ const ELEMENT_TYPE_LABELS: Record<SlideElementType, string> = {
 export function SlideBlockEditor({ block, onUpdate }: SlideBlockEditorProps): JSX.Element {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [dragging, setDragging] = useState<{ id: string; offsetX: number; offsetY: number } | null>(null)
+  const [stockOpen, setStockOpen] = useState(false)
   const canvasRef = useRef<HTMLDivElement>(null)
   const copyAsset = useAssetUpload()
 
@@ -221,12 +224,21 @@ export function SlideBlockEditor({ block, onUpdate }: SlideBlockEditorProps): JS
             <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
               Background Image
             </label>
-            <button
-              onClick={handleBgImageUpload}
-              className="w-full px-2 py-1.5 text-xs rounded border border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] cursor-pointer truncate"
-            >
-              {block.backgroundImage ? block.backgroundImage.split('/').pop() : 'Choose image...'}
-            </button>
+            <div className="flex gap-1">
+              <button
+                onClick={handleBgImageUpload}
+                className="flex-1 px-2 py-1.5 text-xs rounded border border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] cursor-pointer truncate"
+              >
+                {block.backgroundImage ? block.backgroundImage.split('/').pop() : 'Choose image...'}
+              </button>
+              <button
+                onClick={() => setStockOpen(true)}
+                className="shrink-0 flex items-center gap-1 px-2 py-1.5 text-xs text-[var(--brand-magenta)] border border-[var(--border-default)] rounded hover:bg-[var(--brand-magenta)]/10 cursor-pointer"
+                title="Search stock backgrounds"
+              >
+                <Search size={10} />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -372,6 +384,14 @@ export function SlideBlockEditor({ block, onUpdate }: SlideBlockEditorProps): JS
           </div>
         )}
       </div>
+
+      <StockSearchDialog
+        open={stockOpen}
+        onClose={() => setStockOpen(false)}
+        onSelect={(localPath) => onUpdate({ backgroundImage: localPath })}
+        mediaType="image"
+        title="Search Background Images"
+      />
     </div>
   )
 }

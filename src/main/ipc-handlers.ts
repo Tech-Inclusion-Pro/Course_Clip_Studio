@@ -1,5 +1,5 @@
 import { ipcMain, dialog, app, BrowserWindow, net, safeStorage } from 'electron'
-import { readFileSync, readFile, writeFileSync, copyFileSync, existsSync, mkdirSync, readdirSync, statSync, rmSync } from 'fs'
+import { readFileSync, readFile, writeFileSync, writeFile as writeFileAsync, copyFileSync, existsSync, mkdirSync, readdirSync, statSync, rmSync } from 'fs'
 import { join, dirname } from 'path'
 
 function getConfigPath(): string {
@@ -401,6 +401,84 @@ export function registerIpcHandlers(): void {
           request.end()
         } catch (err) {
           reject(err instanceof Error ? err.message : 'Upload failed')
+        }
+      })
+    }
+  )
+
+  // Download a file as binary to disk (for stock media downloads)
+  ipcMain.handle(
+    'net:downloadFile',
+    async (
+      _event,
+      opts: {
+        url: string
+        destPath: string
+        headers?: Record<string, string>
+      }
+    ): Promise<{ ok: boolean; path: string }> => {
+      return new Promise((resolve, reject) => {
+        try {
+          const destDir = dirname(opts.destPath)
+          if (!existsSync(destDir)) {
+            mkdirSync(destDir, { recursive: true })
+          }
+
+          const request = net.request({ url: opts.url, method: 'GET' })
+
+          if (opts.headers) {
+            for (const [key, value] of Object.entries(opts.headers)) {
+              request.setHeader(key, value)
+            }
+          }
+
+          const chunks: Buffer[] = []
+
+          request.on('response', (response) => {
+            // Follow redirects
+            if (response.statusCode >= 300 && response.statusCode < 400) {
+              const location = response.headers.location
+              if (location) {
+                const redirectUrl = Array.isArray(location) ? location[0] : location
+                // Re-invoke with redirect URL
+                const redirectReq = net.request({ url: redirectUrl, method: 'GET' })
+                const redirectChunks: Buffer[] = []
+                redirectReq.on('response', (rRes) => {
+                  rRes.on('data', (chunk: Buffer) => redirectChunks.push(chunk))
+                  rRes.on('end', () => {
+                    const buffer = Buffer.concat(redirectChunks)
+                    writeFileAsync(opts.destPath, buffer, (err) => {
+                      if (err) return reject(err.message)
+                      resolve({ ok: true, path: opts.destPath })
+                    })
+                  })
+                })
+                redirectReq.on('error', (err) => reject(err.message))
+                redirectReq.end()
+                return
+              }
+            }
+
+            response.on('data', (chunk: Buffer) => {
+              chunks.push(chunk)
+            })
+
+            response.on('end', () => {
+              const buffer = Buffer.concat(chunks)
+              writeFileAsync(opts.destPath, buffer, (err) => {
+                if (err) return reject(err.message)
+                resolve({ ok: true, path: opts.destPath })
+              })
+            })
+          })
+
+          request.on('error', (err) => {
+            reject(err.message)
+          })
+
+          request.end()
+        } catch (err) {
+          reject(err instanceof Error ? err.message : 'Download failed')
         }
       })
     }

@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import { Plus, Trash2, FlipVertical, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react'
+import { useAIGenerate } from '@/hooks/useAIGenerate'
+import { flashcardPrompt } from '@/lib/ai'
+import { AIGenerateButton } from '@/components/ui/AIGenerateButton'
 import type { FlashcardBlock } from '@/types/course'
 
 interface FlashcardBlockEditorProps {
@@ -10,6 +13,24 @@ interface FlashcardBlockEditorProps {
 export function FlashcardBlockEditor({ block, onUpdate }: FlashcardBlockEditorProps): JSX.Element {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [flipped, setFlipped] = useState(false)
+  const { generate, isGenerating, isConfigured } = useAIGenerate()
+
+  async function handleAIGenerate() {
+    const existing = block.cards.filter((c) => c.front.trim()).map((c) => c.front).join(', ')
+    const topic = existing || 'general study topic'
+    const text = await generate(flashcardPrompt(topic, 5))
+    if (!text) return
+    try {
+      const parsed = JSON.parse(text.replace(/```json?\n?/g, '').replace(/```/g, '').trim())
+      const cards = (Array.isArray(parsed) ? parsed : []).map((c: Record<string, string>) => ({
+        front: c.front || '',
+        back: c.back || ''
+      })).filter((c: { front: string }) => c.front)
+      if (cards.length > 0) {
+        onUpdate({ cards: [...block.cards, ...cards] })
+      }
+    } catch { /* ignore parse errors */ }
+  }
 
   function addCard() {
     onUpdate({ cards: [...block.cards, { front: '', back: '' }] })
@@ -73,6 +94,14 @@ export function FlashcardBlockEditor({ block, onUpdate }: FlashcardBlockEditorPr
             >
               <Trash2 size={14} />
             </button>
+          )}
+          {isConfigured && (
+            <AIGenerateButton
+              label="Generate Cards"
+              onClick={handleAIGenerate}
+              isGenerating={isGenerating}
+              size="sm"
+            />
           )}
           <button
             onClick={addCard}

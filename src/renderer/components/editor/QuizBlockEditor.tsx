@@ -8,6 +8,9 @@ import { useState } from 'react'
 import { createQuizQuestion } from '@/lib/block-factories'
 import { uid } from '@/lib/uid'
 import { reorder } from '@/lib/course-helpers'
+import { useAIGenerate } from '@/hooks/useAIGenerate'
+import { quizPrompt } from '@/lib/ai'
+import { AIGenerateButton } from '@/components/ui/AIGenerateButton'
 import { QuestionEditor } from './QuestionEditor'
 import { QuestionBankPicker } from './QuestionBankPicker'
 import type { QuizBlock, QuizQuestion } from '@/types/course'
@@ -20,6 +23,34 @@ interface QuizBlockEditorProps {
 export function QuizBlockEditor({ block, onUpdate }: QuizBlockEditorProps): JSX.Element {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [bankPickerOpen, setBankPickerOpen] = useState(false)
+  const { generate, isGenerating, isConfigured } = useAIGenerate()
+
+  async function handleAIGenerate() {
+    const topic = block.questions.map((q) => q.prompt).filter(Boolean).join('; ')
+    const prompt = quizPrompt(topic || 'general knowledge review')
+    const text = await generate(prompt)
+    if (!text) return
+    try {
+      const parsed = JSON.parse(text.replace(/```json?\n?/g, '').replace(/```/g, '').trim())
+      const questions: QuizQuestion[] = (parsed.questions ?? []).map((q: Record<string, unknown>) => {
+        const base = createQuizQuestion((q.type as QuizQuestion['type']) || 'multiple-choice')
+        return {
+          ...base,
+          prompt: (q.prompt as string) || '',
+          choices: Array.isArray(q.choices) ? q.choices.map((c: Record<string, unknown>) => ({
+            id: uid('choice'),
+            label: (c.label as string) || '',
+            isCorrect: !!c.isCorrect
+          })) : base.choices,
+          feedbackCorrect: (q.feedbackCorrect as string) || '',
+          feedbackIncorrect: (q.feedbackIncorrect as string) || ''
+        }
+      })
+      if (questions.length > 0) {
+        onUpdate({ questions: [...block.questions, ...questions] })
+      }
+    } catch { /* ignore parse errors */ }
+  }
 
   function handleAddQuestion(type: QuizQuestion['type'] = 'multiple-choice') {
     const newQ = createQuizQuestion(type)
@@ -176,6 +207,14 @@ export function QuizBlockEditor({ block, onUpdate }: QuizBlockEditorProps): JSX.
           <AddQuestionButton label="True / False" onClick={() => handleAddQuestion('true-false')} />
           <AddQuestionButton label="Short Answer" onClick={() => handleAddQuestion('short-answer')} />
           <AddQuestionButton label="Likert Scale" onClick={() => handleAddQuestion('likert')} />
+          {isConfigured && (
+            <AIGenerateButton
+              label="Generate Questions"
+              onClick={handleAIGenerate}
+              isGenerating={isGenerating}
+              size="sm"
+            />
+          )}
           <button
             onClick={() => setBankPickerOpen(!bankPickerOpen)}
             className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-[var(--font-weight-medium)] text-[var(--brand-magenta)] hover:text-[var(--text-primary)] bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] border border-[var(--brand-magenta)]/30 rounded-md transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"

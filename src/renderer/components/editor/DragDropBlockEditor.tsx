@@ -1,5 +1,8 @@
 import { Plus, Trash2, GripVertical, Target } from 'lucide-react'
 import { uid } from '@/lib/uid'
+import { useAIGenerate } from '@/hooks/useAIGenerate'
+import { dragDropPrompt } from '@/lib/ai'
+import { AIGenerateButton } from '@/components/ui/AIGenerateButton'
 import type { DragDropBlock, DragItem, DropZone } from '@/types/course'
 
 interface DragDropBlockEditorProps {
@@ -8,6 +11,31 @@ interface DragDropBlockEditorProps {
 }
 
 export function DragDropBlockEditor({ block, onUpdate }: DragDropBlockEditorProps): JSX.Element {
+  const { generate, isGenerating, isConfigured } = useAIGenerate()
+
+  async function handleAIGenerate() {
+    const existing = block.zones.filter((z) => z.label.trim()).map((z) => z.label).join(', ')
+    const topic = existing || block.instruction || 'educational categorization activity'
+    const text = await generate(dragDropPrompt(topic))
+    if (!text) return
+    try {
+      const parsed = JSON.parse(text.replace(/```json?\n?/g, '').replace(/```/g, '').trim())
+      if (parsed.instruction) onUpdate({ instruction: parsed.instruction })
+      const zones: DropZone[] = (parsed.zones ?? []).map((label: string) => ({ id: uid('zone'), label }))
+      const items: DragItem[] = (parsed.items ?? []).map((it: { label: string; correctZone: number }) => ({
+        id: uid('item'),
+        label: it.label,
+        correctZoneId: zones[it.correctZone]?.id ?? ''
+      }))
+      if (zones.length > 0) {
+        onUpdate({
+          zones: [...block.zones, ...zones],
+          items: [...block.items, ...items]
+        })
+      }
+    } catch { /* ignore parse errors */ }
+  }
+
   function addZone() {
     const zone: DropZone = { id: uid('zone'), label: '' }
     onUpdate({ zones: [...block.zones, zone] })
@@ -44,14 +72,24 @@ export function DragDropBlockEditor({ block, onUpdate }: DragDropBlockEditorProp
       aria-label="Drag and drop block editor"
     >
       {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-3 bg-[var(--bg-muted)] border-b border-[var(--border-default)]">
-        <GripVertical size={16} className="text-[var(--brand-magenta)]" />
-        <div>
-          <h3 className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-primary)]">Drag & Drop</h3>
-          <p className="text-[10px] text-[var(--text-tertiary)]">
-            {block.items.length} item{block.items.length !== 1 ? 's' : ''}, {block.zones.length} zone{block.zones.length !== 1 ? 's' : ''}
-          </p>
+      <div className="flex items-center justify-between px-4 py-3 bg-[var(--bg-muted)] border-b border-[var(--border-default)]">
+        <div className="flex items-center gap-2">
+          <GripVertical size={16} className="text-[var(--brand-magenta)]" />
+          <div>
+            <h3 className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-primary)]">Drag & Drop</h3>
+            <p className="text-[10px] text-[var(--text-tertiary)]">
+              {block.items.length} item{block.items.length !== 1 ? 's' : ''}, {block.zones.length} zone{block.zones.length !== 1 ? 's' : ''}
+            </p>
+          </div>
         </div>
+        {isConfigured && (
+          <AIGenerateButton
+            label="Generate Items"
+            onClick={handleAIGenerate}
+            isGenerating={isGenerating}
+            size="sm"
+          />
+        )}
       </div>
 
       <div className="p-4 space-y-4">

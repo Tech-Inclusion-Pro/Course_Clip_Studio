@@ -1,4 +1,7 @@
 import { AlertTriangle, Info, CheckCircle2, XCircle, Lightbulb } from 'lucide-react'
+import { useAIGenerate } from '@/hooks/useAIGenerate'
+import { calloutContentPrompt } from '@/lib/ai'
+import { AIGenerateButton } from '@/components/ui/AIGenerateButton'
 import type { CalloutBlock } from '@/types/course'
 
 interface CalloutBlockEditorProps {
@@ -17,6 +20,18 @@ const VARIANT_CONFIG: Record<CalloutBlock['variant'], { icon: typeof Info; borde
 export function CalloutBlockEditor({ block, onUpdate }: CalloutBlockEditorProps): JSX.Element {
   const config = VARIANT_CONFIG[block.variant]
   const Icon = config.icon
+  const { generate, isGenerating, isConfigured } = useAIGenerate()
+
+  async function handleAIGenerate() {
+    const topic = block.content || block.title || 'educational content'
+    const text = await generate(calloutContentPrompt(topic, block.variant))
+    if (!text) return
+    try {
+      const parsed = JSON.parse(text.replace(/```json?\n?/g, '').replace(/```/g, '').trim())
+      if (parsed.title) onUpdate({ title: parsed.title, content: parsed.content || block.content })
+      else if (parsed.content) onUpdate({ content: parsed.content })
+    } catch { /* ignore parse errors */ }
+  }
 
   return (
     <div
@@ -49,7 +64,17 @@ export function CalloutBlockEditor({ block, onUpdate }: CalloutBlockEditorProps)
         })}
       </div>
 
-      {/* Callout preview + edit */}
+      {/* AI generate + Callout preview + edit */}
+      {isConfigured && (
+        <div className="flex justify-end px-3 pt-2">
+          <AIGenerateButton
+            label="Generate Content"
+            onClick={handleAIGenerate}
+            isGenerating={isGenerating}
+            size="sm"
+          />
+        </div>
+      )}
       <div className={`border-l-4 ${config.borderClass} ${config.bgClass} p-4 space-y-2`}>
         <div className="flex items-start gap-2">
           <Icon size={18} className="shrink-0 mt-0.5 opacity-70" />

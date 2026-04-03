@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import { Plus, Trash2, Layers } from 'lucide-react'
+import { useAIGenerate } from '@/hooks/useAIGenerate'
+import { tabContentPrompt } from '@/lib/ai'
+import { AIGenerateButton } from '@/components/ui/AIGenerateButton'
 import type { TabsBlock } from '@/types/course'
 
 interface TabsBlockEditorProps {
@@ -9,6 +12,24 @@ interface TabsBlockEditorProps {
 
 export function TabsBlockEditor({ block, onUpdate }: TabsBlockEditorProps): JSX.Element {
   const [activeTab, setActiveTab] = useState(0)
+  const { generate, isGenerating, isConfigured } = useAIGenerate()
+
+  async function handleAIGenerate() {
+    const existing = block.tabs.filter((t) => t.label.trim()).map((t) => t.label).join(', ')
+    const topic = existing || 'educational content'
+    const text = await generate(tabContentPrompt(topic, 3))
+    if (!text) return
+    try {
+      const parsed = JSON.parse(text.replace(/```json?\n?/g, '').replace(/```/g, '').trim())
+      const tabs = (Array.isArray(parsed) ? parsed : []).map((t: Record<string, string>) => ({
+        label: t.label || '',
+        content: t.content || ''
+      })).filter((t: { label: string }) => t.label)
+      if (tabs.length > 0) {
+        onUpdate({ tabs: [...block.tabs, ...tabs] })
+      }
+    } catch { /* ignore parse errors */ }
+  }
 
   function addTab() {
     onUpdate({
@@ -42,13 +63,23 @@ export function TabsBlockEditor({ block, onUpdate }: TabsBlockEditorProps): JSX.
           <Layers size={16} className="text-[var(--brand-magenta)]" />
           <h3 className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-primary)]">Tabs</h3>
         </div>
-        <button
-          onClick={addTab}
-          className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] border border-[var(--border-default)] rounded-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
-          aria-label="Add tab"
-        >
-          <Plus size={12} /> Add Tab
-        </button>
+        <div className="flex items-center gap-1">
+          {isConfigured && (
+            <AIGenerateButton
+              label="Generate Tabs"
+              onClick={handleAIGenerate}
+              isGenerating={isGenerating}
+              size="sm"
+            />
+          )}
+          <button
+            onClick={addTab}
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-surface)] hover:bg-[var(--bg-hover)] border border-[var(--border-default)] rounded-md cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+            aria-label="Add tab"
+          >
+            <Plus size={12} /> Add Tab
+          </button>
+        </div>
       </div>
 
       {/* Tab bar */}
