@@ -400,13 +400,13 @@ export function renderLessonHtml(
 
   ${settings.enrollmentPage && lessonIndex === 0 ? `<!-- Enrollment Overlay -->
   <div id="enrollment-overlay" style="position:fixed;inset:0;z-index:9999;background:${theme.backgroundColor};display:flex;align-items:center;justify-content:center;">
-    <div style="max-width:420px;width:90%;padding:40px;background:${theme.surfaceColor};border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.12);text-align:center;">
+    <div style="max-width:420px;width:90%;padding:40px;background:#ffffff;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.12);text-align:center;">
       ${theme.logoPath ? `<img src="${escapeHtml(theme.logoPath)}" alt="Logo" style="max-height:60px;margin-bottom:20px;" />` : ''}
       <h1 style="font-family:${theme.fontFamilyHeading || theme.fontFamily};font-size:22px;color:#000000;margin-bottom:8px;">${escapeHtml(course.meta.title)}</h1>
-      <p style="font-size:14px;color:#333333;margin-bottom:24px;">${escapeHtml(course.meta.description || 'Welcome! Please enter your name to begin.')}</p>
+      <p style="font-size:14px;color:#000000;margin-bottom:24px;">${escapeHtml(course.meta.description || 'Welcome! Please enter your name to begin.')}</p>
       <form id="enrollment-form" style="text-align:left;">
         <label style="display:block;font-size:13px;font-weight:600;color:#000000;margin-bottom:6px;">Your Name</label>
-        <input id="enrollment-name" type="text" required placeholder="Enter your full name" style="width:100%;padding:10px 14px;font-size:15px;border:2px solid #00000020;border-radius:8px;background:${theme.backgroundColor};color:#000000;outline:none;box-sizing:border-box;margin-bottom:16px;" />
+        <input id="enrollment-name" type="text" required placeholder="Enter your full name" style="width:100%;padding:10px 14px;font-size:15px;border:2px solid #00000020;border-radius:8px;background:#ffffff;color:#000000;outline:none;box-sizing:border-box;margin-bottom:16px;" />
         <button type="submit" style="width:100%;padding:12px;font-size:15px;font-weight:600;background:${theme.primaryColor};color:#fff;border:none;border-radius:8px;cursor:pointer;">Begin Course</button>
       </form>
     </div>
