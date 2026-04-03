@@ -74,7 +74,7 @@ function getAnimationClass(block: ContentBlock): string {
 /**
  * Render a content block to HTML string.
  */
-function renderBlock(block: ContentBlock): string {
+function renderBlock(block: ContentBlock, options?: { enableSaveForLater?: boolean }): string {
   const animStyle = getAnimationStyle(block)
   const animClass = getAnimationClass(block)
   let html = renderBlockInner(block, animStyle, animClass)
@@ -82,6 +82,11 @@ function renderBlock(block: ContentBlock): string {
   // Append per-block feedback if present
   if (block.feedback) {
     html += `\n<details class="block-feedback"><summary>Feedback</summary><div>${escapeHtml(block.feedback)}</div></details>`
+  }
+
+  // Append per-block "Save for Later" button (skip for divider and save-for-later blocks themselves)
+  if (options?.enableSaveForLater && block.type !== 'divider' && block.type !== 'save-for-later') {
+    html += `\n<button class="sfl-save-btn" data-block-id="${block.id}" data-block-type="${block.type}" data-block-label="${escapeHtml(block.ariaLabel)}" title="Save for Later">&#9733; Save for Later</button>`
   }
 
   return html
@@ -126,13 +131,17 @@ function renderBlockInner(block: ContentBlock, animStyle: string, animClass: str
     case 'quiz':
       return renderQuiz(block, animStyle, animClass)
 
-    case 'accordion':
-      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-accordion${animClass}"${animStyle}>
+    case 'accordion': {
+      const accordionLayout = block.layout === 'horizontal' ? ` accordion-horizontal accordion-cols-${block.columns ?? 2}` : ''
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-accordion${accordionLayout}${animClass}"${animStyle}>
+  <div class="accordion-items">
   ${block.items.map((item, i) => `<details${i === 0 ? ' open' : ''}>
     <summary>${escapeHtml(item.title)}</summary>
     <div class="accordion-content">${item.content}</div>
   </details>`).join('\n  ')}
+  </div>
 </section>`
+    }
 
     case 'tabs':
       return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-tabs${animClass}"${animStyle}>
@@ -194,7 +203,9 @@ function renderBlockInner(block: ContentBlock, animStyle: string, animClass: str
 </section>`
       }
       return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-h5p${animClass}"${animStyle}>
-  <iframe src="${escapeHtml(block.embedUrl)}" title="${escapeHtml(block.ariaLabel)}" sandbox="allow-scripts allow-same-origin" allowfullscreen></iframe>
+  <div class="h5p-responsive-wrapper">
+    <iframe src="${escapeHtml(block.embedUrl)}" title="${escapeHtml(block.ariaLabel)}" sandbox="allow-scripts allow-same-origin" allowfullscreen></iframe>
+  </div>
 </section>`
 
     case 'branching':
@@ -256,6 +267,31 @@ function renderBlockInner(block: ContentBlock, animStyle: string, animClass: str
   </div>
 </section>`
     }
+
+    case 'file-upload':
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-file-upload${animClass}"${animStyle}>
+  <div class="file-upload-card">
+    <div class="file-icon">&#128196;</div>
+    <div class="file-info">
+      <p class="file-name">${escapeHtml(block.fileName || 'File')}</p>
+      <p class="file-meta">${block.fileSize > 0 ? `${(block.fileSize / 1024).toFixed(1)} KB` : ''} ${block.mimeType ? `· ${escapeHtml(block.mimeType)}` : ''}</p>
+    </div>
+    <div class="file-actions">
+      ${block.allowDownload && block.filePath ? `<a href="${escapeHtml(block.filePath)}" download="${escapeHtml(block.fileName)}" class="file-download-btn">Download</a>` : ''}
+      ${block.inlineViewer && block.filePath && (block.mimeType === 'application/pdf' || block.mimeType?.startsWith('text/')) ? `<button class="file-view-btn" data-file-src="${escapeHtml(block.filePath)}" data-file-type="${escapeHtml(block.mimeType)}">View</button>` : ''}
+    </div>
+  </div>
+  <div class="file-viewer-container" hidden></div>
+</section>`
+
+    case 'save-for-later':
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-save-for-later${animClass}"${animStyle}>
+  <h3 class="sfl-heading">${escapeHtml(block.heading || 'Saved for Later')}</h3>
+  <p class="sfl-description">${escapeHtml(block.description || '')}</p>
+  <div class="sfl-items-list" aria-live="polite">
+    <p class="sfl-empty">No items saved yet.</p>
+  </div>
+</section>`
 
     default:
       return `<!-- Unknown block type: ${(block as ContentBlock).type} -->`
@@ -342,7 +378,11 @@ export function renderLessonHtml(
 ): string {
   const theme = course.theme
   const settings = course.settings
-  const blocks = lesson.blocks.map(renderBlock).join('\n\n    ')
+  // Check if any lesson in the course has a save-for-later block
+  const hasSaveForLater = course.modules.some((m) =>
+    m.lessons.some((l) => l.blocks.some((b) => b.type === 'save-for-later'))
+  )
+  const blocks = lesson.blocks.map((b) => renderBlock(b, { enableSaveForLater: hasSaveForLater })).join('\n\n    ')
 
   return `<!DOCTYPE html>
 <html lang="${escapeHtml(course.meta.language || 'en')}">
@@ -362,11 +402,11 @@ export function renderLessonHtml(
   <div id="enrollment-overlay" style="position:fixed;inset:0;z-index:9999;background:${theme.backgroundColor};display:flex;align-items:center;justify-content:center;">
     <div style="max-width:420px;width:90%;padding:40px;background:${theme.surfaceColor};border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.12);text-align:center;">
       ${theme.logoPath ? `<img src="${escapeHtml(theme.logoPath)}" alt="Logo" style="max-height:60px;margin-bottom:20px;" />` : ''}
-      <h1 style="font-family:${theme.fontFamilyHeading || theme.fontFamily};font-size:22px;color:${theme.textColor};margin-bottom:8px;">${escapeHtml(course.meta.title)}</h1>
-      <p style="font-size:14px;color:${theme.textColor}aa;margin-bottom:24px;">${escapeHtml(course.meta.description || 'Welcome! Please enter your name to begin.')}</p>
+      <h1 style="font-family:${theme.fontFamilyHeading || theme.fontFamily};font-size:22px;color:#000000;margin-bottom:8px;">${escapeHtml(course.meta.title)}</h1>
+      <p style="font-size:14px;color:#333333;margin-bottom:24px;">${escapeHtml(course.meta.description || 'Welcome! Please enter your name to begin.')}</p>
       <form id="enrollment-form" style="text-align:left;">
-        <label style="display:block;font-size:13px;font-weight:600;color:${theme.textColor};margin-bottom:6px;">Your Name</label>
-        <input id="enrollment-name" type="text" required placeholder="Enter your full name" style="width:100%;padding:10px 14px;font-size:15px;border:2px solid ${theme.textColor}20;border-radius:8px;background:${theme.backgroundColor};color:${theme.textColor};outline:none;box-sizing:border-box;margin-bottom:16px;" />
+        <label style="display:block;font-size:13px;font-weight:600;color:#000000;margin-bottom:6px;">Your Name</label>
+        <input id="enrollment-name" type="text" required placeholder="Enter your full name" style="width:100%;padding:10px 14px;font-size:15px;border:2px solid #00000020;border-radius:8px;background:${theme.backgroundColor};color:#000000;outline:none;box-sizing:border-box;margin-bottom:16px;" />
         <button type="submit" style="width:100%;padding:12px;font-size:15px;font-weight:600;background:${theme.primaryColor};color:#fff;border:none;border-radius:8px;cursor:pointer;">Begin Course</button>
       </form>
     </div>
@@ -389,6 +429,13 @@ export function renderLessonHtml(
       <span class="module-label">${escapeHtml(moduleTitle)}</span>
       <h1>${escapeHtml(lesson.title)}</h1>
     </div>
+
+    ${settings.readmeContent && lessonIndex === 0 ? `<aside class="course-readme" role="note" aria-label="Course documentation">
+      <details>
+        <summary>&#128196; Course Documentation / Read Me</summary>
+        <div class="readme-content">${escapeHtml(settings.readmeContent)}</div>
+      </details>
+    </aside>` : ''}
 
     ${blocks}
 
@@ -567,7 +614,7 @@ function getPlayerStyles(theme: CourseTheme): string {
     .block-matching .matching-columns { display: flex; gap: 24px; }
     .matching-columns > div { flex: 1; }
     .match-item { padding: 8px 12px; margin: 4px 0; border: 2px solid ${blockText}20; border-radius: 6px; cursor: pointer; transition: all 0.2s; color: ${blockText}; background: ${blockBg}; }
-    .match-item:hover { background: ${theme.primaryColor}10; }
+    .match-item:hover { background: ${theme.primaryColor}; color: #fff; }
     .match-item.selected { border-color: ${theme.primaryColor}; background: ${theme.primaryColor}15; box-shadow: 0 0 0 2px ${theme.primaryColor}30; }
     .match-item.matched-correct { border-color: #22c55e; background: #dcfce7; color: #166534; cursor: default; }
     .match-item.matched-incorrect { border-color: #ef4444; background: #fee2e2; color: #991b1b; }
@@ -628,6 +675,62 @@ function getPlayerStyles(theme: CourseTheme): string {
     @keyframes lumina-slide-up { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes lumina-slide-left { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
     @keyframes lumina-scale { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+
+    /* Accordion horizontal layout */
+    .accordion-horizontal .accordion-items { display: grid; gap: 12px; }
+    .accordion-horizontal.accordion-cols-2 .accordion-items { grid-template-columns: repeat(2, 1fr); }
+    .accordion-horizontal.accordion-cols-3 .accordion-items { grid-template-columns: repeat(3, 1fr); }
+    @media (max-width: 768px) {
+      .accordion-horizontal.accordion-cols-3 .accordion-items { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .accordion-horizontal .accordion-items { grid-template-columns: 1fr !important; }
+    }
+
+    /* H5P responsive wrapper */
+    .block-h5p iframe, .h5p-responsive-wrapper { width: 100%; min-height: 400px; border: none; }
+    .h5p-responsive-wrapper { position: relative; overflow: hidden; }
+    .h5p-responsive-wrapper iframe { width: 100%; height: 100%; min-height: 400px; border: none; }
+    @media (max-width: 600px) { .h5p-responsive-wrapper iframe, .block-h5p iframe { min-height: 280px; } }
+    @media (min-width: 960px) { .h5p-responsive-wrapper iframe, .block-h5p iframe { min-height: 520px; } }
+
+    /* File Upload block */
+    .block-file-upload .file-upload-card { display: flex; align-items: center; gap: 16px; padding: 16px; border: 1px solid ${blockText}20; border-radius: 10px; background: ${blockBg}; }
+    .file-icon { font-size: 32px; }
+    .file-info { flex: 1; }
+    .file-name { font-size: 15px; font-weight: 600; color: ${blockText}; margin-bottom: 2px; }
+    .file-meta { font-size: 12px; color: ${blockText}; opacity: 0.7; }
+    .file-actions { display: flex; gap: 8px; }
+    .file-download-btn, .file-view-btn { padding: 8px 16px; border-radius: ${btnRadius}; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; border: none; }
+    .file-download-btn { background: ${theme.primaryColor}; color: #fff; }
+    .file-view-btn { background: ${blockBg}; color: ${blockText}; border: 2px solid ${theme.primaryColor}; }
+    .file-viewer-container { margin-top: 12px; border-radius: 8px; overflow: hidden; border: 1px solid ${blockText}20; }
+    .file-viewer-container iframe { width: 100%; height: 500px; border: none; }
+
+    /* Save for Later */
+    .sfl-save-btn { display: block; margin: 6px 0 0 auto; padding: 4px 12px; font-size: 11px; background: none; border: 1px solid ${blockText}25; border-radius: ${btnRadius}; color: ${blockText}; opacity: 0.6; cursor: pointer; transition: all 0.2s; }
+    .sfl-save-btn:hover { opacity: 1; border-color: ${theme.primaryColor}; color: ${ensureContrast(theme.primaryColor, theme.backgroundColor)}; }
+    .sfl-save-btn.saved { opacity: 1; border-color: #22c55e; color: #22c55e; }
+    .block-save-for-later { background: ${blockBg}; color: ${blockText}; padding: 24px; border-radius: 12px; border: 1px solid ${blockText}15; }
+    .sfl-heading { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .sfl-description { font-size: 14px; opacity: 0.8; margin-bottom: 16px; }
+    .sfl-items-list { min-height: 40px; }
+    .sfl-empty { font-size: 13px; opacity: 0.5; font-style: italic; }
+    .sfl-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; margin-bottom: 6px; border: 1px solid ${blockText}15; border-radius: 8px; background: ${blockBg}; }
+    .sfl-item-label { flex: 1; font-size: 13px; }
+    .sfl-item-type { font-size: 10px; opacity: 0.5; text-transform: uppercase; }
+    .sfl-item-remove { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 14px; padding: 4px; }
+
+    /* Incomplete section highlighting */
+    .block-incomplete-highlight { outline: 3px dashed #ef4444 !important; outline-offset: 4px; border-radius: 4px; animation: pulse-outline 1.5s ease-in-out 3; }
+    @keyframes pulse-outline { 0%, 100% { outline-color: #ef4444; } 50% { outline-color: #fca5a5; } }
+
+    /* Course README */
+    .course-readme { margin-bottom: 24px; }
+    .course-readme details { border: 1px solid ${theme.primaryColor}30; border-radius: 10px; }
+    .course-readme summary { padding: 14px 18px; cursor: pointer; font-weight: 600; font-size: 14px; color: ${ensureContrast(theme.primaryColor, theme.backgroundColor)}; background: ${theme.primaryColor}08; border-radius: 10px; }
+    .course-readme[open] summary { border-radius: 10px 10px 0 0; }
+    .readme-content { padding: 16px 18px; font-size: 14px; line-height: 1.7; white-space: pre-wrap; color: ${bodyText}; }
 
     @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
     @media (max-width: 600px) {

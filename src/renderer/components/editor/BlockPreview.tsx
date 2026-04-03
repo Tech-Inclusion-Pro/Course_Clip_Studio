@@ -16,7 +16,9 @@ import {
   XCircle,
   Lightbulb,
   Puzzle,
-  Presentation
+  Presentation,
+  FileUp,
+  Bookmark
 } from 'lucide-react'
 import { FeedbackFormPreview } from './FeedbackFormPreview'
 import type { ContentBlock, CalloutBlock } from '@/types/course'
@@ -378,6 +380,32 @@ export function BlockPreview({ block }: BlockPreviewProps): JSX.Element {
             <p className="absolute bottom-1 right-1.5 text-[10px] text-[var(--text-tertiary)]">
               {block.elements.length} element{block.elements.length !== 1 ? 's' : ''}
             </p>
+          </div>
+        </div>
+      )
+
+    case 'file-upload':
+      return (
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--bg-muted)]">
+          <FileUp size={24} className="text-[var(--text-tertiary)] shrink-0" />
+          <div className="min-w-0">
+            <p className="text-sm text-[var(--text-primary)] truncate">
+              {block.fileName || 'No file selected'}
+            </p>
+            <p className="text-xs text-[var(--text-secondary)]">
+              {block.allowDownload ? 'Downloadable' : 'View only'}{block.inlineViewer ? ' · Inline viewer' : ''}
+            </p>
+          </div>
+        </div>
+      )
+
+    case 'save-for-later':
+      return (
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--bg-muted)]">
+          <Bookmark size={24} className="text-[var(--text-tertiary)] shrink-0" />
+          <div className="min-w-0">
+            <p className="text-sm text-[var(--text-primary)]">{block.heading || 'Saved for Later'}</p>
+            <p className="text-xs text-[var(--text-secondary)]">Collects student-saved items</p>
           </div>
         </div>
       )

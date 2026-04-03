@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Trash2, ChevronDown, ChevronRight, ChevronsUpDown } from 'lucide-react'
+import { Plus, Trash2, ChevronDown, ChevronRight, ChevronsUpDown, Rows3, Columns3 } from 'lucide-react'
 import type { AccordionBlock } from '@/types/course'
 
 interface AccordionBlockEditorProps {
@@ -52,7 +52,7 @@ export function AccordionBlockEditor({ block, onUpdate }: AccordionBlockEditorPr
           <div>
             <h3 className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-primary)]">Accordion</h3>
             <p className="text-[10px] text-[var(--text-tertiary)]">
-              {block.items.length} section{block.items.length !== 1 ? 's' : ''}
+              {block.items.length} section{block.items.length !== 1 ? 's' : ''} &middot; {block.layout === 'horizontal' ? `${block.columns ?? 2} columns` : 'stacked'}
             </p>
           </div>
         </div>
@@ -63,6 +63,54 @@ export function AccordionBlockEditor({ block, onUpdate }: AccordionBlockEditorPr
         >
           <Plus size={12} /> Add Section
         </button>
+      </div>
+
+      {/* Layout Options */}
+      <div className="flex items-center gap-3 px-4 py-2 border-b border-[var(--border-default)] bg-[var(--bg-surface)]">
+        <span className="text-[10px] font-[var(--font-weight-semibold)] text-[var(--text-tertiary)] uppercase tracking-wider">Layout</span>
+        <div className="flex gap-1">
+          <button
+            onClick={() => onUpdate({ layout: 'stacked' })}
+            className={`flex items-center gap-1 px-2 py-1 text-[10px] rounded border cursor-pointer transition-colors ${
+              block.layout !== 'horizontal'
+                ? 'border-[var(--brand-magenta)] bg-[var(--brand-magenta)]/5 text-[var(--text-brand)]'
+                : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'
+            }`}
+            aria-pressed={block.layout !== 'horizontal'}
+          >
+            <Rows3 size={10} /> Stacked
+          </button>
+          <button
+            onClick={() => onUpdate({ layout: 'horizontal', columns: block.columns ?? 2 })}
+            className={`flex items-center gap-1 px-2 py-1 text-[10px] rounded border cursor-pointer transition-colors ${
+              block.layout === 'horizontal'
+                ? 'border-[var(--brand-magenta)] bg-[var(--brand-magenta)]/5 text-[var(--text-brand)]'
+                : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'
+            }`}
+            aria-pressed={block.layout === 'horizontal'}
+          >
+            <Columns3 size={10} /> Side by Side
+          </button>
+        </div>
+        {block.layout === 'horizontal' && (
+          <div className="flex items-center gap-1 ml-2">
+            <span className="text-[10px] text-[var(--text-tertiary)]">Columns:</span>
+            {([2, 3] as const).map((n) => (
+              <button
+                key={n}
+                onClick={() => onUpdate({ columns: n })}
+                className={`px-2 py-0.5 text-[10px] rounded border cursor-pointer ${
+                  (block.columns ?? 2) === n
+                    ? 'border-[var(--brand-magenta)] bg-[var(--brand-magenta)]/5 text-[var(--text-brand)]'
+                    : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'
+                }`}
+                aria-pressed={(block.columns ?? 2) === n}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Sections */}

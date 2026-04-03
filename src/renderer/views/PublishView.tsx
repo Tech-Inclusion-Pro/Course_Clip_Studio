@@ -55,6 +55,7 @@ export function PublishView(): JSX.Element {
 
 function PublishWizard({ course }: { course: Course }): JSX.Element {
   const navigate = useNavigate()
+  const updateCourse = useCourseStore((s) => s.updateCourse)
   const [step, setStep] = useState<WizardStep>('preflight')
   const [format, setFormat] = useState<ExportFormat>('scorm-1.2')
   const [acknowledged, setAcknowledged] = useState(false)
@@ -79,6 +80,9 @@ function PublishWizard({ course }: { course: Course }): JSX.Element {
   const [pdfIncludeAnswers, setPdfIncludeAnswers] = useState(false)
   const [pdfIncludeUdl, setPdfIncludeUdl] = useState(false)
 
+  // README / documentation for students
+  const [readmeContent, setReadmeContent] = useState(course.settings.readmeContent ?? '')
+
   // Build state
   const [building, setBuilding] = useState(false)
   const [progress, setProgress] = useState<PackageProgress | null>(null)
@@ -97,6 +101,11 @@ function PublishWizard({ course }: { course: Course }): JSX.Element {
     setBuilding(true)
     setBuildError(null)
     setBuildComplete(false)
+
+    // Save readme content to course before building
+    if (readmeContent !== (course.settings.readmeContent ?? '')) {
+      updateCourse(course.id, { settings: { ...course.settings, readmeContent } })
+    }
 
     try {
       const safeName = course.meta.title.replace(/[^a-zA-Z0-9]/g, '_')
@@ -141,7 +150,7 @@ function PublishWizard({ course }: { course: Course }): JSX.Element {
     } finally {
       setBuilding(false)
     }
-  }, [course, format, xapiEndpoint, xapiUsername, xapiPassword, xapiActorName, xapiActorEmail, pdfPageSize, pdfIncludeAnswers, pdfIncludeUdl])
+  }, [course, format, xapiEndpoint, xapiUsername, xapiPassword, xapiActorName, xapiActorEmail, pdfPageSize, pdfIncludeAnswers, pdfIncludeUdl, readmeContent, updateCourse])
 
   const steps: WizardStep[] = ['preflight', 'format', 'settings', 'build']
   const stepIndex = steps.indexOf(step)
@@ -252,6 +261,8 @@ function PublishWizard({ course }: { course: Course }): JSX.Element {
               onPdfPageSizeChange={setPdfPageSize}
               onPdfIncludeAnswersChange={setPdfIncludeAnswers}
               onPdfIncludeUdlChange={setPdfIncludeUdl}
+              readmeContent={readmeContent}
+              onReadmeContentChange={setReadmeContent}
             />
           )}
           {step === 'build' && (
@@ -541,7 +552,9 @@ function SettingsStep({
   pdfIncludeUdl,
   onPdfPageSizeChange,
   onPdfIncludeAnswersChange,
-  onPdfIncludeUdlChange
+  onPdfIncludeUdlChange,
+  readmeContent,
+  onReadmeContentChange
 }: {
   format: ExportFormat
   masteryScore: number
@@ -565,23 +578,46 @@ function SettingsStep({
   onPdfPageSizeChange: (v: 'A4' | 'Letter') => void
   onPdfIncludeAnswersChange: (v: boolean) => void
   onPdfIncludeUdlChange: (v: boolean) => void
+  readmeContent: string
+  onReadmeContentChange: (v: string) => void
 }): JSX.Element {
+  const readmeSection = (
+    <div className="space-y-2 mt-6 pt-6 border-t border-[var(--border-default)]">
+      <label className="text-xs font-[var(--font-weight-semibold)] text-[var(--text-secondary)]">
+        Course Documentation / Read Me (Optional)
+      </label>
+      <p className="text-[10px] text-[var(--text-tertiary)]">
+        Add a README or any documentation you want the student to see at the start of the course.
+      </p>
+      <textarea
+        value={readmeContent}
+        onChange={(e) => onReadmeContentChange(e.target.value)}
+        rows={5}
+        className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)] resize-y"
+        placeholder="Enter any instructions, links, or documentation for the student..."
+      />
+    </div>
+  )
+
   if (format === 'scorm-1.2' || format === 'scorm-2004') {
     return (
-      <ScormSettings
-        format={format}
-        masteryScore={masteryScore}
-        completionCriteria={completionCriteria}
-        onMasteryChange={onMasteryChange}
-        onCompletionChange={onCompletionChange}
-        lessonCount={lessonCount}
-      />
+      <>
+        <ScormSettings
+          format={format}
+          masteryScore={masteryScore}
+          completionCriteria={completionCriteria}
+          onMasteryChange={onMasteryChange}
+          onCompletionChange={onCompletionChange}
+          lessonCount={lessonCount}
+        />
+        {readmeSection}
+      </>
     )
   }
 
   if (format === 'xapi') {
     return (
-      <XapiSettings
+      <><XapiSettings
         endpoint={xapiEndpoint}
         username={xapiUsername}
         password={xapiPassword}
@@ -593,20 +629,23 @@ function SettingsStep({
         onActorNameChange={onXapiActorNameChange}
         onActorEmailChange={onXapiActorEmailChange}
         lessonCount={lessonCount}
-      />
+      />{readmeSection}</>
     )
   }
 
   if (format === 'pdf') {
     return (
-      <PdfSettings
-        pageSize={pdfPageSize}
-        includeAnswers={pdfIncludeAnswers}
-        includeUdl={pdfIncludeUdl}
-        onPageSizeChange={onPdfPageSizeChange}
-        onIncludeAnswersChange={onPdfIncludeAnswersChange}
-        onIncludeUdlChange={onPdfIncludeUdlChange}
-      />
+      <>
+        <PdfSettings
+          pageSize={pdfPageSize}
+          includeAnswers={pdfIncludeAnswers}
+          includeUdl={pdfIncludeUdl}
+          onPageSizeChange={onPdfPageSizeChange}
+          onIncludeAnswersChange={onPdfIncludeAnswersChange}
+          onIncludeUdlChange={onPdfIncludeUdlChange}
+        />
+        {readmeSection}
+      </>
     )
   }
 
@@ -643,6 +682,8 @@ function SettingsStep({
           <span>Open <strong>index.html</strong> in any modern browser to view the course. No internet connection or server required.</span>
         </div>
       </div>
+
+      {readmeSection}
     </div>
   )
 }

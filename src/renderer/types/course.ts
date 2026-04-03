@@ -91,6 +91,8 @@ export type ContentBlock =
   | PluginBlock
   | FeedbackFormBlock
   | SlideBlock
+  | FileUploadBlock
+  | SaveForLaterBlock
 
 // ─── Base Block ───
 
@@ -217,6 +219,8 @@ export interface MatchItem {
 export interface AccordionBlock extends BaseBlock {
   type: 'accordion'
   items: { title: string; content: string }[]
+  layout?: 'stacked' | 'horizontal'
+  columns?: 2 | 3
 }
 
 export interface TabsBlock extends BaseBlock {
@@ -358,6 +362,26 @@ export interface SlideBlock extends BaseBlock {
   elements: SlideElement[]
 }
 
+// ─── File Upload Block ───
+
+export interface FileUploadBlock extends BaseBlock {
+  type: 'file-upload'
+  filePath: string
+  fileName: string
+  fileSize: number
+  mimeType: string
+  allowDownload: boolean
+  inlineViewer: boolean
+}
+
+// ─── Save for Later Block ───
+
+export interface SaveForLaterBlock extends BaseBlock {
+  type: 'save-for-later'
+  heading: string
+  description: string
+}
+
 // ─── UDL ───
 
 export interface UDLChecklist {
@@ -458,6 +482,7 @@ export interface CourseSettings {
   accessibilityModeToggle: boolean
   completionCriteria: 'visit-all' | 'quiz-pass' | 'both'
   enrollmentPage: boolean
+  readmeContent?: string
   xapi: XAPIConfig | null
   scorm: SCORMConfig | null
 }
@@ -526,7 +551,9 @@ export const BLOCK_TYPES: readonly BlockType[] = [
   'custom-html',
   'plugin',
   'feedback-form',
-  'slide'
+  'slide',
+  'file-upload',
+  'save-for-later'
 ] as const
 
 export const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
@@ -549,8 +576,24 @@ export const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
   'custom-html': 'HTML / Rich Text',
   'plugin': 'Plugin',
   'feedback-form': 'Feedback Form',
-  'slide': 'Slide'
+  'slide': 'Slide',
+  'file-upload': 'File Upload',
+  'save-for-later': 'Save for Later'
 }
+
+// ─── Interactive Block Types ───
+// These block types require student interaction to complete
+export const INTERACTIVE_BLOCK_TYPES: readonly BlockType[] = [
+  'video',
+  'audio',
+  'quiz',
+  'accordion',
+  'drag-drop',
+  'flashcard',
+  'feedback-form',
+  'matching',
+  'tabs'
+] as const
 
 // ─── Content Area ───
 

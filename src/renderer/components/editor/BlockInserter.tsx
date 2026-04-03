@@ -20,6 +20,8 @@ import {
   ClipboardList,
   Puzzle,
   Presentation,
+  FileUp,
+  Bookmark,
   X
 } from 'lucide-react'
 import { BLOCK_TYPES, BLOCK_TYPE_LABELS } from '@/types/course'
@@ -45,7 +47,9 @@ const BLOCK_ICONS: Record<BlockType, typeof Type> = {
   'custom-html': FileCode,
   'plugin': Puzzle,
   'feedback-form': ClipboardList,
-  'slide': Presentation
+  'slide': Presentation,
+  'file-upload': FileUp,
+  'save-for-later': Bookmark
 }
 
 interface BlockInserterProps {

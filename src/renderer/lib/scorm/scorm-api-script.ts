@@ -189,6 +189,10 @@ export function getPlayerScript(): string {
     initMatching();
     initBranching();
     initAnimations();
+    initAutoSave();
+    initSaveForLater();
+    initFileViewer();
+    initIncompleteHighlighting();
   }
 
   function initEnrollment() {
@@ -548,6 +552,216 @@ export function getPlayerScript(): string {
     }, { threshold: 0.15 });
 
     blocks.forEach(function(el) { observer.observe(el); });
+  }
+
+  // Auto-save progress via SCORM suspend_data
+  function initAutoSave() {
+    var sp = getSuspendProgress();
+
+    // Restore scroll position
+    if (sp.scrollPositions && sp.scrollPositions[lessonId]) {
+      var savedScroll = parseInt(sp.scrollPositions[lessonId]);
+      if (savedScroll > 0) window.scrollTo(0, savedScroll);
+    }
+
+    // Periodically save scroll position
+    var scrollTimer = null;
+    window.addEventListener('scroll', function() {
+      if (scrollTimer) clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(function() {
+        var progress = getSuspendProgress();
+        if (!progress.scrollPositions) progress.scrollPositions = {};
+        progress.scrollPositions[lessonId] = String(window.scrollY);
+        saveSuspendProgress(progress);
+      }, 500);
+    });
+
+    // Auto-save on any input change
+    document.addEventListener('change', function(e) {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA')) {
+        var progress = getSuspendProgress();
+        if (!progress.inputState) progress.inputState = {};
+        if (!progress.inputState[lessonId]) progress.inputState[lessonId] = {};
+        var el = e.target;
+        var name = el.name || el.id || el.getAttribute('data-question');
+        if (name) {
+          progress.inputState[lessonId][name] = el.type === 'checkbox' || el.type === 'radio' ? el.checked + '|' + el.value : el.value;
+          saveSuspendProgress(progress);
+        }
+      }
+    });
+
+    // Restore saved input state
+    if (sp.inputState && sp.inputState[lessonId]) {
+      var state = sp.inputState[lessonId];
+      Object.keys(state).forEach(function(name) {
+        var val = state[name];
+        var els = document.querySelectorAll('[name="' + name + '"], [id="' + name + '"], [data-question="' + name + '"]');
+        els.forEach(function(el) {
+          if (el.type === 'radio' || el.type === 'checkbox') {
+            var parts = val.split('|');
+            if (parts[1] === el.value) el.checked = parts[0] === 'true';
+          } else {
+            el.value = val;
+          }
+        });
+      });
+    }
+  }
+
+  // Save for Later via SCORM suspend_data
+  function initSaveForLater() {
+    function getSaved() {
+      var sp = getSuspendProgress();
+      return sp.savedForLater || [];
+    }
+    function setSaved(items) {
+      var sp = getSuspendProgress();
+      sp.savedForLater = items;
+      saveSuspendProgress(sp);
+    }
+
+    document.querySelectorAll('.sfl-save-btn').forEach(function(btn) {
+      var blockId = btn.getAttribute('data-block-id');
+      var saved = getSaved();
+      if (saved.some(function(s) { return s.id === blockId; })) {
+        btn.textContent = '\u2605 Saved';
+        btn.classList.add('saved');
+      }
+
+      btn.addEventListener('click', function() {
+        var items = getSaved();
+        var existing = items.findIndex(function(s) { return s.id === blockId; });
+        if (existing >= 0) {
+          items.splice(existing, 1);
+          btn.textContent = '\u2606 Save for Later';
+          btn.classList.remove('saved');
+        } else {
+          items.push({
+            id: blockId,
+            type: btn.getAttribute('data-block-type'),
+            label: btn.getAttribute('data-block-label'),
+            lessonId: lessonId,
+            savedAt: new Date().toISOString()
+          });
+          btn.textContent = '\u2605 Saved';
+          btn.classList.add('saved');
+        }
+        setSaved(items);
+        renderSflLists();
+      });
+    });
+
+    function renderSflLists() {
+      document.querySelectorAll('.block-save-for-later').forEach(function(block) {
+        var list = block.querySelector('.sfl-items-list');
+        if (!list) return;
+        var items = getSaved();
+        if (items.length === 0) {
+          list.innerHTML = '<p class="sfl-empty">No items saved yet.</p>';
+          return;
+        }
+        list.innerHTML = items.map(function(item) {
+          return '<div class="sfl-item"><span class="sfl-item-type">' + (item.type || '') + '</span><span class="sfl-item-label">' + (item.label || 'Untitled') + '</span><button class="sfl-item-remove" data-sfl-id="' + item.id + '" title="Remove">&times;</button></div>';
+        }).join('');
+        list.querySelectorAll('.sfl-item-remove').forEach(function(removeBtn) {
+          removeBtn.addEventListener('click', function() {
+            var rid = removeBtn.getAttribute('data-sfl-id');
+            var current = getSaved();
+            setSaved(current.filter(function(s) { return s.id !== rid; }));
+            var saveBtn = document.querySelector('.sfl-save-btn[data-block-id="' + rid + '"]');
+            if (saveBtn) { saveBtn.textContent = '\u2606 Save for Later'; saveBtn.classList.remove('saved'); }
+            renderSflLists();
+          });
+        });
+      });
+    }
+    renderSflLists();
+  }
+
+  // File viewer - toggle inline PDF/HTML viewer
+  function initFileViewer() {
+    document.querySelectorAll('.file-view-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var container = btn.closest('.block-file-upload').querySelector('.file-viewer-container');
+        if (!container) return;
+        if (!container.hidden) {
+          container.hidden = true;
+          container.innerHTML = '';
+          btn.textContent = 'View';
+          return;
+        }
+        var src = btn.getAttribute('data-file-src');
+        var type = btn.getAttribute('data-file-type');
+        container.hidden = false;
+        if (type === 'application/pdf') {
+          container.innerHTML = '<iframe src="' + src + '" style="width:100%;height:500px;border:none;" title="PDF viewer"></iframe>';
+        } else {
+          container.innerHTML = '<iframe src="' + src + '" style="width:100%;height:400px;border:none;" title="Document viewer" sandbox="allow-same-origin"></iframe>';
+        }
+        btn.textContent = 'Hide';
+      });
+    });
+  }
+
+  // Incomplete section highlighting on navigation
+  function initIncompleteHighlighting() {
+    var INTERACTIVE_TYPES = ['video', 'audio', 'quiz', 'accordion', 'drag-drop', 'flashcard', 'feedback-form', 'matching', 'tabs'];
+    var nextBtn = document.getElementById('btn-next');
+    if (!nextBtn) return;
+
+    var originalOnclick = nextBtn.onclick;
+    nextBtn.onclick = function(e) {
+      var incompleteBlocks = [];
+      INTERACTIVE_TYPES.forEach(function(type) {
+        document.querySelectorAll('.block-' + type.replace('-', '')).forEach(function(block) {
+          incompleteBlocks.push(block);
+        });
+        document.querySelectorAll('.block-' + type).forEach(function(block) {
+          if (incompleteBlocks.indexOf(block) === -1) incompleteBlocks.push(block);
+        });
+      });
+
+      var unfinished = [];
+      incompleteBlocks.forEach(function(block) {
+        if (block.classList.contains('block-quiz')) {
+          var result = block.querySelector('.quiz-result');
+          if (!result || result.hidden) unfinished.push(block);
+          return;
+        }
+        if (block.classList.contains('block-dragdrop') || block.classList.contains('block-drag-drop')) {
+          var unplaced = block.querySelectorAll('.dd-item:not(.placed)');
+          if (unplaced.length > 0) unfinished.push(block);
+          return;
+        }
+        if (block.classList.contains('block-matching')) {
+          var unmatched = block.querySelectorAll('.match-left:not(.matched-correct)');
+          if (unmatched.length > 0) unfinished.push(block);
+          return;
+        }
+        if (block.classList.contains('block-feedback-form') || block.querySelector('.feedback-submit')) {
+          var submitted = block.querySelector('.feedback-thankyou');
+          if (!submitted || submitted.hidden) unfinished.push(block);
+        }
+      });
+
+      if (unfinished.length > 0) {
+        document.querySelectorAll('.block-incomplete-highlight').forEach(function(el) {
+          el.classList.remove('block-incomplete-highlight');
+        });
+        unfinished.forEach(function(block) {
+          block.classList.add('block-incomplete-highlight');
+        });
+        unfinished[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        return false;
+      }
+
+      document.querySelectorAll('.block-incomplete-highlight').forEach(function(el) {
+        el.classList.remove('block-incomplete-highlight');
+      });
+      if (originalOnclick) return originalOnclick.call(nextBtn, e);
+    };
   }
 })();
 `

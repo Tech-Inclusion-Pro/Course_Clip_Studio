@@ -97,6 +97,10 @@ export function getHtmlPlayerScript(): string {
     initMatching();
     initBranching();
     initAnimations();
+    initAutoSave();
+    initSaveForLater();
+    initFileViewer();
+    initIncompleteHighlighting();
     restoreCompletionIndicators();
   }
 
@@ -423,6 +427,228 @@ export function getHtmlPlayerScript(): string {
         }
       });
     });
+  }
+
+  // Auto-save progress periodically and on interaction
+  function initAutoSave() {
+    // Save scroll position
+    var scrollKey = 'lumina_scroll_' + courseId + '_' + lessonId;
+    var savedScroll = 0;
+    try { savedScroll = parseInt(localStorage.getItem(scrollKey) || '0'); } catch(e) {}
+    if (savedScroll > 0) window.scrollTo(0, savedScroll);
+
+    // Periodically save scroll position
+    var scrollTimer = null;
+    window.addEventListener('scroll', function() {
+      if (scrollTimer) clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(function() {
+        try { localStorage.setItem(scrollKey, String(window.scrollY)); } catch(e) {}
+      }, 500);
+    });
+
+    // Auto-save on any input change (quiz answers, etc.)
+    document.addEventListener('change', function(e) {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA')) {
+        var p = getProgress();
+        if (!p.inputState) p.inputState = {};
+        if (!p.inputState[lessonId]) p.inputState[lessonId] = {};
+        var el = e.target;
+        var name = el.name || el.id || el.getAttribute('data-question');
+        if (name) {
+          p.inputState[lessonId][name] = el.type === 'checkbox' || el.type === 'radio' ? el.checked + '|' + el.value : el.value;
+          saveProgress(p);
+        }
+      }
+    });
+
+    // Restore saved input state
+    var p = getProgress();
+    if (p.inputState && p.inputState[lessonId]) {
+      var state = p.inputState[lessonId];
+      Object.keys(state).forEach(function(name) {
+        var val = state[name];
+        var els = document.querySelectorAll('[name="' + name + '"], [id="' + name + '"], [data-question="' + name + '"]');
+        els.forEach(function(el) {
+          if (el.type === 'radio' || el.type === 'checkbox') {
+            var parts = val.split('|');
+            if (parts[1] === el.value) el.checked = parts[0] === 'true';
+          } else {
+            el.value = val;
+          }
+        });
+      });
+    }
+  }
+
+  // Save for Later — per-block save buttons
+  function initSaveForLater() {
+    var sflKey = 'lumina_sfl_' + courseId;
+
+    function getSaved() {
+      try { var d = localStorage.getItem(sflKey); return d ? JSON.parse(d) : []; } catch(e) { return []; }
+    }
+    function setSaved(items) {
+      try { localStorage.setItem(sflKey, JSON.stringify(items)); } catch(e) {}
+    }
+
+    // Init save buttons
+    document.querySelectorAll('.sfl-save-btn').forEach(function(btn) {
+      var blockId = btn.getAttribute('data-block-id');
+      var saved = getSaved();
+      if (saved.some(function(s) { return s.id === blockId; })) {
+        btn.textContent = '\u2605 Saved';
+        btn.classList.add('saved');
+      }
+
+      btn.addEventListener('click', function() {
+        var items = getSaved();
+        var existing = items.findIndex(function(s) { return s.id === blockId; });
+        if (existing >= 0) {
+          items.splice(existing, 1);
+          btn.textContent = '\u2606 Save for Later';
+          btn.classList.remove('saved');
+        } else {
+          items.push({
+            id: blockId,
+            type: btn.getAttribute('data-block-type'),
+            label: btn.getAttribute('data-block-label'),
+            lessonId: lessonId,
+            savedAt: new Date().toISOString()
+          });
+          btn.textContent = '\u2605 Saved';
+          btn.classList.add('saved');
+        }
+        setSaved(items);
+        renderSflLists();
+      });
+    });
+
+    // Render saved items in save-for-later blocks
+    function renderSflLists() {
+      document.querySelectorAll('.block-save-for-later').forEach(function(block) {
+        var list = block.querySelector('.sfl-items-list');
+        if (!list) return;
+        var items = getSaved();
+        if (items.length === 0) {
+          list.innerHTML = '<p class="sfl-empty">No items saved yet.</p>';
+          return;
+        }
+        list.innerHTML = items.map(function(item) {
+          return '<div class="sfl-item"><span class="sfl-item-type">' + (item.type || '') + '</span><span class="sfl-item-label">' + (item.label || 'Untitled') + '</span><button class="sfl-item-remove" data-sfl-id="' + item.id + '" title="Remove">&times;</button></div>';
+        }).join('');
+        list.querySelectorAll('.sfl-item-remove').forEach(function(removeBtn) {
+          removeBtn.addEventListener('click', function() {
+            var rid = removeBtn.getAttribute('data-sfl-id');
+            var current = getSaved();
+            setSaved(current.filter(function(s) { return s.id !== rid; }));
+            // Update corresponding save button if on this page
+            var saveBtn = document.querySelector('.sfl-save-btn[data-block-id="' + rid + '"]');
+            if (saveBtn) { saveBtn.textContent = '\u2606 Save for Later'; saveBtn.classList.remove('saved'); }
+            renderSflLists();
+          });
+        });
+      });
+    }
+    renderSflLists();
+  }
+
+  // File viewer - toggle inline PDF/HTML viewer
+  function initFileViewer() {
+    document.querySelectorAll('.file-view-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var container = btn.closest('.block-file-upload').querySelector('.file-viewer-container');
+        if (!container) return;
+        if (!container.hidden) {
+          container.hidden = true;
+          container.innerHTML = '';
+          btn.textContent = 'View';
+          return;
+        }
+        var src = btn.getAttribute('data-file-src');
+        var type = btn.getAttribute('data-file-type');
+        container.hidden = false;
+        if (type === 'application/pdf') {
+          container.innerHTML = '<iframe src="' + src + '" style="width:100%;height:500px;border:none;" title="PDF viewer"></iframe>';
+        } else {
+          container.innerHTML = '<iframe src="' + src + '" style="width:100%;height:400px;border:none;" title="Document viewer" sandbox="allow-same-origin"></iframe>';
+        }
+        btn.textContent = 'Hide';
+      });
+    });
+  }
+
+  // Incomplete section highlighting on Next click
+  function initIncompleteHighlighting() {
+    var INTERACTIVE_TYPES = ['video', 'audio', 'quiz', 'accordion', 'drag-drop', 'flashcard', 'feedback-form', 'matching', 'tabs'];
+    var nextBtn = document.getElementById('btn-next');
+    if (!nextBtn) return;
+
+    var originalOnclick = nextBtn.onclick;
+    nextBtn.onclick = function(e) {
+      // Check for incomplete interactive blocks
+      var incompleteBlocks = [];
+      INTERACTIVE_TYPES.forEach(function(type) {
+        document.querySelectorAll('.block-' + type.replace('-', '')).forEach(function(block) {
+          incompleteBlocks.push(block);
+        });
+        // Also check with hyphen format
+        document.querySelectorAll('.block-' + type).forEach(function(block) {
+          if (incompleteBlocks.indexOf(block) === -1) incompleteBlocks.push(block);
+        });
+      });
+
+      // Check which blocks need interaction
+      var unfinished = [];
+      incompleteBlocks.forEach(function(block) {
+        // Quiz: check if submitted
+        if (block.classList.contains('block-quiz')) {
+          var result = block.querySelector('.quiz-result');
+          if (!result || result.hidden) unfinished.push(block);
+          return;
+        }
+        // Drag & Drop: check if all items placed
+        if (block.classList.contains('block-dragdrop')) {
+          var unplaced = block.querySelectorAll('.dd-item:not(.placed)');
+          if (unplaced.length > 0) unfinished.push(block);
+          return;
+        }
+        // Matching: check if all matched
+        if (block.classList.contains('block-matching')) {
+          var unmatched = block.querySelectorAll('.match-left:not(.matched-correct)');
+          if (unmatched.length > 0) unfinished.push(block);
+          return;
+        }
+        // Feedback form: check if submitted
+        if (block.classList.contains('block-feedback-form') || block.querySelector('.feedback-submit')) {
+          var submitted = block.querySelector('.feedback-thankyou');
+          if (!submitted || submitted.hidden) unfinished.push(block);
+        }
+      });
+
+      if (unfinished.length > 0) {
+        // Remove previous highlights
+        document.querySelectorAll('.block-incomplete-highlight').forEach(function(el) {
+          el.classList.remove('block-incomplete-highlight');
+        });
+        // Highlight incomplete blocks
+        unfinished.forEach(function(block) {
+          block.classList.add('block-incomplete-highlight');
+        });
+        // Scroll to first incomplete block
+        unfinished[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+
+      // All complete, proceed
+      document.querySelectorAll('.block-incomplete-highlight').forEach(function(el) {
+        el.classList.remove('block-incomplete-highlight');
+      });
+      if (originalOnclick) return originalOnclick.call(nextBtn, e);
+      var next = document.body.getAttribute('data-next-lesson');
+      if (next) window.location.href = next;
+    };
   }
 
   // Scroll-triggered block animations via IntersectionObserver

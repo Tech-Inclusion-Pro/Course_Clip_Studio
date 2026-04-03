@@ -23,7 +23,9 @@ import type {
   CustomHTMLBlock,
   PluginBlock,
   FeedbackFormBlock,
-  SlideBlock
+  SlideBlock,
+  FileUploadBlock,
+  SaveForLaterBlock
 } from '@/types/course'
 
 // ─── Individual Block Factories ───
@@ -133,6 +135,8 @@ export function createAccordionBlock(overrides: Partial<AccordionBlock> = {}): A
     ariaLabel: 'Expandable content sections',
     notes: '',
     items: [{ title: 'Section 1', content: '' }],
+    layout: 'stacked',
+    columns: 2,
     ...overrides
   }
 }
@@ -283,6 +287,34 @@ export function createSlideBlock(overrides: Partial<SlideBlock> = {}): SlideBloc
   }
 }
 
+export function createFileUploadBlock(overrides: Partial<FileUploadBlock> = {}): FileUploadBlock {
+  return {
+    id: uid('block'),
+    type: 'file-upload',
+    ariaLabel: 'File upload',
+    notes: '',
+    filePath: '',
+    fileName: '',
+    fileSize: 0,
+    mimeType: '',
+    allowDownload: true,
+    inlineViewer: true,
+    ...overrides
+  }
+}
+
+export function createSaveForLaterBlock(overrides: Partial<SaveForLaterBlock> = {}): SaveForLaterBlock {
+  return {
+    id: uid('block'),
+    type: 'save-for-later',
+    ariaLabel: 'Saved for later items',
+    notes: '',
+    heading: 'Saved for Later',
+    description: 'Review items you saved while going through the course.',
+    ...overrides
+  }
+}
+
 // ─── Quiz Helpers ───
 
 export function createQuizChoice(overrides: Partial<QuizChoice> = {}): QuizChoice {
@@ -369,7 +401,9 @@ const factories: Record<BlockType, (overrides?: Record<string, unknown>) => Cont
   'custom-html': createCustomHTMLBlock,
   'plugin': createPluginBlock,
   'feedback-form': createFeedbackFormBlock,
-  'slide': createSlideBlock
+  'slide': createSlideBlock,
+  'file-upload': createFileUploadBlock,
+  'save-for-later': createSaveForLaterBlock
 }
 
 /**

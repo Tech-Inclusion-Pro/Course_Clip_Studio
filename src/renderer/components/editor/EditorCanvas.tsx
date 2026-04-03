@@ -40,6 +40,7 @@ import { H5PBlockEditor } from './H5PBlockEditor'
 import { CustomHTMLBlockEditor } from './CustomHTMLBlockEditor'
 import { FeedbackFormBlockEditor } from './FeedbackFormBlockEditor'
 import { SlideBlockEditor } from './SlideBlockEditor'
+import { FileUploadBlockEditor } from './FileUploadBlockEditor'
 import { BlockInserterButton } from './BlockInserter'
 import { SlideCanvas } from './SlideCanvas'
 import { BLOCK_TYPE_LABELS } from '@/types/course'
@@ -241,6 +242,9 @@ export function EditorCanvas({ scrollContainerRef }: EditorCanvasProps): JSX.Ele
         return <FeedbackFormBlockEditor block={block} onUpdate={updateFn} />
       case 'slide':
         return <SlideBlockEditor block={block} onUpdate={updateFn} />
+      case 'file-upload':
+        return <FileUploadBlockEditor block={block} onUpdate={updateFn} />
+      case 'save-for-later':
       case 'divider':
         // Divider is simple enough to just show preview even when selected
         return <BlockPreview block={block} />
