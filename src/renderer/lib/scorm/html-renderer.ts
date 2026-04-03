@@ -704,12 +704,12 @@ function getPlayerStyles(theme: CourseTheme): string {
       .accordion-horizontal .accordion-items { grid-template-columns: 1fr !important; }
     }
 
-    /* H5P responsive wrapper */
-    .block-h5p iframe, .h5p-responsive-wrapper { width: 100%; min-height: 400px; border: none; }
-    .h5p-responsive-wrapper { position: relative; overflow: hidden; }
-    .h5p-responsive-wrapper iframe { width: 100%; height: 100%; min-height: 400px; border: none; }
-    @media (max-width: 600px) { .h5p-responsive-wrapper iframe, .block-h5p iframe { min-height: 280px; } }
-    @media (min-width: 960px) { .h5p-responsive-wrapper iframe, .block-h5p iframe { min-height: 520px; } }
+    /* H5P responsive wrapper — fills available viewport */
+    .block-h5p iframe, .h5p-responsive-wrapper { width: 100%; min-height: 70vh; border: none; }
+    .h5p-responsive-wrapper { position: relative; overflow: hidden; border-radius: 8px; }
+    .h5p-responsive-wrapper iframe { width: 100%; height: 70vh; border: none; }
+    @media (max-width: 600px) { .h5p-responsive-wrapper iframe, .block-h5p iframe { height: 60vh; min-height: 60vh; } }
+    @media (min-width: 960px) { .h5p-responsive-wrapper iframe, .block-h5p iframe { height: 80vh; min-height: 80vh; } }
 
     /* File Upload block */
     .block-file-upload .file-upload-card { display: flex; align-items: center; gap: 16px; padding: 16px; border: 1px solid ${blockText}20; border-radius: 10px; background: ${blockBg}; }

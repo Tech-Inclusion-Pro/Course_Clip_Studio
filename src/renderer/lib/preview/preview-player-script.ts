@@ -409,28 +409,34 @@ export function getPreviewPlayerScript(): string {
 
   // Scroll-triggered block animations via IntersectionObserver
   function initAnimations() {
-    var blocks = document.querySelectorAll('[data-anim]');
-    if (blocks.length === 0) return;
+    // Use requestAnimationFrame to ensure DOM is fully painted in srcDoc iframes
+    requestAnimationFrame(function() {
+      var blocks = document.querySelectorAll('[data-anim]');
+      if (blocks.length === 0) return;
 
-    // If reduced motion is preferred, show all blocks immediately
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      blocks.forEach(function(el) { el.style.opacity = '1'; });
-      return;
-    }
+      // If reduced motion is preferred, show all blocks immediately
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        blocks.forEach(function(el) { el.style.opacity = '1'; });
+        return;
+      }
 
-    var observer = new IntersectionObserver(function(entries) {
-      entries.forEach(function(entry) {
-        if (!entry.isIntersecting) return;
-        var el = entry.target;
-        var animType = el.getAttribute('data-anim');
-        var duration = el.getAttribute('data-anim-duration') || '500';
-        var delay = el.getAttribute('data-anim-delay') || '0';
-        el.style.animation = 'lumina-' + animType + ' ' + duration + 'ms ease-out ' + delay + 'ms both';
-        observer.unobserve(el);
-      });
-    }, { threshold: 0.15 });
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (!entry.isIntersecting) return;
+          var el = entry.target;
+          var animType = el.getAttribute('data-anim');
+          var duration = el.getAttribute('data-anim-duration') || '500';
+          var delay = el.getAttribute('data-anim-delay') || '0';
+          el.style.animation = 'lumina-' + animType + ' ' + duration + 'ms ease-out ' + delay + 'ms both';
+          // Ensure opacity is set after animation completes as fallback
+          var totalMs = parseInt(duration) + parseInt(delay) + 50;
+          setTimeout(function() { el.style.opacity = '1'; }, totalMs);
+          observer.unobserve(el);
+        });
+      }, { threshold: 0.1, rootMargin: '0px 0px -10% 0px' });
 
-    blocks.forEach(function(el) { observer.observe(el); });
+      blocks.forEach(function(el) { observer.observe(el); });
+    });
   }
 })();
 `

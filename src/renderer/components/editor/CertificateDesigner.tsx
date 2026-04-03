@@ -48,7 +48,8 @@ export function CertificateDesigner({ onClose }: CertificateDesignerProps): JSX.
 
   const cert = course?.certificate ?? null
   const [showPreview, setShowPreview] = useState(false)
-  const [designerMode, setDesignerMode] = useState(false)
+  const [enlargedPreview, setEnlargedPreview] = useState(false)
+  const [designerMode, setDesignerMode] = useState(true)
   const [enlargedDesigner, setEnlargedDesigner] = useState(false)
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null)
   const [dragging, setDragging] = useState<{ fieldId: string; startX: number; startY: number; fieldX: number; fieldY: number } | null>(null)
@@ -812,13 +813,20 @@ export function CertificateDesigner({ onClose }: CertificateDesignerProps): JSX.
               </Button>
 
               {showPreview && (
-                <div className="rounded-lg border border-[var(--border-default)] overflow-hidden bg-white">
+                <div className="rounded-lg border border-[var(--border-default)] overflow-hidden bg-white relative">
                   <iframe
                     srcDoc={previewHtml}
                     title="Certificate preview"
                     className="w-full h-48 border-0"
                     sandbox="allow-same-origin"
                   />
+                  <button
+                    onClick={() => setEnlargedPreview(true)}
+                    className="absolute top-2 right-2 p-1.5 rounded-md bg-black/40 text-white hover:bg-black/60 cursor-pointer"
+                    title="Expand preview"
+                  >
+                    <Maximize2 size={14} />
+                  </button>
                 </div>
               )}
 
@@ -835,6 +843,49 @@ export function CertificateDesigner({ onClose }: CertificateDesignerProps): JSX.
           </>
         )}
       </div>
+
+      {/* Enlarged Preview Popout */}
+      {enlargedPreview && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-6"
+          onClick={() => setEnlargedPreview(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 shrink-0">
+              <div className="flex items-center gap-2">
+                <Award size={18} className="text-[var(--brand-magenta)]" />
+                <h2 className="text-sm font-semibold text-gray-900">Certificate Preview</h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleExportPreview}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-[var(--brand-magenta)] border border-[var(--brand-magenta)] rounded-md hover:bg-[var(--brand-magenta)]/5 cursor-pointer"
+                >
+                  <FileDown size={12} /> Export PDF
+                </button>
+                <button
+                  onClick={() => setEnlargedPreview(false)}
+                  className="p-1.5 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-auto p-4 bg-gray-100 flex items-center justify-center">
+              <iframe
+                srcDoc={previewHtml}
+                title="Certificate preview (enlarged)"
+                className="w-full border-0 rounded-lg shadow-lg bg-white"
+                style={{ maxWidth: '900px', aspectRatio: '297 / 210' }}
+                sandbox="allow-same-origin"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

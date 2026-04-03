@@ -539,6 +539,7 @@ export function getPlayerScript(): string {
 
   // Scroll-triggered block animations via IntersectionObserver
   function initAnimations() {
+    requestAnimationFrame(function() {
     var blocks = document.querySelectorAll('[data-anim]');
     if (blocks.length === 0) return;
 
@@ -555,11 +556,14 @@ export function getPlayerScript(): string {
         var duration = el.getAttribute('data-anim-duration') || '500';
         var delay = el.getAttribute('data-anim-delay') || '0';
         el.style.animation = 'lumina-' + animType + ' ' + duration + 'ms ease-out ' + delay + 'ms both';
+        var totalMs = parseInt(duration) + parseInt(delay) + 50;
+        setTimeout(function() { el.style.opacity = '1'; }, totalMs);
         observer.unobserve(el);
       });
-    }, { threshold: 0.15 });
+    }, { threshold: 0.1, rootMargin: '0px 0px -10% 0px' });
 
     blocks.forEach(function(el) { observer.observe(el); });
+    });
   }
 
   // Auto-save progress via SCORM suspend_data

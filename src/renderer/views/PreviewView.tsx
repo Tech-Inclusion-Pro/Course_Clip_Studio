@@ -319,12 +319,19 @@ export function PreviewView(): JSX.Element {
                     const visited = visitedLessons.has(lesson.id)
                     const quiz = quizScores[lesson.id]
 
+                    const enrollmentBlocking = needsEnrollment && !enrollmentCompleted && currentIdx === 0
+
                     return (
                       <li key={lesson.id}>
                         <button
-                          onClick={() => setCurrentIdx(flat.globalIdx)}
+                          onClick={() => { if (!enrollmentBlocking) setCurrentIdx(flat.globalIdx) }}
+                          disabled={enrollmentBlocking}
                           className={`
-                            w-full text-left px-2 py-1.5 rounded text-xs cursor-pointer transition-colors flex items-center gap-1.5
+                            w-full text-left px-2 py-1.5 rounded text-xs transition-colors flex items-center gap-1.5
+                            ${enrollmentBlocking
+                              ? 'opacity-40 cursor-not-allowed'
+                              : 'cursor-pointer'
+                            }
                             ${isCurrent
                               ? 'bg-[var(--bg-active)] text-[var(--text-brand)] font-[var(--font-weight-medium)]'
                               : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'
