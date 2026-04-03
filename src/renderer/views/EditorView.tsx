@@ -18,6 +18,7 @@ import { CollaboratorNotesPanel } from '@/components/editor/CollaboratorNotesPan
 import { QuestionBankPanel } from '@/components/editor/QuestionBankPanel'
 import { SplitPreviewPane } from '@/components/editor/SplitPreviewPane'
 import { BranchingGraphView } from '@/components/editor/BranchingGraphView'
+import { MediaLibraryPanel } from '@/components/media-library/MediaLibraryPanel'
 import { useScrollSync } from '@/hooks/useScrollSync'
 
 export function EditorView(): JSX.Element {
@@ -39,6 +40,8 @@ export function EditorView(): JSX.Element {
   const toggleNotesPanel = useEditorStore((s) => s.toggleNotesPanel)
   const questionBankOpen = useEditorStore((s) => s.questionBankOpen)
   const toggleQuestionBank = useEditorStore((s) => s.toggleQuestionBank)
+  const mediaLibraryOpen = useEditorStore((s) => s.mediaLibraryOpen)
+  const toggleMediaLibrary = useEditorStore((s) => s.toggleMediaLibrary)
   const splitPreviewOpen = useEditorStore((s) => s.splitPreviewOpen)
   const activeLessonId = useEditorStore((s) => s.activeLessonId)
   const branchingGraphOpen = useEditorStore((s) => s.branchingGraphOpen)
@@ -228,6 +231,16 @@ export function EditorView(): JSX.Element {
             aria-label="Question bank"
           >
             <QuestionBankPanel onClose={toggleQuestionBank} />
+          </aside>
+        )}
+
+        {/* Media Library Panel */}
+        {mediaLibraryOpen && (
+          <aside
+            className="w-96 shrink-0 border-l border-[var(--border-default)] bg-[var(--bg-surface)] overflow-y-auto"
+            aria-label="Media library"
+          >
+            <MediaLibraryPanel onClose={toggleMediaLibrary} />
           </aside>
         )}
       </div>

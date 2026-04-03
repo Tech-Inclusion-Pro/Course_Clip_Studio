@@ -103,6 +103,7 @@ Each step is optional and can be skipped. All settings can be changed later from
 - **Version history panel** — Save named checkpoints and restore previous versions
 - **Collaborator notes panel** — Threaded discussion notes attached to specific blocks
 - **Branching graph view** — Visualize branching scenario connections
+- **Media Library panel** — Centralized asset browser with built-in icons, shapes, uploads, and color palette tools (see Media Library below)
 
 ### Canvas Editing Modes
 
@@ -142,6 +143,101 @@ A dedicated dashboard tab with a 6-step wizard for creating WCAG-compliant cours
 | Syllabus Library | View, open, duplicate, and delete saved syllabi from a tabbed library |
 | Send to AI Assistant | Load a saved syllabus as context into the main AI panel for further content generation |
 | 14 Audience Levels | PreK through Graduate/Doctoral, plus Corporate, Healthcare, Parent/Caregiver, Community, and custom |
+
+### Media Library
+
+A centralized Media Library panel for browsing, uploading, and managing all course assets. Accessible from the **Dashboard** (sidebar section) and the **Editor** (right-side panel via toolbar button).
+
+#### Five-Tab Interface
+
+| Tab | Description |
+|-----|-------------|
+| **All Assets** | Combined search view across built-in, uploaded, and global assets with filtering by type, UDL principle, and WCAG status |
+| **Built-In** | Browse 50 built-in SVG assets organized by type (Icons, Shapes, Text Shapes) and category (Navigation, Education, Accessibility, Geometric, Arrows, Callouts, Section Headers, Labels, Instructional Prompts) |
+| **Search Online** | Placeholder for Phase 2 API-connected search (Pexels, Unsplash, Pixabay) |
+| **My Uploads** | Upload images, video, audio, and documents via file dialog or drag-and-drop with automatic metadata entry |
+| **Generated** | View generated assets; Chart Builder, Diagram Builder, and Narration Studio stubs for Phase 2 |
+
+#### Built-In Asset Library (50 Starter Assets)
+
+| Category | Count | Examples |
+|----------|-------|---------|
+| **Navigation Icons** | 5 | Home, Arrow Right/Left, Menu, Search |
+| **Accessibility Icons** | 3 | Accessibility, Vision Impaired, Closed Captions |
+| **Education Icons** | 4 | Book Open, Graduation Cap, Lightbulb, Pencil |
+| **People Icons** | 2 | User, Users Group |
+| **Technology Icons** | 2 | Monitor, Link |
+| **Media Icons** | 2 | Image, Play |
+| **Feedback Icons** | 2 | Check Circle, Alert Triangle |
+| **Basic Geometric Shapes** | 8 | Circle, Square, Triangle, Diamond, Pentagon, Hexagon, Star, Oval |
+| **Rounded Shapes** | 4 | Rounded Rectangle, Pill, Rounded Square, Squircle |
+| **Arrow Shapes** | 4 | Right, Left, Up, Down |
+| **Callout Shapes** | 4 | Speech Bubble, Thought Bubble, Banner, Badge |
+| **Text Shapes** | 10 | Tip Box, Warning Box, Note Box, Section Headers (Underline, Pill, Gradient), Tag Label, Step Number, Question Prompt, Activity Prompt |
+
+All built-in assets include pre-filled accessibility metadata (alt text, ARIA labels, UDL tags, WCAG status).
+
+#### Upload Workflow
+
+1. Click **Browse Files** or drag-and-drop a file onto the upload zone
+2. Supported formats: Images (PNG, JPG, GIF, SVG, WebP — 10MB), Video (MP4, WebM, MOV — 500MB), Audio (MP3, WAV, OGG, M4A — 50MB), Documents (PDF, DOCX, PPTX — 50MB)
+3. The **Asset Metadata Editor** opens automatically, prompting for:
+   - Title and alt text (required)
+   - Long description, ARIA label, source/credit
+   - License (CC0, CC BY 4.0, Royalty-Free, etc.)
+   - UDL principle tag (Representation, Action & Expression, Engagement)
+   - WCAG accessibility status
+   - Language and keyword tags
+   - Scope toggle (project-only or global across all projects)
+4. File is copied to the course's `assets/` folder and recorded in the asset manifest
+
+#### Asset Grid
+
+- Responsive grid layout with thumbnail previews (inline SVG for built-in assets, `<img>` for uploaded images)
+- **Keyboard navigation** — Arrow keys to move between tiles, Enter/Space to insert
+- Each tile shows: type badge, WCAG status indicator (green/yellow/red dot), truncated title
+- Click to select, double-click to insert into the active block
+
+#### Color Palette Manager
+
+Accessible from the palette icon in the Media Library header:
+
+| Feature | Description |
+|---------|-------------|
+| **Lumina Brand Palette** | Pre-loaded system palette (Magenta #a23b84, Indigo #3a2b95, Purple #6f2fa6) — non-deletable |
+| **Custom Palettes** | Create, rename, and delete custom color palettes |
+| **Color Picker** | Visual color picker with hex input |
+| **Contrast Ratios** | Each color displays contrast ratio against white and black backgrounds |
+| **WCAG Warnings** | AA (4.5:1 normal text) and AA Large (3:1 large text) pass/fail indicators |
+| **Persistence** | Palettes saved via Electron settings across sessions |
+
+#### Asset Manifest Storage
+
+- **Project manifest** — `{courseFolder}/asset-manifest.json` stores uploaded and generated assets per course
+- **Global manifest** — `~/lumina-global/global-manifest.json` for assets shared across all projects
+- **Auto-directory creation** — `assets/{images,video,audio,documents,generated,captions}` folders created automatically
+
+#### Editor Integration
+
+- **Toolbar button** — Media Library toggle in the editor toolbar (Image icon) opens a w-96 panel alongside the canvas
+- **Asset insertion** — Double-click or press Enter on a selected asset to update the currently selected block (image src, video src, or audio src)
+- **Dashboard section** — Full-page Media Library view in the Dashboard sidebar alongside Courses, Templates, Content Areas, and Syllabus
+
+#### Walkthrough: Using the Media Library
+
+1. **From the Dashboard**: Click "Media Library" in the left sidebar to open the full-page view. Browse built-in assets, upload files, or manage color palettes.
+
+2. **From the Editor**: Click the Image icon in the editor toolbar (right section, next to Theme Editor). The Media Library panel opens on the right side of the canvas.
+
+3. **Browse Built-In Assets**: Switch to the "Built-In" tab. Use the type tabs (Icons, Shapes, Text Shapes) and category sidebar to filter. Type in the search bar to find assets by name or tag.
+
+4. **Upload an Asset**: Switch to the "My Uploads" tab. Click "Browse Files" or drag a file onto the drop zone. Fill in the metadata form (at minimum: title and alt text) and click "Add Asset."
+
+5. **Insert into a Block**: Select a content block in the editor (e.g., an Image/Media block). In the Media Library panel, double-click any asset to insert it into the selected block.
+
+6. **Manage Color Palettes**: Click the Palette icon in the Media Library header. Create a new palette, add colors with the color picker, and review contrast ratios for WCAG compliance.
+
+7. **Search & Filter**: Use the search bar and filter dropdowns (Type, UDL Principle, Accessibility Status) in the "All Assets" tab to find assets across all sources.
 
 ### AI Features
 
@@ -477,7 +573,8 @@ lumina-udl/
 │       ├── components/
 │       │   ├── layout/         # AppShell, Sidebar, TopBar
 │       │   ├── editor/         # Block editors, AI panel, tree navigator
-│       │   ├── dashboard/      # Course cards, import dialog, templates
+│       │   ├── dashboard/      # Course cards, import dialog, templates, MediaLibrarySection
+│       │   ├── media-library/  # MediaLibraryPanel, tabs, AssetGrid, AssetTile, AssetMetadataEditor, ColorPaletteManager
 │       │   ├── syllabus/       # Syllabus Builder wizard, cards, library, preview
 │       │   │   ├── steps/      # 6 wizard step components
 │       │   │   ├── cards/      # ObjectiveCard, AssignmentCard, RubricEditor
@@ -488,8 +585,8 @@ lumina-udl/
 │       │   ├── onboarding/     # First-launch setup wizard
 │       │   └── ui/             # Button, ThemeToggle, SettingsCard, FieldRow, ToggleSwitch, ColorInput, AIGenerateButton, StockSearchDialog
 │       ├── views/              # Dashboard, Editor, Preview, Settings, SignIn, Publish
-│       ├── stores/             # Zustand stores (app, auth, course, editor)
-│       ├── hooks/              # useTheme, useAccessibility, useWorkspaceInit, useAssetUpload, useAIGenerate
+│       ├── stores/             # Zustand stores (app, auth, course, editor, media-library)
+│       ├── hooks/              # useTheme, useAccessibility, useWorkspaceInit, useAssetUpload, useAssetInsert, useAIGenerate
 │       ├── lib/
 │       │   ├── export/         # HTML packager, PDF renderer, syllabus .docx export
 │       │   ├── import/         # Markdown, PPTX, SCORM parsers
@@ -498,8 +595,10 @@ lumina-udl/
 │       │   ├── ai/             # LLM provider abstraction + syllabus AI prompts + inline generation prompts
 │       │   ├── stock-api.ts   # Unified stock media API client (Pexels, Unsplash, Pixabay)
 │       │   ├── tippy/          # Tippy context gatherer, system prompt, tour steps
+│       │   ├── built-in-assets.ts # 50 built-in SVG icon, shape, and text-shape definitions
+│       │   ├── media-manifest.ts  # Asset manifest read/write helpers
 │       │   └── accessibility/  # Audit engine, contrast checker
-│       ├── types/              # Course data model TypeScript types
+│       ├── types/              # Course data model + media library TypeScript types
 │       └── i18n/               # Internationalization (en, es)
 ├── resources/
 │   ├── icon.png               # App icon source (512x512)

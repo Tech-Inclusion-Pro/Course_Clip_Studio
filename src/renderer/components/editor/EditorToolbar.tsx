@@ -18,6 +18,7 @@ import {
   Palette,
   ShieldCheck,
   Award,
+  Image,
   Save,
   History,
   MessageSquare,
@@ -63,6 +64,8 @@ export function EditorToolbar(): JSX.Element {
   const aiPanelOpen = useEditorStore((s) => s.aiPanelOpen)
   const themeEditorOpen = useEditorStore((s) => s.themeEditorOpen)
   const auditPanelOpen = useEditorStore((s) => s.auditPanelOpen)
+  const mediaLibraryOpen = useEditorStore((s) => s.mediaLibraryOpen)
+  const toggleMediaLibrary = useEditorStore((s) => s.toggleMediaLibrary)
   const certificateDesignerOpen = useEditorStore((s) => s.certificateDesignerOpen)
   const splitPreviewOpen = useEditorStore((s) => s.splitPreviewOpen)
   const previewDevice = useEditorStore((s) => s.previewDevice)
@@ -272,6 +275,12 @@ export function EditorToolbar(): JSX.Element {
 
       {/* Right: Panel toggles */}
       <div className="flex items-center gap-1">
+        <ToolbarButton
+          icon={Image}
+          label={t('toolbar.mediaLibrary', 'Media Library')}
+          active={mediaLibraryOpen}
+          onClick={toggleMediaLibrary}
+        />
         <ToolbarButton
           icon={Palette}
           label={t('toolbar.themeEditor', 'Theme Editor')}

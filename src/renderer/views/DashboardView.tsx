@@ -15,6 +15,7 @@ import { NewCourseDialog } from '@/components/dashboard/NewCourseDialog'
 import { ImportDialog } from '@/components/dashboard/ImportDialog'
 import { ContentAreasSection } from '@/components/dashboard/ContentAreasSection'
 import { SyllabusBuilderSection } from '@/components/syllabus/SyllabusBuilderSection'
+import { MediaLibrarySection } from '@/components/dashboard/MediaLibrarySection'
 import { WorkspacePickerDialog } from '@/components/dashboard/WorkspacePickerDialog'
 import { createCourse } from '@/lib/mock-data'
 import { saveCourseToWorkspace } from '@/lib/workspace'
@@ -212,6 +213,8 @@ export function DashboardView(): JSX.Element {
               </div>
             )}
           </>
+        ) : activeSection === 'media-library' ? (
+          <MediaLibrarySection />
         ) : activeSection === 'content-areas' ? (
           <ContentAreasSection />
         ) : activeSection === 'syllabus' ? (

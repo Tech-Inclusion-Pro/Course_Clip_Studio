@@ -34,6 +34,7 @@ interface EditorState {
   notesPanelOpen: boolean
   branchingGraphOpen: boolean
   questionBankOpen: boolean
+  mediaLibraryOpen: boolean
 
   // Dirty state
   isDirty: boolean
@@ -76,6 +77,7 @@ interface EditorState {
   toggleNotesPanel: () => void
   toggleBranchingGraph: () => void
   toggleQuestionBank: () => void
+  toggleMediaLibrary: () => void
 
   // Dirty
   markDirty: () => void
@@ -112,6 +114,7 @@ const initialState = {
   notesPanelOpen: false,
   branchingGraphOpen: false,
   questionBankOpen: false,
+  mediaLibraryOpen: false,
   isDirty: false,
   clipboardBlockIds: [] as string[],
   clipboardOperation: null as 'copy' | 'cut' | null
@@ -170,6 +173,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   toggleNotesPanel: () => set((s) => ({ notesPanelOpen: !s.notesPanelOpen })),
   toggleBranchingGraph: () => set((s) => ({ branchingGraphOpen: !s.branchingGraphOpen })),
   toggleQuestionBank: () => set((s) => ({ questionBankOpen: !s.questionBankOpen })),
+  toggleMediaLibrary: () => set((s) => ({ mediaLibraryOpen: !s.mediaLibraryOpen })),
 
   // Dirty
   markDirty: () => set({ isDirty: true }),
