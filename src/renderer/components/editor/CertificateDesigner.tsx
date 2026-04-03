@@ -3,7 +3,7 @@ import {
   X,
   Award,
   Eye,
-  EyeOff,
+  Pencil,
   FileDown,
   Check,
   Image as ImageIcon,
@@ -11,9 +11,7 @@ import {
   Upload,
   Move,
   Plus,
-  Trash2,
-  Maximize2,
-  Minimize2
+  Trash2
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useCourseStore } from '@/stores/useCourseStore'
@@ -47,10 +45,8 @@ export function CertificateDesigner({ onClose }: CertificateDesignerProps): JSX.
   const uploadAsset = useAssetUpload()
 
   const cert = course?.certificate ?? null
-  const [showPreview, setShowPreview] = useState(false)
-  const [enlargedPreview, setEnlargedPreview] = useState(false)
+  const [popoutMode, setPopoutMode] = useState<'closed' | 'preview' | 'edit'>('closed')
   const [designerMode, setDesignerMode] = useState(true)
-  const [enlargedDesigner, setEnlargedDesigner] = useState(false)
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null)
   const [dragging, setDragging] = useState<{ fieldId: string; startX: number; startY: number; fieldX: number; fieldY: number } | null>(null)
   const canvasRef = useRef<HTMLDivElement>(null)
@@ -224,133 +220,181 @@ export function CertificateDesigner({ onClose }: CertificateDesignerProps): JSX.
 
   const selectedField = fields.find((f) => f.id === selectedFieldId)
 
-  // Enlarged designer overlay
-  if (enlargedDesigner && designerMode) {
-    return (
-      <>
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-8">
-          <div className="bg-[var(--bg-surface)] rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
-            {/* Enlarged header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-default)] shrink-0">
-              <div className="flex items-center gap-2">
-                <Award size={18} className="text-[var(--brand-magenta)]" />
-                <h2 className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-primary)]">Certificate Field Designer</h2>
-              </div>
-              <div className="flex items-center gap-2">
-                <button onClick={addField} className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] text-white bg-[var(--brand-magenta)] rounded hover:opacity-90 cursor-pointer">
+  // ─── Popout Modal (Preview + Edit) ───
+  const popoutModal = popoutMode !== 'closed' && (
+    <div
+      className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-6"
+      onClick={() => setPopoutMode('closed')}
+    >
+      <div
+        className="bg-[var(--bg-surface)] rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Unified header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-default)] shrink-0">
+          <div className="flex items-center gap-2">
+            <Award size={18} className="text-[var(--brand-magenta)]" />
+            <h2 className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-primary)]">
+              {popoutMode === 'preview' ? 'Certificate Preview' : 'Certificate Field Designer'}
+            </h2>
+          </div>
+          <div className="flex items-center gap-2">
+            {popoutMode === 'preview' ? (
+              <>
+                <button
+                  onClick={handleExportPreview}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-[var(--brand-magenta)] border border-[var(--brand-magenta)] rounded-md hover:bg-[var(--brand-magenta)]/5 cursor-pointer"
+                >
+                  <FileDown size={12} /> Export PDF
+                </button>
+                <button
+                  onClick={() => setPopoutMode('edit')}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-[var(--brand-magenta)] rounded-md hover:opacity-90 cursor-pointer"
+                >
+                  <Pencil size={12} /> Edit
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={addField}
+                  className="flex items-center gap-1 px-2.5 py-1.5 text-[10px] text-white bg-[var(--brand-magenta)] rounded hover:opacity-90 cursor-pointer"
+                >
                   <Plus size={10} /> Add Field
                 </button>
-                <button onClick={() => setEnlargedDesigner(false)} className="p-1.5 rounded text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] cursor-pointer">
-                  <Minimize2 size={14} />
-                </button>
-              </div>
-            </div>
-            {/* Enlarged canvas + fields sidebar */}
-            <div className="flex flex-1 min-h-0">
-              {/* Large canvas */}
-              <div className="flex-1 p-4 overflow-auto flex items-center justify-center bg-[var(--bg-muted)]">
-                <div
-                  ref={canvasRef}
-                  className="relative border border-[var(--border-default)] rounded-lg overflow-hidden cursor-crosshair shadow-lg"
-                  style={{
-                    width: '100%',
-                    maxWidth: '900px',
-                    aspectRatio: '297 / 210',
-                    background: backgroundImage
-                      ? `url(${backgroundImage}) center/cover no-repeat`
-                      : 'linear-gradient(135deg, #f8f9fa, #e9ecef)'
-                  }}
-                  onMouseMove={handleCanvasMouseMove}
-                  onMouseUp={handleCanvasMouseUp}
-                  onMouseLeave={handleCanvasMouseUp}
+                <button
+                  onClick={() => setPopoutMode('preview')}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-[var(--brand-magenta)] border border-[var(--brand-magenta)] rounded-md hover:bg-[var(--brand-magenta)]/5 cursor-pointer"
                 >
-                  {fields.map((field) => (
-                    <div
-                      key={field.id}
-                      className={`absolute cursor-move select-none px-1 ${
-                        selectedFieldId === field.id
-                          ? 'ring-2 ring-[var(--brand-magenta)] rounded'
-                          : 'hover:ring-1 hover:ring-[var(--brand-magenta)]/50 rounded'
-                      }`}
-                      style={{
-                        left: `${field.x}%`,
-                        top: `${field.y}%`,
-                        transform: 'translate(-50%, -50%)',
-                        fontSize: `${Math.max(10, field.fontSize * 0.6)}px`,
-                        fontWeight: field.fontWeight,
-                        color: field.color,
-                        textAlign: field.textAlign,
-                        whiteSpace: 'nowrap'
-                      }}
-                      onMouseDown={(e) => handleCanvasMouseDown(field.id, e)}
-                      title={`${field.label} (${field.variable || 'custom text'})`}
-                    >
-                      {field.label}
-                    </div>
-                  ))}
-                </div>
-              </div>
-              {/* Field properties sidebar */}
-              <div className="w-64 border-l border-[var(--border-default)] overflow-y-auto p-3 space-y-2 shrink-0">
-                <p className="text-[10px] font-[var(--font-weight-semibold)] text-[var(--text-tertiary)] uppercase tracking-wider mb-1">Fields</p>
+                  <Eye size={12} /> Preview
+                </button>
+              </>
+            )}
+            <button
+              onClick={() => setPopoutMode('closed')}
+              className="p-1.5 rounded text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] cursor-pointer"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+
+        {/* Body */}
+        {popoutMode === 'preview' ? (
+          <div className="flex-1 overflow-auto p-4 bg-[var(--bg-muted)] flex items-center justify-center">
+            <iframe
+              srcDoc={previewHtml}
+              title="Certificate preview (enlarged)"
+              className="w-full border-0 rounded-lg shadow-lg bg-white"
+              style={{ maxWidth: '900px', aspectRatio: '297 / 210' }}
+              sandbox="allow-same-origin"
+            />
+          </div>
+        ) : (
+          <div className="flex flex-1 min-h-0">
+            {/* Large canvas */}
+            <div className="flex-1 p-4 overflow-auto flex items-center justify-center bg-[var(--bg-muted)]">
+              <div
+                ref={canvasRef}
+                className="relative border border-[var(--border-default)] rounded-lg overflow-hidden cursor-crosshair shadow-lg"
+                style={{
+                  width: '100%',
+                  maxWidth: '900px',
+                  aspectRatio: '297 / 210',
+                  background: backgroundImage
+                    ? `url(${backgroundImage}) center/cover no-repeat`
+                    : 'linear-gradient(135deg, #f8f9fa, #e9ecef)'
+                }}
+                onMouseMove={handleCanvasMouseMove}
+                onMouseUp={handleCanvasMouseUp}
+                onMouseLeave={handleCanvasMouseUp}
+              >
                 {fields.map((field) => (
                   <div
                     key={field.id}
-                    className={`p-2 rounded border text-[10px] cursor-pointer ${
+                    className={`absolute cursor-move select-none px-1 ${
                       selectedFieldId === field.id
-                        ? 'border-[var(--brand-magenta)] bg-[var(--brand-magenta)]/5'
-                        : 'border-[var(--border-default)] bg-[var(--bg-surface)]'
+                        ? 'ring-2 ring-[var(--brand-magenta)] rounded'
+                        : 'hover:ring-1 hover:ring-[var(--brand-magenta)]/50 rounded'
                     }`}
-                    onClick={() => setSelectedFieldId(field.id)}
+                    style={{
+                      left: `${field.x}%`,
+                      top: `${field.y}%`,
+                      transform: 'translate(-50%, -50%)',
+                      fontSize: `${Math.max(10, field.fontSize * 0.6)}px`,
+                      fontWeight: field.fontWeight,
+                      color: field.color,
+                      textAlign: field.textAlign,
+                      whiteSpace: 'nowrap'
+                    }}
+                    onMouseDown={(e) => handleCanvasMouseDown(field.id, e)}
+                    title={`${field.label} (${field.variable || 'custom text'})`}
                   >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-[var(--font-weight-semibold)] text-[var(--text-primary)]">{field.label}</span>
-                      <button onClick={(e) => { e.stopPropagation(); removeField(field.id) }} className="p-0.5 text-red-400 hover:text-red-600 cursor-pointer">
-                        <Trash2 size={10} />
-                      </button>
-                    </div>
-                    {selectedFieldId === field.id && (
-                      <div className="space-y-1.5 mt-1.5">
-                        <input type="text" value={field.label} onChange={(e) => updateField(field.id, { label: e.target.value })} placeholder="Field label" className="w-full px-1.5 py-1 text-[10px] rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)]" />
-                        <select value={field.variable} onChange={(e) => updateField(field.id, { variable: e.target.value })} className="w-full px-1.5 py-1 text-[10px] rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)]">
-                          <option value="">Custom text</option>
-                          <option value="{{learner_name}}">Learner Name</option>
-                          <option value="{{course_title}}">Course Title</option>
-                          <option value="{{completion_date}}">Completion Date</option>
-                          <option value="{{completion_timestamp}}">Completion Timestamp</option>
-                          <option value="{{score}}">Score</option>
-                          <option value="{{instructor}}">Instructor</option>
-                          <option value="{{signature}}">Signature</option>
-                        </select>
-                        <div className="flex gap-1">
-                          <input type="number" value={field.fontSize} onChange={(e) => updateField(field.id, { fontSize: parseInt(e.target.value) || 14 })} className="w-12 px-1 py-0.5 text-[10px] rounded border border-[var(--border-default)] bg-[var(--bg-surface)]" title="Font size (pt)" />
-                          <select value={field.fontWeight} onChange={(e) => updateField(field.id, { fontWeight: e.target.value as 'normal' | 'bold' })} className="flex-1 px-1 py-0.5 text-[10px] rounded border border-[var(--border-default)] bg-[var(--bg-surface)]">
-                            <option value="normal">Normal</option>
-                            <option value="bold">Bold</option>
-                          </select>
-                          <select value={field.textAlign} onChange={(e) => updateField(field.id, { textAlign: e.target.value as 'left' | 'center' | 'right' })} className="flex-1 px-1 py-0.5 text-[10px] rounded border border-[var(--border-default)] bg-[var(--bg-surface)]">
-                            <option value="left">Left</option>
-                            <option value="center">Center</option>
-                            <option value="right">Right</option>
-                          </select>
-                        </div>
-                        <div className="flex gap-1 items-center">
-                          <label className="text-[9px] text-[var(--text-tertiary)]">Color:</label>
-                          <input type="color" value={field.color} onChange={(e) => updateField(field.id, { color: e.target.value })} className="w-6 h-5 p-0 border-0 cursor-pointer" />
-                          <label className="text-[9px] text-[var(--text-tertiary)] ml-2">X:{field.x}%</label>
-                          <label className="text-[9px] text-[var(--text-tertiary)]">Y:{field.y}%</label>
-                        </div>
-                      </div>
-                    )}
+                    {field.label}
                   </div>
                 ))}
               </div>
             </div>
+            {/* Field properties sidebar */}
+            <div className="w-64 border-l border-[var(--border-default)] overflow-y-auto p-3 space-y-2 shrink-0">
+              <p className="text-[10px] font-[var(--font-weight-semibold)] text-[var(--text-tertiary)] uppercase tracking-wider mb-1">Fields</p>
+              {fields.map((field) => (
+                <div
+                  key={field.id}
+                  className={`p-2 rounded border text-[10px] cursor-pointer ${
+                    selectedFieldId === field.id
+                      ? 'border-[var(--brand-magenta)] bg-[var(--brand-magenta)]/5'
+                      : 'border-[var(--border-default)] bg-[var(--bg-surface)]'
+                  }`}
+                  onClick={() => setSelectedFieldId(field.id)}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-[var(--font-weight-semibold)] text-[var(--text-primary)]">{field.label}</span>
+                    <button onClick={(e) => { e.stopPropagation(); removeField(field.id) }} className="p-0.5 text-red-400 hover:text-red-600 cursor-pointer">
+                      <Trash2 size={10} />
+                    </button>
+                  </div>
+                  {selectedFieldId === field.id && (
+                    <div className="space-y-1.5 mt-1.5">
+                      <input type="text" value={field.label} onChange={(e) => updateField(field.id, { label: e.target.value })} placeholder="Field label" className="w-full px-1.5 py-1 text-[10px] rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)]" />
+                      <select value={field.variable} onChange={(e) => updateField(field.id, { variable: e.target.value })} className="w-full px-1.5 py-1 text-[10px] rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)]">
+                        <option value="">Custom text</option>
+                        <option value="{{learner_name}}">Learner Name</option>
+                        <option value="{{course_title}}">Course Title</option>
+                        <option value="{{completion_date}}">Completion Date</option>
+                        <option value="{{completion_timestamp}}">Completion Timestamp</option>
+                        <option value="{{score}}">Score</option>
+                        <option value="{{instructor}}">Instructor</option>
+                        <option value="{{signature}}">Signature</option>
+                      </select>
+                      <div className="flex gap-1">
+                        <input type="number" value={field.fontSize} onChange={(e) => updateField(field.id, { fontSize: parseInt(e.target.value) || 14 })} className="w-12 px-1 py-0.5 text-[10px] rounded border border-[var(--border-default)] bg-[var(--bg-surface)]" title="Font size (pt)" />
+                        <select value={field.fontWeight} onChange={(e) => updateField(field.id, { fontWeight: e.target.value as 'normal' | 'bold' })} className="flex-1 px-1 py-0.5 text-[10px] rounded border border-[var(--border-default)] bg-[var(--bg-surface)]">
+                          <option value="normal">Normal</option>
+                          <option value="bold">Bold</option>
+                        </select>
+                        <select value={field.textAlign} onChange={(e) => updateField(field.id, { textAlign: e.target.value as 'left' | 'center' | 'right' })} className="flex-1 px-1 py-0.5 text-[10px] rounded border border-[var(--border-default)] bg-[var(--bg-surface)]">
+                          <option value="left">Left</option>
+                          <option value="center">Center</option>
+                          <option value="right">Right</option>
+                        </select>
+                      </div>
+                      <div className="flex gap-1 items-center">
+                        <label className="text-[9px] text-[var(--text-tertiary)]">Color:</label>
+                        <input type="color" value={field.color} onChange={(e) => updateField(field.id, { color: e.target.value })} className="w-6 h-5 p-0 border-0 cursor-pointer" />
+                        <label className="text-[9px] text-[var(--text-tertiary)] ml-2">X:{field.x}%</label>
+                        <label className="text-[9px] text-[var(--text-tertiary)]">Y:{field.y}%</label>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </>
-    )
-  }
+        )}
+      </div>
+    </div>
+  )
 
   return (
     <div className="flex flex-col h-full">
@@ -621,24 +665,12 @@ export function CertificateDesigner({ onClose }: CertificateDesignerProps): JSX.
                   <Move size={12} />
                   Field Designer
                 </label>
-                <div className="flex items-center gap-2">
-                  {designerMode && (
-                    <button
-                      onClick={() => setEnlargedDesigner(!enlargedDesigner)}
-                      className="text-[10px] text-[var(--text-secondary)] cursor-pointer hover:text-[var(--brand-magenta)] flex items-center gap-0.5"
-                      title={enlargedDesigner ? 'Minimize' : 'Enlarge designer'}
-                    >
-                      {enlargedDesigner ? <Minimize2 size={10} /> : <Maximize2 size={10} />}
-                      {enlargedDesigner ? 'Minimize' : 'Enlarge'}
-                    </button>
-                  )}
-                  <button
-                    onClick={() => { setDesignerMode(!designerMode); setEnlargedDesigner(false) }}
-                    className="text-[10px] text-[var(--brand-magenta)] cursor-pointer hover:underline"
-                  >
-                    {designerMode ? 'Close' : 'Open'}
-                  </button>
-                </div>
+                <button
+                  onClick={() => setDesignerMode(!designerMode)}
+                  className="text-[10px] text-[var(--brand-magenta)] cursor-pointer hover:underline"
+                >
+                  {designerMode ? 'Close' : 'Open'}
+                </button>
               </div>
               <p className="text-[10px] text-[var(--text-tertiary)] mb-2">
                 Drag fields to position them on the certificate. These override the template layout for uploaded backgrounds.
@@ -649,7 +681,7 @@ export function CertificateDesigner({ onClose }: CertificateDesignerProps): JSX.
               <div className="space-y-3">
                 {/* Visual Canvas */}
                 <div
-                  ref={canvasRef}
+                  ref={popoutMode === 'closed' ? canvasRef : undefined}
                   className="relative border border-[var(--border-default)] rounded-lg overflow-hidden cursor-crosshair"
                   style={{
                     aspectRatio: '297 / 210',
@@ -657,9 +689,9 @@ export function CertificateDesigner({ onClose }: CertificateDesignerProps): JSX.
                       ? `url(${backgroundImage}) center/cover no-repeat`
                       : 'linear-gradient(135deg, #f8f9fa, #e9ecef)'
                   }}
-                  onMouseMove={handleCanvasMouseMove}
-                  onMouseUp={handleCanvasMouseUp}
-                  onMouseLeave={handleCanvasMouseUp}
+                  onMouseMove={popoutMode === 'closed' ? handleCanvasMouseMove : undefined}
+                  onMouseUp={popoutMode === 'closed' ? handleCanvasMouseUp : undefined}
+                  onMouseLeave={popoutMode === 'closed' ? handleCanvasMouseUp : undefined}
                 >
                   {fields.map((field) => (
                     <div
@@ -679,7 +711,7 @@ export function CertificateDesigner({ onClose }: CertificateDesignerProps): JSX.
                         textAlign: field.textAlign,
                         whiteSpace: 'nowrap'
                       }}
-                      onMouseDown={(e) => handleCanvasMouseDown(field.id, e)}
+                      onMouseDown={popoutMode === 'closed' ? (e) => handleCanvasMouseDown(field.id, e) : undefined}
                       title={`${field.label} (${field.variable || 'custom text'})`}
                     >
                       {field.label}
@@ -800,35 +832,17 @@ export function CertificateDesigner({ onClose }: CertificateDesignerProps): JSX.
               </p>
             </div>
 
-            {/* Preview toggle + export */}
+            {/* Show Preview + Export */}
             <div className="space-y-2">
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => setShowPreview(!showPreview)}
+                onClick={() => setPopoutMode('preview')}
                 className="w-full"
               >
-                {showPreview ? <EyeOff size={14} /> : <Eye size={14} />}
-                {showPreview ? 'Hide Preview' : 'Show Preview'}
+                <Eye size={14} />
+                Show Preview
               </Button>
-
-              {showPreview && (
-                <div className="rounded-lg border border-[var(--border-default)] overflow-hidden bg-white relative">
-                  <iframe
-                    srcDoc={previewHtml}
-                    title="Certificate preview"
-                    className="w-full h-48 border-0"
-                    sandbox="allow-same-origin"
-                  />
-                  <button
-                    onClick={() => setEnlargedPreview(true)}
-                    className="absolute top-2 right-2 p-1.5 rounded-md bg-black/40 text-white hover:bg-black/60 cursor-pointer"
-                    title="Expand preview"
-                  >
-                    <Maximize2 size={14} />
-                  </button>
-                </div>
-              )}
 
               <Button
                 variant="ghost"
@@ -844,48 +858,8 @@ export function CertificateDesigner({ onClose }: CertificateDesignerProps): JSX.
         )}
       </div>
 
-      {/* Enlarged Preview Popout */}
-      {enlargedPreview && (
-        <div
-          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-6"
-          onClick={() => setEnlargedPreview(false)}
-        >
-          <div
-            className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 shrink-0">
-              <div className="flex items-center gap-2">
-                <Award size={18} className="text-[var(--brand-magenta)]" />
-                <h2 className="text-sm font-semibold text-gray-900">Certificate Preview</h2>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleExportPreview}
-                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-[var(--brand-magenta)] border border-[var(--brand-magenta)] rounded-md hover:bg-[var(--brand-magenta)]/5 cursor-pointer"
-                >
-                  <FileDown size={12} /> Export PDF
-                </button>
-                <button
-                  onClick={() => setEnlargedPreview(false)}
-                  className="p-1.5 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 cursor-pointer"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            </div>
-            <div className="flex-1 overflow-auto p-4 bg-gray-100 flex items-center justify-center">
-              <iframe
-                srcDoc={previewHtml}
-                title="Certificate preview (enlarged)"
-                className="w-full border-0 rounded-lg shadow-lg bg-white"
-                style={{ maxWidth: '900px', aspectRatio: '297 / 210' }}
-                sandbox="allow-same-origin"
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Unified Popout Modal */}
+      {popoutModal}
     </div>
   )
 }

@@ -8,19 +8,50 @@ import {
   MoreHorizontal,
   Pencil,
   Copy,
-  Trash2
+  Trash2,
+  GripVertical
 } from 'lucide-react'
+import {
+  DndContext,
+  closestCorners,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+  type DragEndEvent,
+  type DragStartEvent
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  sortableKeyboardCoordinates
+} from '@dnd-kit/sortable'
+import { useDroppable } from '@dnd-kit/core'
+import { CSS } from '@dnd-kit/utilities'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useEditorStore } from '@/stores/useEditorStore'
 import { udlStatusColor } from '@/lib/course-helpers'
 import { createModule, createLesson } from '@/lib/mock-data'
-import type { Module } from '@/types/course'
+import type { Module, Lesson } from '@/types/course'
 
 const UDL_DOT_COLORS = {
   red: 'bg-red-500',
   yellow: 'bg-yellow-500',
   green: 'bg-emerald-500'
 } as const
+
+/** Parse a composite sortable ID like "mod1::lesson1" */
+function parseSortableId(id: string): { moduleId: string; lessonId: string } {
+  const idx = id.indexOf('::')
+  return { moduleId: id.slice(0, idx), lessonId: id.slice(idx + 2) }
+}
+
+/** Build a composite sortable ID */
+function makeSortableId(moduleId: string, lessonId: string): string {
+  return `${moduleId}::${lessonId}`
+}
 
 export function CourseTreePanel(): JSX.Element {
   const activeCourseId = useCourseStore((s) => s.activeCourseId)
@@ -31,6 +62,8 @@ export function CourseTreePanel(): JSX.Element {
   const addLesson = useCourseStore((s) => s.addLesson)
   const removeLesson = useCourseStore((s) => s.removeLesson)
   const updateLesson = useCourseStore((s) => s.updateLesson)
+  const reorderLessons = useCourseStore((s) => s.reorderLessons)
+  const moveLessonToModule = useCourseStore((s) => s.moveLessonToModule)
 
   const activeModuleId = useEditorStore((s) => s.activeModuleId)
   const activeLessonId = useEditorStore((s) => s.activeLessonId)
@@ -49,6 +82,12 @@ export function CourseTreePanel(): JSX.Element {
   const [renameValue, setRenameValue] = useState('')
   const renameInputRef = useRef<HTMLInputElement>(null)
   const contextMenuRef = useRef<HTMLDivElement>(null)
+  const [activeDragLesson, setActiveDragLesson] = useState<Lesson | null>(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
 
   // Auto-expand module containing active lesson
   useEffect(() => {
@@ -192,6 +231,57 @@ export function CourseTreePanel(): JSX.Element {
     setRenamingId(null)
   }
 
+  function handleDragStart(event: DragStartEvent) {
+    const { moduleId, lessonId } = parseSortableId(event.active.id as string)
+    if (!course) return
+    const mod = course.modules.find((m) => m.id === moduleId)
+    const lesson = mod?.lessons.find((l) => l.id === lessonId)
+    if (lesson) setActiveDragLesson(lesson)
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    setActiveDragLesson(null)
+    const { active, over } = event
+    if (!over || !activeCourseId || !course) return
+
+    const activeId = active.id as string
+    const overId = over.id as string
+
+    // Check if dropping onto an empty module drop zone (prefixed with "empty::")
+    if (overId.startsWith('empty::')) {
+      const toModuleId = overId.slice(7)
+      const { moduleId: fromModuleId, lessonId } = parseSortableId(activeId)
+      if (fromModuleId !== toModuleId) {
+        moveLessonToModule(activeCourseId, fromModuleId, toModuleId, lessonId, 0)
+        setExpandedModules((prev) => new Set(prev).add(toModuleId))
+      }
+      return
+    }
+
+    const from = parseSortableId(activeId)
+    const to = parseSortableId(overId)
+
+    if (activeId === overId) return
+
+    if (from.moduleId === to.moduleId) {
+      // Same module reorder
+      const mod = course.modules.find((m) => m.id === from.moduleId)
+      if (!mod) return
+      const fromIndex = mod.lessons.findIndex((l) => l.id === from.lessonId)
+      const toIndex = mod.lessons.findIndex((l) => l.id === to.lessonId)
+      if (fromIndex !== -1 && toIndex !== -1) {
+        reorderLessons(activeCourseId, from.moduleId, fromIndex, toIndex)
+      }
+    } else {
+      // Cross-module move
+      const toMod = course.modules.find((m) => m.id === to.moduleId)
+      if (!toMod) return
+      const toIndex = toMod.lessons.findIndex((l) => l.id === to.lessonId)
+      moveLessonToModule(activeCourseId, from.moduleId, to.moduleId, from.lessonId, toIndex !== -1 ? toIndex : toMod.lessons.length)
+      setExpandedModules((prev) => new Set(prev).add(to.moduleId))
+    }
+  }
+
   if (!course) {
     return (
       <div className="p-4">
@@ -224,27 +314,43 @@ export function CourseTreePanel(): JSX.Element {
             No modules yet. Click + to add one.
           </p>
         ) : (
-          <ul role="tree">
-            {course.modules.map((mod) => (
-              <ModuleNode
-                key={mod.id}
-                mod={mod}
-                courseId={activeCourseId!}
-                expanded={expandedModules.has(mod.id)}
-                activeModuleId={activeModuleId}
-                activeLessonId={activeLessonId}
-                renamingId={renamingId}
-                renameValue={renameValue}
-                renameInputRef={renameInputRef}
-                onToggle={() => toggleModule(mod.id)}
-                onSelectLesson={(lessonId) => handleSelectLesson(mod.id, lessonId)}
-                onContextMenu={handleContextMenu}
-                onAddLesson={() => handleAddLesson(mod.id)}
-                onRenameChange={setRenameValue}
-                onRenameCommit={commitRename}
-              />
-            ))}
-          </ul>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <ul role="tree">
+              {course.modules.map((mod) => (
+                <ModuleNode
+                  key={mod.id}
+                  mod={mod}
+                  courseId={activeCourseId!}
+                  expanded={expandedModules.has(mod.id)}
+                  activeModuleId={activeModuleId}
+                  activeLessonId={activeLessonId}
+                  renamingId={renamingId}
+                  renameValue={renameValue}
+                  renameInputRef={renameInputRef}
+                  onToggle={() => toggleModule(mod.id)}
+                  onSelectLesson={(lessonId) => handleSelectLesson(mod.id, lessonId)}
+                  onContextMenu={handleContextMenu}
+                  onAddLesson={() => handleAddLesson(mod.id)}
+                  onRenameChange={setRenameValue}
+                  onRenameCommit={commitRename}
+                />
+              ))}
+            </ul>
+
+            <DragOverlay>
+              {activeDragLesson ? (
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-[var(--bg-surface)] border border-[var(--brand-magenta)] shadow-lg text-xs text-[var(--text-primary)]">
+                  <FileText size={13} className="shrink-0" />
+                  <span className="truncate">{activeDragLesson.title}</span>
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
         )}
       </nav>
 
@@ -292,6 +398,141 @@ export function CourseTreePanel(): JSX.Element {
   )
 }
 
+// ─── Sortable Lesson Item ───
+
+interface SortableLessonItemProps {
+  lesson: Lesson
+  moduleId: string
+  isActive: boolean
+  isRenaming: boolean
+  renameValue: string
+  renameInputRef: React.RefObject<HTMLInputElement | null>
+  onSelect: () => void
+  onContextMenu: (e: React.MouseEvent) => void
+  onRenameChange: (value: string) => void
+  onRenameCommit: () => void
+}
+
+function SortableLessonItem({
+  lesson,
+  moduleId,
+  isActive,
+  isRenaming,
+  renameValue,
+  renameInputRef,
+  onSelect,
+  onContextMenu,
+  onRenameChange,
+  onRenameCommit
+}: SortableLessonItemProps): JSX.Element {
+  const sortableId = makeSortableId(moduleId, lesson.id)
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: sortableId })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1
+  }
+
+  return (
+    <li ref={setNodeRef} style={style} role="treeitem" {...attributes}>
+      <div
+        className={`
+          group flex items-center gap-1 px-2 py-1 mx-1 rounded-md cursor-pointer transition-colors
+          ${isActive
+            ? 'bg-[var(--bg-active)] text-[var(--text-brand)]'
+            : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'
+          }
+        `}
+        onClick={onSelect}
+        onContextMenu={onContextMenu}
+        onKeyDown={(e) => { if (e.key === 'Enter') onSelect() }}
+        tabIndex={0}
+        aria-label={`Lesson: ${lesson.title}`}
+        aria-current={isActive ? 'true' : undefined}
+      >
+        <button
+          className="p-0.5 rounded cursor-grab text-[var(--text-tertiary)] hover:text-[var(--text-primary)] active:cursor-grabbing touch-none opacity-0 group-hover:opacity-100 transition-opacity"
+          aria-label="Drag to reorder"
+          title="Drag to reorder"
+          tabIndex={-1}
+          {...listeners}
+        >
+          <GripVertical size={12} />
+        </button>
+
+        <FileText size={13} className="shrink-0" />
+
+        {isRenaming ? (
+          <input
+            ref={renameInputRef}
+            value={renameValue}
+            onChange={(e) => onRenameChange(e.target.value)}
+            onBlur={onRenameCommit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') onRenameCommit()
+              if (e.key === 'Escape') { onRenameChange(lesson.title); onRenameCommit() }
+            }}
+            onClick={(e) => e.stopPropagation()}
+            className="flex-1 text-xs bg-transparent border border-[var(--border-default)] rounded px-1 py-0.5 text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--ring-brand)] min-w-0"
+          />
+        ) : (
+          <span className="flex-1 text-xs truncate">{lesson.title}</span>
+        )}
+
+        {lesson.accessibilityScore !== null && (
+          <span
+            className={`text-[10px] font-[var(--font-weight-medium)] shrink-0 ${
+              lesson.accessibilityScore >= 80
+                ? 'text-emerald-600'
+                : lesson.accessibilityScore >= 60
+                  ? 'text-yellow-600'
+                  : 'text-red-600'
+            }`}
+            title={`Accessibility score: ${lesson.accessibilityScore}`}
+          >
+            {lesson.accessibilityScore}
+          </span>
+        )}
+
+        <button
+          onClick={(e) => { e.stopPropagation(); onContextMenu(e as unknown as React.MouseEvent) }}
+          className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 p-0.5 rounded cursor-pointer text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-opacity"
+          aria-label="Lesson actions"
+        >
+          <MoreHorizontal size={12} />
+        </button>
+      </div>
+    </li>
+  )
+}
+
+// ─── Empty Module Drop Zone ───
+
+function EmptyModuleDropZone({ moduleId }: { moduleId: string }): JSX.Element {
+  const { setNodeRef, isOver } = useDroppable({ id: `empty::${moduleId}` })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`mx-3 my-1 py-2 rounded border border-dashed text-center text-[10px] transition-colors ${
+        isOver
+          ? 'border-[var(--brand-magenta)] bg-[var(--brand-magenta)]/5 text-[var(--brand-magenta)]'
+          : 'border-[var(--border-default)] text-[var(--text-tertiary)]'
+      }`}
+    >
+      {isOver ? 'Drop lesson here' : 'No lessons'}
+    </div>
+  )
+}
+
 // ─── Module Node ───
 
 interface ModuleNodeProps {
@@ -328,6 +569,8 @@ function ModuleNode({
   const udlColor = udlStatusColor(mod.udlChecklist)
   const isRenaming = renamingId === mod.id
   const Chevron = expanded ? ChevronDown : ChevronRight
+
+  const sortableIds = mod.lessons.map((l) => makeSortableId(mod.id, l.id))
 
   return (
     <li role="treeitem" aria-expanded={expanded}>
@@ -389,74 +632,30 @@ function ModuleNode({
       </div>
 
       {/* Lessons */}
-      {expanded && mod.lessons.length > 0 && (
-        <ul role="group" className="ml-4">
-          {mod.lessons.map((lesson) => {
-            const isActive = activeLessonId === lesson.id
-            const isLessonRenaming = renamingId === lesson.id
-            return (
-              <li key={lesson.id} role="treeitem">
-                <div
-                  className={`
-                    group flex items-center gap-1.5 px-2 py-1 mx-1 rounded-md cursor-pointer transition-colors
-                    ${isActive
-                      ? 'bg-[var(--bg-active)] text-[var(--text-brand)]'
-                      : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'
-                    }
-                  `}
-                  onClick={() => onSelectLesson(lesson.id)}
+      {expanded && (
+        <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
+          {mod.lessons.length > 0 ? (
+            <ul role="group" className="ml-4">
+              {mod.lessons.map((lesson) => (
+                <SortableLessonItem
+                  key={lesson.id}
+                  lesson={lesson}
+                  moduleId={mod.id}
+                  isActive={activeLessonId === lesson.id}
+                  isRenaming={renamingId === lesson.id}
+                  renameValue={renameValue}
+                  renameInputRef={renameInputRef}
+                  onSelect={() => onSelectLesson(lesson.id)}
                   onContextMenu={(e) => onContextMenu(e, 'lesson', mod.id, lesson.id)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') onSelectLesson(lesson.id) }}
-                  tabIndex={0}
-                  aria-label={`Lesson: ${lesson.title}`}
-                  aria-current={isActive ? 'true' : undefined}
-                >
-                  <FileText size={13} className="shrink-0" />
-
-                  {isLessonRenaming ? (
-                    <input
-                      ref={renameInputRef}
-                      value={renameValue}
-                      onChange={(e) => onRenameChange(e.target.value)}
-                      onBlur={onRenameCommit}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') onRenameCommit()
-                        if (e.key === 'Escape') { onRenameChange(lesson.title); onRenameCommit() }
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex-1 text-xs bg-transparent border border-[var(--border-default)] rounded px-1 py-0.5 text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--ring-brand)] min-w-0"
-                    />
-                  ) : (
-                    <span className="flex-1 text-xs truncate">{lesson.title}</span>
-                  )}
-
-                  {lesson.accessibilityScore !== null && (
-                    <span
-                      className={`text-[10px] font-[var(--font-weight-medium)] shrink-0 ${
-                        lesson.accessibilityScore >= 80
-                          ? 'text-emerald-600'
-                          : lesson.accessibilityScore >= 60
-                            ? 'text-yellow-600'
-                            : 'text-red-600'
-                      }`}
-                      title={`Accessibility score: ${lesson.accessibilityScore}`}
-                    >
-                      {lesson.accessibilityScore}
-                    </span>
-                  )}
-
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onContextMenu(e as unknown as React.MouseEvent, 'lesson', mod.id, lesson.id) }}
-                    className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 p-0.5 rounded cursor-pointer text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-opacity"
-                    aria-label="Lesson actions"
-                  >
-                    <MoreHorizontal size={12} />
-                  </button>
-                </div>
-              </li>
-            )
-          })}
-        </ul>
+                  onRenameChange={onRenameChange}
+                  onRenameCommit={onRenameCommit}
+                />
+              ))}
+            </ul>
+          ) : (
+            <EmptyModuleDropZone moduleId={mod.id} />
+          )}
+        </SortableContext>
       )}
     </li>
   )
