@@ -93,6 +93,17 @@ export type ContentBlock =
   | SlideBlock
   | FileUploadBlock
   | SaveForLaterBlock
+  | TimelineBlock
+  | MathBlock
+  | ChartBlock
+  | LottieBlock
+  | InteractiveVideoBlock
+  | PDFViewerBlock
+  | ConvertedDocBlock
+  | ImageMapBlock
+  | RevealScrollBlock
+  | WritingBlock
+  | KnowledgeCheckBlock
 
 // ─── Base Block ───
 
@@ -157,6 +168,12 @@ export interface CaptionTrack {
   kind: 'subtitles' | 'captions' | 'descriptions'
 }
 
+export interface QuizRandomizationConfig {
+  enabled: boolean
+  poolSize: number
+  seed?: string
+}
+
 export interface QuizBlock extends BaseBlock {
   type: 'quiz'
   questions: QuizQuestion[]
@@ -165,6 +182,7 @@ export interface QuizBlock extends BaseBlock {
   allowRetry: boolean
   shuffleQuestions: boolean
   shuffleAnswers: boolean
+  randomization?: QuizRandomizationConfig
 }
 
 export interface QuizQuestion {
@@ -176,6 +194,9 @@ export interface QuizQuestion {
   feedbackCorrect: string
   feedbackIncorrect: string
   bankQuestionId?: string
+  difficulty?: 'easy' | 'medium' | 'hard'
+  bloomsLevel?: 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create'
+  tags?: string[]
 }
 
 export interface QuizChoice {
@@ -218,14 +239,14 @@ export interface MatchItem {
 
 export interface AccordionBlock extends BaseBlock {
   type: 'accordion'
-  items: { title: string; content: string }[]
+  items: { title: string; content: string; children?: ContentBlock[] }[]
   layout?: 'stacked' | 'horizontal'
   columns?: 2 | 3
 }
 
 export interface TabsBlock extends BaseBlock {
   type: 'tabs'
-  tabs: { label: string; content: string }[]
+  tabs: { label: string; content: string; children?: ContentBlock[] }[]
 }
 
 export interface FlashcardBlock extends BaseBlock {
@@ -324,7 +345,7 @@ export interface FeedbackQuestion {
 
 // ─── Slide Block ───
 
-export type SlideElementType = 'button' | 'embed' | 'quiz' | 'matching' | 'text' | 'image'
+export type SlideElementType = 'button' | 'embed' | 'quiz' | 'matching' | 'text' | 'image' | 'hotspot-callout'
 
 export interface SlideElementData {
   // button
@@ -343,6 +364,14 @@ export interface SlideElementData {
   // image
   imagePath?: string
   imageAlt?: string
+  // hotspot-callout
+  calloutText?: string
+  calloutAnchorX?: number
+  calloutAnchorY?: number
+  connectorStyle?: 'line' | 'curve' | 'elbow'
+  connectorColor?: string
+  anchorStyle?: 'dot' | 'ring' | 'pin'
+  triggerMode?: 'hover' | 'click' | 'always'
 }
 
 export interface SlideElement {
@@ -372,6 +401,162 @@ export interface FileUploadBlock extends BaseBlock {
   mimeType: string
   allowDownload: boolean
   inlineViewer: boolean
+}
+
+// ─── Timeline Block ───
+
+export interface TimelineNode {
+  id: string
+  title: string
+  date: string
+  content: string
+  icon?: string
+}
+
+export interface TimelineBlock extends BaseBlock {
+  type: 'timeline'
+  nodes: TimelineNode[]
+  orientation: 'vertical' | 'horizontal'
+  expandBehavior: 'all-open' | 'one-at-a-time' | 'click-to-expand'
+  lineStyle: 'solid' | 'dashed' | 'dotted'
+}
+
+// ─── Math/LaTeX Block ───
+
+export interface MathBlock extends BaseBlock {
+  type: 'math'
+  latex: string
+  displayMode: boolean
+  renderer: 'katex' | 'mathjax'
+}
+
+// ─── Chart Block ───
+
+export interface ChartDataset {
+  label: string
+  data: number[]
+  backgroundColor?: string
+  borderColor?: string
+}
+
+export interface ChartBlock extends BaseBlock {
+  type: 'chart'
+  chartType: 'bar' | 'line' | 'pie' | 'doughnut' | 'radar' | 'polarArea'
+  labels: string[]
+  datasets: ChartDataset[]
+  accessibleSummary: string
+  xAxisLabel?: string
+  yAxisLabel?: string
+}
+
+// ─── Lottie Animation Block ───
+
+export interface LottieBlock extends BaseBlock {
+  type: 'lottie'
+  animationPath: string
+  autoplay: boolean
+  loop: boolean
+  speed: number
+  trigger: 'auto' | 'hover' | 'click' | 'scroll'
+  fallbackImagePath: string
+}
+
+// ─── Interactive Video Block ───
+
+export interface VideoTimedQuestion {
+  id: string
+  timestamp: number
+  question: QuizQuestion
+}
+
+export interface InteractiveVideoBlock extends BaseBlock {
+  type: 'interactive-video'
+  url: string
+  transcript: string
+  questions: VideoTimedQuestion[]
+  pauseBehavior: 'pause' | 'overlay' | 'none'
+}
+
+// ─── PDF Viewer Block ───
+
+export interface PDFViewerBlock extends BaseBlock {
+  type: 'pdf-viewer'
+  filePath: string
+  hasAccessibilityTags: boolean
+  showControls: boolean
+  allowDownload: boolean
+}
+
+// ─── Converted Document Block ───
+
+export interface ConvertedDocBlock extends BaseBlock {
+  type: 'converted-doc'
+  sourceFilePath: string
+  sourceType: 'pdf' | 'docx' | 'pptx'
+  convertedHtml: string
+  conversionStatus: 'pending' | 'converting' | 'done' | 'error'
+}
+
+// ─── Image Map Block ───
+
+export interface ImageMapHotspot {
+  id: string
+  shape: 'rect' | 'circle'
+  coords: number[]
+  label: string
+  popupContent: string
+}
+
+export interface ImageMapBlock extends BaseBlock {
+  type: 'image-map'
+  imagePath: string
+  imageAlt: string
+  hotspots: ImageMapHotspot[]
+}
+
+// ─── Reveal Scroll Block ───
+
+export interface RevealItem {
+  id: string
+  content: string
+  animation: 'fade-in' | 'slide-up' | 'slide-left' | 'scale'
+}
+
+export interface RevealScrollBlock extends BaseBlock {
+  type: 'reveal-scroll'
+  items: RevealItem[]
+  trigger: 'scroll' | 'click'
+  staggerDelay: number
+  threshold: number
+}
+
+// ─── Writing Block ───
+
+export interface WritingPromptSection {
+  id: string
+  label: string
+  placeholder: string
+  minWords?: number
+  maxWords?: number
+}
+
+export interface WritingBlock extends BaseBlock {
+  type: 'writing'
+  variant: 'essay' | 'reflection' | 'journal' | 'short-response'
+  instruction: string
+  promptSections: WritingPromptSection[]
+  rubricEnabled: boolean
+  aiScoringEnabled: boolean
+}
+
+// ─── Knowledge Check Block ───
+
+export interface KnowledgeCheckBlock extends BaseBlock {
+  type: 'knowledge-check'
+  phase: 'pre' | 'post' | 'formative'
+  objectives: string[]
+  questions: QuizQuestion[]
+  showProgressReport: boolean
 }
 
 // ─── Save for Later Block ───
@@ -553,7 +738,18 @@ export const BLOCK_TYPES: readonly BlockType[] = [
   'feedback-form',
   'slide',
   'file-upload',
-  'save-for-later'
+  'save-for-later',
+  'timeline',
+  'math',
+  'chart',
+  'lottie',
+  'interactive-video',
+  'pdf-viewer',
+  'converted-doc',
+  'image-map',
+  'reveal-scroll',
+  'writing',
+  'knowledge-check'
 ] as const
 
 export const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
@@ -578,7 +774,18 @@ export const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
   'feedback-form': 'Feedback Form',
   'slide': 'Slide',
   'file-upload': 'File Upload',
-  'save-for-later': 'Save for Later'
+  'save-for-later': 'Save for Later',
+  'timeline': 'Timeline',
+  'math': 'Math / LaTeX',
+  'chart': 'Chart',
+  'lottie': 'Lottie Animation',
+  'interactive-video': 'Interactive Video',
+  'pdf-viewer': 'PDF Viewer',
+  'converted-doc': 'Converted Document',
+  'image-map': 'Image Map',
+  'reveal-scroll': 'Reveal on Scroll',
+  'writing': 'Writing',
+  'knowledge-check': 'Knowledge Check'
 }
 
 // ─── Interactive Block Types ───
@@ -592,7 +799,11 @@ export const INTERACTIVE_BLOCK_TYPES: readonly BlockType[] = [
   'flashcard',
   'feedback-form',
   'matching',
-  'tabs'
+  'tabs',
+  'interactive-video',
+  'writing',
+  'knowledge-check',
+  'image-map'
 ] as const
 
 // ─── Content Area ───

@@ -25,7 +25,18 @@ import type {
   FeedbackFormBlock,
   SlideBlock,
   FileUploadBlock,
-  SaveForLaterBlock
+  SaveForLaterBlock,
+  TimelineBlock,
+  MathBlock,
+  ChartBlock,
+  LottieBlock,
+  InteractiveVideoBlock,
+  PDFViewerBlock,
+  ConvertedDocBlock,
+  ImageMapBlock,
+  RevealScrollBlock,
+  WritingBlock,
+  KnowledgeCheckBlock
 } from '@/types/course'
 
 // ─── Individual Block Factories ───
@@ -315,6 +326,161 @@ export function createSaveForLaterBlock(overrides: Partial<SaveForLaterBlock> = 
   }
 }
 
+export function createTimelineBlock(overrides: Partial<TimelineBlock> = {}): TimelineBlock {
+  return {
+    id: uid('block'),
+    type: 'timeline',
+    ariaLabel: 'Timeline',
+    notes: '',
+    nodes: [{ id: uid('tnode'), title: 'Event 1', date: '', content: '' }],
+    orientation: 'vertical',
+    expandBehavior: 'all-open',
+    lineStyle: 'solid',
+    ...overrides
+  }
+}
+
+export function createMathBlock(overrides: Partial<MathBlock> = {}): MathBlock {
+  return {
+    id: uid('block'),
+    type: 'math',
+    ariaLabel: 'Math equation',
+    notes: '',
+    latex: '',
+    displayMode: true,
+    renderer: 'katex',
+    ...overrides
+  }
+}
+
+export function createChartBlock(overrides: Partial<ChartBlock> = {}): ChartBlock {
+  return {
+    id: uid('block'),
+    type: 'chart',
+    ariaLabel: 'Chart',
+    notes: '',
+    chartType: 'bar',
+    labels: ['A', 'B', 'C'],
+    datasets: [{ label: 'Series 1', data: [10, 20, 30] }],
+    accessibleSummary: '',
+    ...overrides
+  }
+}
+
+export function createLottieBlock(overrides: Partial<LottieBlock> = {}): LottieBlock {
+  return {
+    id: uid('block'),
+    type: 'lottie',
+    ariaLabel: 'Animation',
+    notes: '',
+    animationPath: '',
+    autoplay: true,
+    loop: true,
+    speed: 1,
+    trigger: 'auto',
+    fallbackImagePath: '',
+    ...overrides
+  }
+}
+
+export function createInteractiveVideoBlock(overrides: Partial<InteractiveVideoBlock> = {}): InteractiveVideoBlock {
+  return {
+    id: uid('block'),
+    type: 'interactive-video',
+    ariaLabel: 'Interactive video',
+    notes: '',
+    url: '',
+    transcript: '',
+    questions: [],
+    pauseBehavior: 'pause',
+    ...overrides
+  }
+}
+
+export function createPDFViewerBlock(overrides: Partial<PDFViewerBlock> = {}): PDFViewerBlock {
+  return {
+    id: uid('block'),
+    type: 'pdf-viewer',
+    ariaLabel: 'PDF document',
+    notes: '',
+    filePath: '',
+    hasAccessibilityTags: false,
+    showControls: true,
+    allowDownload: true,
+    ...overrides
+  }
+}
+
+export function createConvertedDocBlock(overrides: Partial<ConvertedDocBlock> = {}): ConvertedDocBlock {
+  return {
+    id: uid('block'),
+    type: 'converted-doc',
+    ariaLabel: 'Converted document',
+    notes: '',
+    sourceFilePath: '',
+    sourceType: 'docx',
+    convertedHtml: '',
+    conversionStatus: 'pending',
+    ...overrides
+  }
+}
+
+export function createImageMapBlock(overrides: Partial<ImageMapBlock> = {}): ImageMapBlock {
+  return {
+    id: uid('block'),
+    type: 'image-map',
+    ariaLabel: 'Interactive image map',
+    notes: '',
+    imagePath: '',
+    imageAlt: '',
+    hotspots: [],
+    ...overrides
+  }
+}
+
+export function createRevealScrollBlock(overrides: Partial<RevealScrollBlock> = {}): RevealScrollBlock {
+  return {
+    id: uid('block'),
+    type: 'reveal-scroll',
+    ariaLabel: 'Reveal on scroll content',
+    notes: '',
+    items: [{ id: uid('reveal'), content: '', animation: 'fade-in' }],
+    trigger: 'scroll',
+    staggerDelay: 200,
+    threshold: 0.3,
+    ...overrides
+  }
+}
+
+export function createWritingBlock(overrides: Partial<WritingBlock> = {}): WritingBlock {
+  return {
+    id: uid('block'),
+    type: 'writing',
+    ariaLabel: 'Writing activity',
+    notes: '',
+    variant: 'essay',
+    instruction: '',
+    promptSections: [{ id: uid('section'), label: 'Response', placeholder: 'Write your response here...', minWords: 0, maxWords: 0 }],
+    rubricEnabled: false,
+    aiScoringEnabled: false,
+    ...overrides
+  }
+}
+
+export function createKnowledgeCheckBlock(overrides: Partial<KnowledgeCheckBlock> = {}): KnowledgeCheckBlock {
+  return {
+    id: uid('block'),
+    type: 'knowledge-check',
+    ariaLabel: 'Knowledge check',
+    notes: '',
+    phase: 'formative',
+    objectives: [],
+    questions: [],
+    showProgressReport: true,
+    ...overrides
+  }
+}
+
 // ─── Quiz Helpers ───
 
 export function createQuizChoice(overrides: Partial<QuizChoice> = {}): QuizChoice {
@@ -403,7 +569,18 @@ const factories: Record<BlockType, (overrides?: Record<string, unknown>) => Cont
   'feedback-form': createFeedbackFormBlock,
   'slide': createSlideBlock,
   'file-upload': createFileUploadBlock,
-  'save-for-later': createSaveForLaterBlock
+  'save-for-later': createSaveForLaterBlock,
+  'timeline': createTimelineBlock,
+  'math': createMathBlock,
+  'chart': createChartBlock,
+  'lottie': createLottieBlock,
+  'interactive-video': createInteractiveVideoBlock,
+  'pdf-viewer': createPDFViewerBlock,
+  'converted-doc': createConvertedDocBlock,
+  'image-map': createImageMapBlock,
+  'reveal-scroll': createRevealScrollBlock,
+  'writing': createWritingBlock,
+  'knowledge-check': createKnowledgeCheckBlock
 }
 
 /**

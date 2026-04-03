@@ -41,6 +41,17 @@ import { CustomHTMLBlockEditor } from './CustomHTMLBlockEditor'
 import { FeedbackFormBlockEditor } from './FeedbackFormBlockEditor'
 import { SlideBlockEditor } from './SlideBlockEditor'
 import { FileUploadBlockEditor } from './FileUploadBlockEditor'
+import { TimelineBlockEditor } from './TimelineBlockEditor'
+import { MathBlockEditor } from './MathBlockEditor'
+import { ChartBlockEditor } from './ChartBlockEditor'
+import { LottieBlockEditor } from './LottieBlockEditor'
+import { InteractiveVideoBlockEditor } from './InteractiveVideoBlockEditor'
+import { PDFViewerBlockEditor } from './PDFViewerBlockEditor'
+import { ConvertedDocBlockEditor } from './ConvertedDocBlockEditor'
+import { ImageMapBlockEditor } from './ImageMapBlockEditor'
+import { RevealScrollBlockEditor } from './RevealScrollBlockEditor'
+import { WritingBlockEditor } from './WritingBlockEditor'
+import { KnowledgeCheckBlockEditor } from './KnowledgeCheckBlockEditor'
 import { BlockInserterButton } from './BlockInserter'
 import { SlideCanvas } from './SlideCanvas'
 import { BLOCK_TYPE_LABELS } from '@/types/course'
@@ -244,6 +255,28 @@ export function EditorCanvas({ scrollContainerRef }: EditorCanvasProps): JSX.Ele
         return <SlideBlockEditor block={block} onUpdate={updateFn} />
       case 'file-upload':
         return <FileUploadBlockEditor block={block} onUpdate={updateFn} />
+      case 'timeline':
+        return <TimelineBlockEditor block={block} onUpdate={updateFn} />
+      case 'math':
+        return <MathBlockEditor block={block} onUpdate={updateFn} />
+      case 'chart':
+        return <ChartBlockEditor block={block} onUpdate={updateFn} />
+      case 'lottie':
+        return <LottieBlockEditor block={block} onUpdate={updateFn} />
+      case 'interactive-video':
+        return <InteractiveVideoBlockEditor block={block} onUpdate={updateFn} />
+      case 'pdf-viewer':
+        return <PDFViewerBlockEditor block={block} onUpdate={updateFn} />
+      case 'converted-doc':
+        return <ConvertedDocBlockEditor block={block} onUpdate={updateFn} />
+      case 'image-map':
+        return <ImageMapBlockEditor block={block} onUpdate={updateFn} />
+      case 'reveal-scroll':
+        return <RevealScrollBlockEditor block={block} onUpdate={updateFn} />
+      case 'writing':
+        return <WritingBlockEditor block={block} onUpdate={updateFn} />
+      case 'knowledge-check':
+        return <KnowledgeCheckBlockEditor block={block} onUpdate={updateFn} />
       case 'save-for-later':
       case 'divider':
         // Divider is simple enough to just show preview even when selected

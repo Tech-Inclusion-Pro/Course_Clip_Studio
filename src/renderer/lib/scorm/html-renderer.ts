@@ -3,7 +3,7 @@
  * Each lesson becomes one HTML file (one SCO).
  */
 
-import type { Course, Lesson, ContentBlock, CourseTheme, SlideElement } from '@/types/course'
+import type { Course, Lesson, ContentBlock, CourseTheme, SlideElement, ChartBlock } from '@/types/course'
 
 /** Compute relative luminance of a hex color (WCAG formula). */
 function luminance(hex: string): number {
@@ -299,6 +299,148 @@ function renderBlockInner(block: ContentBlock, animStyle: string, animClass: str
     <p class="sfl-empty">No items saved yet.</p>
   </div>
 </section>`
+
+    case 'timeline':
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-timeline timeline-${block.orientation}${animClass}"${animStyle}>
+  <ol class="timeline-list" style="border-left-style: ${block.lineStyle};">
+    ${block.nodes.map((node) => `<li class="timeline-node">
+      ${block.expandBehavior === 'all-open'
+        ? `<div class="timeline-node-inner">
+            <span class="timeline-date">${escapeHtml(node.date)}</span>
+            <strong class="timeline-title">${escapeHtml(node.title)}</strong>
+            <div class="timeline-content">${escapeHtml(node.content)}</div>
+          </div>`
+        : `<details${block.expandBehavior === 'click-to-expand' ? '' : ' open'}>
+            <summary><span class="timeline-date">${escapeHtml(node.date)}</span> ${escapeHtml(node.title)}</summary>
+            <div class="timeline-content">${escapeHtml(node.content)}</div>
+          </details>`}
+    </li>`).join('\n    ')}
+  </ol>
+</section>`
+
+    case 'math':
+      // Use KaTeX renderToString at build time
+      try {
+        const katex = require('katex')
+        const mathHtml = katex.renderToString(block.latex || '', { displayMode: block.displayMode, throwOnError: false, trust: false })
+        return `<section role="math" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-math${animClass}"${animStyle}>
+  ${mathHtml}
+</section>`
+      } catch {
+        return `<section role="math" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-math${animClass}"${animStyle}>
+  <code>${escapeHtml(block.latex)}</code>
+</section>`
+      }
+
+    case 'chart': {
+      const chartBlock = block as ChartBlock
+      const chartConfig = JSON.stringify({
+        type: chartBlock.chartType,
+        data: { labels: chartBlock.labels, datasets: chartBlock.datasets },
+        options: { responsive: true }
+      })
+      // Data table for accessibility
+      const tableHtml = `<table class="chart-accessible-table sr-only" aria-label="${escapeHtml(chartBlock.accessibleSummary || 'Chart data')}">
+  <thead><tr><th>Label</th>${chartBlock.datasets.map((ds) => `<th>${escapeHtml(ds.label)}</th>`).join('')}</tr></thead>
+  <tbody>${chartBlock.labels.map((label, i) => `<tr><td>${escapeHtml(label)}</td>${chartBlock.datasets.map((ds) => `<td>${ds.data[i] ?? ''}</td>`).join('')}</tr>`).join('')}</tbody>
+</table>`
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-chart${animClass}"${animStyle}>
+  <canvas id="chart-${block.id}" data-chart='${escapeHtml(chartConfig)}'></canvas>
+  ${chartBlock.accessibleSummary ? `<p class="chart-summary sr-only">${escapeHtml(chartBlock.accessibleSummary)}</p>` : ''}
+  ${tableHtml}
+</section>`
+    }
+
+    case 'lottie':
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-lottie${animClass}"${animStyle}>
+  <div class="lottie-container" data-animation-path="${escapeHtml(block.animationPath)}" data-autoplay="${block.autoplay}" data-loop="${block.loop}" data-speed="${block.speed}" data-trigger="${block.trigger}"></div>
+  ${block.fallbackImagePath ? `<noscript><img src="${escapeHtml(block.fallbackImagePath)}" alt="${escapeHtml(block.ariaLabel)}" /></noscript>` : ''}
+</section>`
+
+    case 'interactive-video':
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-interactive-video${animClass}"${animStyle}>
+  <video controls aria-label="${escapeHtml(block.ariaLabel)}" data-questions='${escapeHtml(JSON.stringify(block.questions))}' data-pause-behavior="${block.pauseBehavior}">
+    <source src="${escapeHtml(block.url)}" />
+  </video>
+  <div class="iv-question-overlay" hidden></div>
+  ${block.transcript ? `<details class="transcript"><summary>View Transcript</summary><div>${escapeHtml(block.transcript)}</div></details>` : ''}
+</section>`
+
+    case 'pdf-viewer':
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-pdf-viewer${animClass}"${animStyle}>
+  <div class="pdf-embed-wrapper">
+    <embed src="${escapeHtml(block.filePath)}" type="application/pdf" width="100%" height="600px" />
+  </div>
+  ${block.allowDownload ? `<a href="${escapeHtml(block.filePath)}" download class="pdf-download-btn">Download PDF</a>` : ''}
+  ${!block.hasAccessibilityTags ? '<p class="pdf-a11y-warning" role="alert">This PDF may not be fully accessible to screen readers.</p>' : ''}
+</section>`
+
+    case 'converted-doc':
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-converted-doc${animClass}"${animStyle}>
+  ${block.convertedHtml || '<p><em>Document content not yet converted.</em></p>'}
+</section>`
+
+    case 'image-map':
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-image-map${animClass}"${animStyle}>
+  <figure>
+    <img src="${escapeHtml(block.imagePath)}" alt="${escapeHtml(block.imageAlt)}" usemap="#map-${block.id}" />
+    <map name="map-${block.id}">
+      ${block.hotspots.map((hs) => `<area shape="${hs.shape}" coords="${hs.coords.join(',')}" alt="${escapeHtml(hs.label)}" data-popup="${escapeHtml(hs.popupContent)}" tabindex="0" />`).join('\n      ')}
+    </map>
+  </figure>
+  <div class="imagemap-popup" hidden></div>
+</section>`
+
+    case 'reveal-scroll':
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-reveal-scroll${animClass}"${animStyle}>
+  ${block.items.map((item, i) => `<div class="reveal-item" data-reveal-animation="${item.animation}" data-reveal-delay="${i * block.staggerDelay}" data-reveal-threshold="${block.threshold}" style="opacity:0;">
+    ${item.content}
+  </div>`).join('\n  ')}
+</section>`
+
+    case 'writing':
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-writing${animClass}"${animStyle}>
+  <div class="writing-variant-badge">${escapeHtml(block.variant)}</div>
+  <div class="writing-instruction">${escapeHtml(block.instruction)}</div>
+  ${block.promptSections.map((s) => `<div class="writing-section">
+    <label class="writing-section-label">${escapeHtml(s.label)}</label>
+    <textarea class="writing-textarea" placeholder="${escapeHtml(s.placeholder)}" data-min-words="${s.minWords || 0}" data-max-words="${s.maxWords || 0}"></textarea>
+    <div class="writing-word-count">0 words${s.minWords ? ` (min: ${s.minWords})` : ''}${s.maxWords ? ` (max: ${s.maxWords})` : ''}</div>
+  </div>`).join('\n  ')}
+</section>`
+
+    case 'knowledge-check': {
+      const kcQuestions = block.questions.map((q, qi) => {
+        let choicesHtml = ''
+        if (q.type === 'multiple-choice' || q.type === 'true-false') {
+          choicesHtml = `<fieldset>
+            <legend class="sr-only">Choices for question ${qi + 1}</legend>
+            ${q.choices.map((c) => `<label class="quiz-choice">
+              <input type="radio" name="kc-q-${q.id}" value="${c.id}" data-correct="${c.isCorrect}" />
+              <span>${escapeHtml(c.label)}</span>
+            </label>`).join('\n            ')}
+          </fieldset>`
+        } else if (q.type === 'short-answer') {
+          choicesHtml = `<input type="text" class="short-answer" data-question="${q.id}" placeholder="Type your answer..." />`
+        }
+        return `<div class="quiz-question" data-type="${q.type}" data-id="${q.id}">
+          <p class="question-prompt"><strong>Q${qi + 1}.</strong> ${escapeHtml(q.prompt)}</p>
+          ${choicesHtml}
+          <div class="feedback feedback-correct" hidden>${escapeHtml(q.feedbackCorrect)}</div>
+          <div class="feedback feedback-incorrect" hidden>${escapeHtml(q.feedbackIncorrect)}</div>
+        </div>`
+      }).join('\n    ')
+
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-knowledge-check${animClass}"${animStyle}>
+  <div class="kc-phase-badge">${escapeHtml(block.phase)}</div>
+  ${block.objectives.length > 0 ? `<ul class="kc-objectives">${block.objectives.map((o) => `<li>${escapeHtml(o)}</li>`).join('')}</ul>` : ''}
+  ${kcQuestions}
+  <div class="quiz-actions">
+    <button class="quiz-submit" type="button">Check Answers</button>
+  </div>
+  <div class="quiz-result" hidden aria-live="polite"></div>
+</section>`
+    }
 
     default:
       return `<!-- Unknown block type: ${(block as ContentBlock).type} -->`
@@ -749,6 +891,63 @@ function getPlayerStyles(theme: CourseTheme): string {
     .course-readme summary { padding: 14px 18px; cursor: pointer; font-weight: 600; font-size: 14px; color: ${ensureContrast(theme.primaryColor, theme.backgroundColor)}; background: ${theme.primaryColor}08; border-radius: 10px; }
     .course-readme[open] summary { border-radius: 10px 10px 0 0; }
     .readme-content { padding: 16px 18px; font-size: 14px; line-height: 1.7; white-space: pre-wrap; color: ${bodyText}; }
+
+    /* Timeline */
+    .block-timeline .timeline-list { list-style: none; padding-left: 24px; border-left: 3px solid ${theme.primaryColor}; }
+    .timeline-node { position: relative; padding: 8px 0 16px 16px; }
+    .timeline-node::before { content: ''; position: absolute; left: -30px; top: 12px; width: 12px; height: 12px; border-radius: 50%; background: ${theme.primaryColor}; border: 2px solid ${theme.backgroundColor}; }
+    .timeline-date { font-size: 12px; color: ${ensureContrast(theme.primaryColor, theme.backgroundColor)}; font-weight: 600; margin-right: 8px; }
+    .timeline-title { font-size: 15px; font-weight: 600; color: ${bodyText}; }
+    .timeline-content { font-size: 14px; margin-top: 4px; color: ${bodyText}; opacity: 0.85; }
+    .timeline-horizontal .timeline-list { display: flex; border-left: none; border-top: 3px solid ${theme.primaryColor}; padding-left: 0; padding-top: 16px; overflow-x: auto; }
+    .timeline-horizontal .timeline-node { padding: 16px 16px 0 0; min-width: 200px; }
+    .timeline-horizontal .timeline-node::before { left: 0; top: -22px; }
+
+    /* Math */
+    .block-math { text-align: center; padding: 16px; font-size: 18px; overflow-x: auto; }
+
+    /* Chart */
+    .block-chart canvas { max-width: 100%; }
+    .chart-accessible-table { width: 100%; border-collapse: collapse; }
+    .chart-accessible-table th, .chart-accessible-table td { padding: 4px 8px; border: 1px solid ${blockText}20; text-align: left; }
+
+    /* Lottie */
+    .block-lottie .lottie-container { max-width: 400px; margin: 0 auto; }
+
+    /* Interactive Video */
+    .block-interactive-video video { width: 100%; border-radius: 8px; }
+    .iv-question-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; border-radius: 8px; }
+
+    /* PDF Viewer */
+    .block-pdf-viewer .pdf-embed-wrapper { border-radius: 8px; overflow: hidden; border: 1px solid ${blockText}20; }
+    .block-pdf-viewer embed { display: block; }
+    .pdf-download-btn { display: inline-block; margin-top: 8px; padding: 8px 16px; background: ${theme.primaryColor}; color: #fff; border-radius: ${btnRadius}; text-decoration: none; font-size: 13px; font-weight: 600; }
+    .pdf-a11y-warning { margin-top: 8px; padding: 8px 12px; background: #fffbeb; border: 1px solid #f59e0b40; border-radius: 6px; font-size: 12px; color: #713f12; }
+
+    /* Converted Document */
+    .block-converted-doc { line-height: 1.7; }
+
+    /* Image Map */
+    .block-image-map img { max-width: 100%; height: auto; display: block; }
+    .imagemap-popup { position: absolute; padding: 12px 16px; background: ${blockBg}; color: ${blockText}; border: 1px solid ${blockText}20; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); max-width: 300px; z-index: 10; }
+
+    /* Reveal Scroll */
+    .reveal-item { transition: opacity 0.6s ease, transform 0.6s ease; margin-bottom: 16px; }
+
+    /* Writing */
+    .block-writing { background: ${blockBg}; color: ${blockText}; padding: 24px; border-radius: 12px; }
+    .writing-variant-badge { display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 8px; border-radius: 4px; background: ${theme.primaryColor}15; color: ${ensureContrast(theme.primaryColor, blockBg)}; margin-bottom: 12px; }
+    .writing-instruction { font-size: 15px; margin-bottom: 16px; line-height: 1.6; }
+    .writing-section { margin-bottom: 16px; }
+    .writing-section-label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+    .writing-textarea { width: 100%; min-height: 120px; padding: 12px; border: 1px solid ${blockText}20; border-radius: 8px; font-size: 14px; line-height: 1.6; resize: vertical; background: ${theme.backgroundColor}; color: ${bodyText}; }
+    .writing-word-count { font-size: 11px; color: ${blockText}; opacity: 0.6; margin-top: 4px; text-align: right; }
+
+    /* Knowledge Check */
+    .block-knowledge-check { background: ${blockBg}; color: ${blockText}; padding: 24px; border-radius: 12px; }
+    .kc-phase-badge { display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 8px; border-radius: 4px; background: ${theme.accentColor}15; color: ${ensureContrast(theme.accentColor, blockBg)}; margin-bottom: 12px; }
+    .kc-objectives { list-style: disc; padding-left: 20px; margin-bottom: 16px; font-size: 13px; }
+    .kc-objectives li { margin-bottom: 4px; }
 
     @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
     @media (max-width: 600px) {

@@ -25,6 +25,10 @@ Course Clip Studio is a professional-grade desktop application for creating acce
 | State Management | Zustand |
 | Icons | lucide-react |
 | Internationalization | i18next |
+| Math Rendering | KaTeX |
+| Charts | Chart.js + react-chartjs-2 |
+| Animations | lottie-react |
+| Document Conversion | mammoth (DOCX), pdfjs-dist (PDF) |
 | AI Providers | Anthropic (Claude), OpenAI (GPT), Ollama (local) |
 
 ## Features
@@ -57,10 +61,24 @@ Each step is optional and can be skipped. All settings can be changed later from
 
 ### Course Authoring
 
-- **20 content block types** — Text, Image/Media, Video, Audio, Quiz, Drag & Drop, Matching, Accordion, Tabs, Flashcard, Branching Scenario, URL/Embed, Code, Divider, Callout, H5P (with inline or new-tab display modes), HTML / Rich Text, Plugin, Feedback Form, and Slide
+- **33 content block types** — Text, Image/Media, Video, Audio, Quiz, Drag & Drop, Matching, Accordion, Tabs, Flashcard, Branching Scenario, URL/Embed, Code, Divider, Callout, H5P (with inline or new-tab display modes), HTML / Rich Text, Plugin, Feedback Form, Slide, File Upload, Save for Later, Timeline, Math/LaTeX, Chart, Lottie Animation, Interactive Video, PDF Viewer, Converted Document, Image Map, Reveal on Scroll, Writing, and Knowledge Check
 - **Slide block** — Free-form canvas block (16:9) for placing buttons, embeds, quiz items, matching activities, text, and images with drag-to-position layout, background color/image, and per-element property editing
 - **URL / Embed block** — Insert any URL with two display modes: "Show in Course" (inline iframe) or "Open External" (opens in browser/new tab)
 - **HTML / Rich Text block** — Full code editor (HTML/CSS/JS tabs via Monaco) with live preview toggle, allowing users to add any custom content
+- **Timeline block** — Vertical or horizontal timeline with ordered event nodes; each node has title, date, and content; configurable expand behavior (all open, one-at-a-time, click-to-expand) and line style (solid, dashed, dotted)
+- **Math/LaTeX block** — LaTeX equation editor with live KaTeX preview, symbol shortcut toolbar, and display/inline mode toggle; renders to accessible `<section role="math">` in exports
+- **Chart block** — Interactive chart editor supporting bar, line, pie, doughnut, radar, and polar area chart types; data grid for labels and datasets, axis labels, accessible data table fallback, and live Chart.js preview
+- **Lottie Animation block** — Lottie JSON file upload with autoplay, loop, speed, and trigger mode (auto, hover, click, scroll) controls; supports fallback image for no-JS environments
+- **Interactive Video block** — Video with timed quiz questions at configurable timestamps; supports pause, overlay, or no-pause behavior; includes transcript for accessibility
+- **PDF Viewer block** — Embedded PDF viewer with page controls, download toggle, and accessibility tag warning for untagged PDFs
+- **Converted Document block** — Upload DOCX, PDF, or PPTX files and convert to HTML; DOCX conversion powered by mammoth.js; manual HTML editing available for fine-tuning
+- **Image Map block** — Interactive image with clickable hotspot regions (rectangle or circle); each hotspot has a label and popup content; coordinates editor for precise placement
+- **Reveal on Scroll block** — Content items that animate into view on scroll or click; configurable animation per item (fade-in, slide-up, slide-left, scale), stagger delay, and visibility threshold
+- **Writing block** — Learner writing activity with variants (essay, reflection, journal, short response); multiple prompt sections with word count limits; optional rubric and AI scoring with FERPA compliance warning
+- **Knowledge Check block** — Assessment block with phase labels (pre-assessment, formative, post-assessment); linked learning objectives; reuses quiz question editor; optional progress report display
+- **Slide hotspot callouts** — New slide element type for hotspot callouts with callout text, anchor point positioning, connector style (line, curve, elbow), anchor style (dot, ring, pin), trigger mode (hover, click, always), and connector color
+- **Nested blocks in Accordion/Tabs** — Accordion items and tab panels now support optional nested child content blocks for richer, composable layouts
+- **Quiz randomization** — Quiz blocks support question pool randomization with configurable pool size per attempt; questions also support difficulty level, Bloom's taxonomy level, and tags metadata
 - **Block animations** — Fade-in, slide-up, slide-left, and scale with configurable duration and delay; animations trigger on scroll via IntersectionObserver in preview and exports with `@keyframes` and `prefers-reduced-motion` support
 - **Rich text editing** — TipTap-powered editor with formatting toolbar and font size control (10–48px dropdown)
 - **Drag-and-drop file uploads** — Drag image, video, and audio files directly onto their blocks; files are automatically copied into the course's assets folder for self-contained packaging

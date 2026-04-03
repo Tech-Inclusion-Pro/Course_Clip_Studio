@@ -18,7 +18,18 @@ import {
   Puzzle,
   Presentation,
   FileUp,
-  Bookmark
+  Bookmark,
+  Clock,
+  Sigma,
+  BarChart3,
+  Clapperboard,
+  MonitorPlay,
+  FileText,
+  FileOutput,
+  MapPin,
+  Eye,
+  PenTool,
+  ClipboardCheck
 } from 'lucide-react'
 import { FeedbackFormPreview } from './FeedbackFormPreview'
 import type { ContentBlock, CalloutBlock } from '@/types/course'
@@ -407,6 +418,171 @@ export function BlockPreview({ block }: BlockPreviewProps): JSX.Element {
             <p className="text-sm text-[var(--text-primary)]">{block.heading || 'Saved for Later'}</p>
             <p className="text-xs text-[var(--text-secondary)]">Collects student-saved items</p>
           </div>
+        </div>
+      )
+
+    case 'timeline':
+      return (
+        <div className="p-3 rounded-lg bg-[var(--bg-muted)]">
+          <div className="flex items-center gap-2 mb-1">
+            <Clock size={16} className="text-[var(--text-tertiary)]" />
+            <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+              Timeline ({block.nodes.length} event{block.nodes.length !== 1 ? 's' : ''})
+            </span>
+          </div>
+          <p className="text-xs text-[var(--text-secondary)]">{block.orientation} · {block.lineStyle}</p>
+        </div>
+      )
+
+    case 'math':
+      return (
+        <div className="p-3 rounded-lg bg-[var(--bg-muted)]">
+          <div className="flex items-center gap-2 mb-1">
+            <Sigma size={16} className="text-[var(--text-tertiary)]" />
+            <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+              Math / LaTeX
+            </span>
+          </div>
+          <p className="text-xs text-[var(--text-secondary)] font-mono truncate">
+            {block.latex || 'Empty equation'}
+          </p>
+        </div>
+      )
+
+    case 'chart':
+      return (
+        <div className="p-3 rounded-lg bg-[var(--bg-muted)]">
+          <div className="flex items-center gap-2 mb-1">
+            <BarChart3 size={16} className="text-[var(--text-tertiary)]" />
+            <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+              Chart ({block.chartType})
+            </span>
+          </div>
+          <p className="text-xs text-[var(--text-secondary)]">
+            {block.datasets.length} dataset{block.datasets.length !== 1 ? 's' : ''} · {block.labels.length} label{block.labels.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+      )
+
+    case 'lottie':
+      return (
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--bg-muted)]">
+          <Clapperboard size={24} className="text-[var(--text-tertiary)] shrink-0" />
+          <div className="min-w-0">
+            <p className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">Lottie Animation</p>
+            <p className="text-xs text-[var(--text-secondary)] truncate">
+              {block.animationPath ? block.animationPath.split('/').pop() : 'No animation file'}
+            </p>
+          </div>
+        </div>
+      )
+
+    case 'interactive-video':
+      return (
+        <div className="p-3 rounded-lg bg-[var(--bg-muted)]">
+          <div className="flex items-center gap-2 mb-1">
+            <MonitorPlay size={16} className="text-[var(--text-tertiary)]" />
+            <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+              Interactive Video
+            </span>
+          </div>
+          <p className="text-xs text-[var(--text-secondary)]">
+            {block.questions.length} timed question{block.questions.length !== 1 ? 's' : ''}
+          </p>
+          {!block.url && <p className="text-xs text-[var(--color-danger-600)] mt-0.5">No video source</p>}
+        </div>
+      )
+
+    case 'pdf-viewer':
+      return (
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--bg-muted)]">
+          <FileText size={24} className="text-[var(--text-tertiary)] shrink-0" />
+          <div className="min-w-0">
+            <p className="text-sm text-[var(--text-primary)] truncate">
+              {block.filePath ? block.filePath.split('/').pop() : 'No PDF selected'}
+            </p>
+            <p className="text-xs text-[var(--text-secondary)]">
+              {block.allowDownload ? 'Downloadable' : 'View only'}
+              {!block.hasAccessibilityTags ? ' · No a11y tags' : ''}
+            </p>
+          </div>
+        </div>
+      )
+
+    case 'converted-doc':
+      return (
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--bg-muted)]">
+          <FileOutput size={24} className="text-[var(--text-tertiary)] shrink-0" />
+          <div className="min-w-0">
+            <p className="text-sm text-[var(--text-primary)] truncate">
+              {block.sourceFilePath ? block.sourceFilePath.split('/').pop() : 'No document'}
+            </p>
+            <p className="text-xs text-[var(--text-secondary)]">
+              {block.sourceType.toUpperCase()} · {block.conversionStatus}
+            </p>
+          </div>
+        </div>
+      )
+
+    case 'image-map':
+      return (
+        <div className="p-3 rounded-lg bg-[var(--bg-muted)]">
+          <div className="flex items-center gap-2 mb-1">
+            <MapPin size={16} className="text-[var(--text-tertiary)]" />
+            <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+              Image Map
+            </span>
+          </div>
+          <p className="text-xs text-[var(--text-secondary)]">
+            {block.hotspots.length} hotspot{block.hotspots.length !== 1 ? 's' : ''}
+          </p>
+          {!block.imagePath && <p className="text-xs text-[var(--color-danger-600)] mt-0.5">No image selected</p>}
+        </div>
+      )
+
+    case 'reveal-scroll':
+      return (
+        <div className="p-3 rounded-lg bg-[var(--bg-muted)]">
+          <div className="flex items-center gap-2 mb-1">
+            <Eye size={16} className="text-[var(--text-tertiary)]" />
+            <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+              Reveal on Scroll
+            </span>
+          </div>
+          <p className="text-xs text-[var(--text-secondary)]">
+            {block.items.length} item{block.items.length !== 1 ? 's' : ''} · {block.trigger}
+          </p>
+        </div>
+      )
+
+    case 'writing':
+      return (
+        <div className="p-3 rounded-lg bg-[var(--bg-muted)]">
+          <div className="flex items-center gap-2 mb-1">
+            <PenTool size={16} className="text-[var(--text-tertiary)]" />
+            <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+              Writing ({block.variant})
+            </span>
+          </div>
+          <p className="text-xs text-[var(--text-secondary)]">
+            {block.promptSections.length} section{block.promptSections.length !== 1 ? 's' : ''}
+            {block.rubricEnabled ? ' · Rubric' : ''}
+          </p>
+        </div>
+      )
+
+    case 'knowledge-check':
+      return (
+        <div className="p-3 rounded-lg bg-[var(--bg-muted)]">
+          <div className="flex items-center gap-2 mb-1">
+            <ClipboardCheck size={16} className="text-[var(--text-tertiary)]" />
+            <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+              Knowledge Check ({block.phase})
+            </span>
+          </div>
+          <p className="text-xs text-[var(--text-secondary)]">
+            {block.questions.length} question{block.questions.length !== 1 ? 's' : ''} · {block.objectives.length} objective{block.objectives.length !== 1 ? 's' : ''}
+          </p>
         </div>
       )
 

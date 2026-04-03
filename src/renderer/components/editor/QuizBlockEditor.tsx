@@ -169,6 +169,34 @@ export function QuizBlockEditor({ block, onUpdate }: QuizBlockEditorProps): JSX.
               onChange={(v) => onUpdate({ shuffleAnswers: v })}
             />
           </div>
+
+          {/* Randomization config */}
+          <div className="pt-2 border-t border-[var(--border-default)]">
+            <ToggleOption
+              label="Question Pool Randomization"
+              description="Select a random subset of questions per attempt"
+              checked={block.randomization?.enabled ?? false}
+              onChange={(v) => onUpdate({ randomization: { enabled: v, poolSize: block.randomization?.poolSize ?? block.questions.length, seed: block.randomization?.seed } })}
+            />
+            {block.randomization?.enabled && (
+              <div className="ml-6 mt-2">
+                <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                  Pool Size (questions per attempt)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={block.questions.length || 1}
+                  value={block.randomization.poolSize}
+                  onChange={(e) => onUpdate({ randomization: { ...block.randomization!, poolSize: Math.max(1, Number(e.target.value)) } })}
+                  className="w-20 px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                />
+                <p className="text-[10px] text-[var(--text-tertiary)] mt-1">
+                  Show {block.randomization.poolSize} of {block.questions.length} questions
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

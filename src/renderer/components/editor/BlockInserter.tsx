@@ -22,7 +22,18 @@ import {
   Presentation,
   FileUp,
   Bookmark,
-  X
+  X,
+  Clock,
+  Sigma,
+  BarChart3,
+  Clapperboard,
+  MonitorPlay,
+  FileText,
+  FileOutput,
+  MapPin,
+  Eye,
+  PenTool,
+  ClipboardCheck
 } from 'lucide-react'
 import { BLOCK_TYPES, BLOCK_TYPE_LABELS } from '@/types/course'
 import type { BlockType } from '@/types/course'
@@ -49,7 +60,18 @@ const BLOCK_ICONS: Record<BlockType, typeof Type> = {
   'feedback-form': ClipboardList,
   'slide': Presentation,
   'file-upload': FileUp,
-  'save-for-later': Bookmark
+  'save-for-later': Bookmark,
+  'timeline': Clock,
+  'math': Sigma,
+  'chart': BarChart3,
+  'lottie': Clapperboard,
+  'interactive-video': MonitorPlay,
+  'pdf-viewer': FileText,
+  'converted-doc': FileOutput,
+  'image-map': MapPin,
+  'reveal-scroll': Eye,
+  'writing': PenTool,
+  'knowledge-check': ClipboardCheck
 }
 
 interface BlockInserterProps {

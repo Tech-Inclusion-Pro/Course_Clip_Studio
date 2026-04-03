@@ -23,7 +23,8 @@ const ELEMENT_DEFAULTS: Record<SlideElementType, { width: number; height: number
   quiz: { width: 300, height: 180 },
   matching: { width: 300, height: 180 },
   text: { width: 200, height: 60 },
-  image: { width: 200, height: 150 }
+  image: { width: 200, height: 150 },
+  'hotspot-callout': { width: 180, height: 80 }
 }
 
 const ELEMENT_TYPE_LABELS: Record<SlideElementType, string> = {
@@ -32,7 +33,8 @@ const ELEMENT_TYPE_LABELS: Record<SlideElementType, string> = {
   quiz: 'Quiz',
   matching: 'Matching',
   text: 'Text',
-  image: 'Image'
+  image: 'Image',
+  'hotspot-callout': 'Hotspot Callout'
 }
 
 export function SlideBlockEditor({ block, onUpdate }: SlideBlockEditorProps): JSX.Element {
@@ -379,6 +381,90 @@ export function SlideBlockEditor({ block, onUpdate }: SlideBlockEditorProps): JS
                 <p className="text-[10px] text-[var(--text-tertiary)]">
                   Configure matching pairs in the preview. {selectedElement.data.matchingPairs?.length || 0} pair(s) set.
                 </p>
+              </div>
+            )}
+
+            {selectedElement.type === 'hotspot-callout' && (
+              <div className="space-y-2">
+                <div>
+                  <label className="block text-[10px] text-[var(--text-tertiary)] mb-0.5">Callout Text</label>
+                  <textarea
+                    value={selectedElement.data.calloutText || ''}
+                    onChange={(e) => updateElement(selectedElement.id, { data: { ...selectedElement.data, calloutText: e.target.value } })}
+                    rows={2}
+                    className="w-full px-2 py-1 text-xs rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] resize-y"
+                    placeholder="Callout text..."
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] text-[var(--text-tertiary)] mb-0.5">Anchor X</label>
+                    <input
+                      type="number"
+                      value={selectedElement.data.calloutAnchorX ?? selectedElement.x}
+                      onChange={(e) => updateElement(selectedElement.id, { data: { ...selectedElement.data, calloutAnchorX: Number(e.target.value) || 0 } })}
+                      className="w-full px-1.5 py-1 text-xs rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-[var(--text-tertiary)] mb-0.5">Anchor Y</label>
+                    <input
+                      type="number"
+                      value={selectedElement.data.calloutAnchorY ?? selectedElement.y + selectedElement.height}
+                      onChange={(e) => updateElement(selectedElement.id, { data: { ...selectedElement.data, calloutAnchorY: Number(e.target.value) || 0 } })}
+                      className="w-full px-1.5 py-1 text-xs rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)]"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] text-[var(--text-tertiary)] mb-0.5">Connector</label>
+                    <select
+                      value={selectedElement.data.connectorStyle || 'line'}
+                      onChange={(e) => updateElement(selectedElement.id, { data: { ...selectedElement.data, connectorStyle: e.target.value as 'line' | 'curve' | 'elbow' } })}
+                      className="w-full px-1.5 py-1 text-xs rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)]"
+                    >
+                      <option value="line">Line</option>
+                      <option value="curve">Curve</option>
+                      <option value="elbow">Elbow</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-[var(--text-tertiary)] mb-0.5">Anchor Style</label>
+                    <select
+                      value={selectedElement.data.anchorStyle || 'dot'}
+                      onChange={(e) => updateElement(selectedElement.id, { data: { ...selectedElement.data, anchorStyle: e.target.value as 'dot' | 'ring' | 'pin' } })}
+                      className="w-full px-1.5 py-1 text-xs rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)]"
+                    >
+                      <option value="dot">Dot</option>
+                      <option value="ring">Ring</option>
+                      <option value="pin">Pin</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] text-[var(--text-tertiary)] mb-0.5">Trigger</label>
+                    <select
+                      value={selectedElement.data.triggerMode || 'hover'}
+                      onChange={(e) => updateElement(selectedElement.id, { data: { ...selectedElement.data, triggerMode: e.target.value as 'hover' | 'click' | 'always' } })}
+                      className="w-full px-1.5 py-1 text-xs rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)]"
+                    >
+                      <option value="hover">Hover</option>
+                      <option value="click">Click</option>
+                      <option value="always">Always</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-[var(--text-tertiary)] mb-0.5">Color</label>
+                    <input
+                      type="color"
+                      value={selectedElement.data.connectorColor || '#ef4444'}
+                      onChange={(e) => updateElement(selectedElement.id, { data: { ...selectedElement.data, connectorColor: e.target.value } })}
+                      className="w-full h-7 rounded border border-[var(--border-default)] cursor-pointer"
+                    />
+                  </div>
+                </div>
               </div>
             )}
           </div>
