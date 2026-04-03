@@ -302,7 +302,7 @@ export function CertificateDesigner({ onClose }: CertificateDesignerProps): JSX.
                   maxWidth: '900px',
                   aspectRatio: '297 / 210',
                   background: backgroundImage
-                    ? `url(${backgroundImage}) center/cover no-repeat`
+                    ? `url("${backgroundImage}") center/cover no-repeat`
                     : 'linear-gradient(135deg, #f8f9fa, #e9ecef)'
                 }}
                 onMouseMove={handleCanvasMouseMove}
@@ -510,10 +510,15 @@ export function CertificateDesigner({ onClose }: CertificateDesignerProps): JSX.
               </div>
               {backgroundImage && (
                 <div className="flex items-center justify-between p-1.5 rounded border border-[var(--border-default)] bg-[var(--bg-surface)]">
-                  <span className="text-[10px] text-[var(--text-secondary)]">Background uploaded</span>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <ImageIcon size={12} className="shrink-0 text-[var(--text-tertiary)]" />
+                    <span className="text-[10px] text-[var(--text-secondary)] truncate">
+                      {backgroundImage.startsWith('data:') ? 'Custom Background Image' : backgroundImage.split(/[/\\]/).pop() || 'Background Image'}
+                    </span>
+                  </div>
                   <button
                     onClick={() => updateCert({ backgroundImage: null })}
-                    className="text-[10px] text-red-500 cursor-pointer hover:underline"
+                    className="text-[10px] text-red-500 cursor-pointer hover:underline shrink-0 ml-2"
                   >
                     Remove
                   </button>
@@ -686,7 +691,7 @@ export function CertificateDesigner({ onClose }: CertificateDesignerProps): JSX.
                   style={{
                     aspectRatio: '297 / 210',
                     background: backgroundImage
-                      ? `url(${backgroundImage}) center/cover no-repeat`
+                      ? `url("${backgroundImage}") center/cover no-repeat`
                       : 'linear-gradient(135deg, #f8f9fa, #e9ecef)'
                   }}
                   onMouseMove={popoutMode === 'closed' ? handleCanvasMouseMove : undefined}
