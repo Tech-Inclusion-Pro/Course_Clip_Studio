@@ -124,20 +124,15 @@ export function CertificateDesigner({ onClose }: CertificateDesignerProps): JSX.
     if (!window.electronAPI?.dialog?.openFile) return
     try {
       const result = await window.electronAPI.dialog.openFile({
-        filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'svg'] }]
+        filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'svg'] }],
+        properties: ['openFile']
       })
-      if (result?.filePath) {
-        const assetPath = await uploadAsset(result.filePath)
-        updateCert({ backgroundImage: assetPath })
-      } else if (result?.data) {
-        const ext = result.name?.split('.').pop()?.toLowerCase() ?? 'png'
-        const mime = ext === 'svg' ? 'image/svg+xml' : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/png'
-        const base64 = typeof result.data === 'string' ? result.data : btoa(String.fromCharCode(...new Uint8Array(result.data)))
-        const dataUri = `data:${mime};base64,${base64}`
-        updateCert({ backgroundImage: dataUri })
-      }
+      if (result?.canceled || !result?.filePaths?.length) return
+      const filePath = result.filePaths[0]
+      const assetPath = await uploadAsset(filePath)
+      updateCert({ backgroundImage: assetPath })
     } catch {
-      // Fallback: use file input
+      // Ignore
     }
   }
 
@@ -145,12 +140,13 @@ export function CertificateDesigner({ onClose }: CertificateDesignerProps): JSX.
     if (!window.electronAPI?.dialog?.openFile) return
     try {
       const result = await window.electronAPI.dialog.openFile({
-        filters: [{ name: 'HTML Template', extensions: ['html', 'htm'] }]
+        filters: [{ name: 'HTML Template', extensions: ['html', 'htm'] }],
+        properties: ['openFile']
       })
-      if (result?.data) {
-        const text = typeof result.data === 'string' ? result.data : new TextDecoder().decode(result.data)
-        updateCert({ template: text })
-      }
+      if (result?.canceled || !result?.filePaths?.length) return
+      const filePath = result.filePaths[0]
+      const data = await window.electronAPI.fs.readFile(filePath)
+      updateCert({ template: data })
     } catch {
       // Ignore
     }
