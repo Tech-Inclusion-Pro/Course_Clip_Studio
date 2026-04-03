@@ -98,7 +98,7 @@ app.whenReady().then(() => {
         responseHeaders: {
           ...details.responseHeaders,
           'Content-Security-Policy': [
-            "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob:; font-src 'self' data: https:; media-src 'self' data: blob:; connect-src 'self' https://api.anthropic.com https://api.openai.com http://localhost:* http://127.0.0.1:*; frame-src 'self' blob: data: https:"
+            "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:; font-src 'self' data: https:; media-src 'self' data: blob: https:; connect-src 'self' https://api.anthropic.com https://api.openai.com https://api.pexels.com https://api.unsplash.com https://pixabay.com http://localhost:* http://127.0.0.1:*; frame-src 'self' blob: data: https:"
           ]
         }
       })

@@ -1,5 +1,12 @@
 import { Plus, Trash2 } from 'lucide-react'
+import { useCallback } from 'react'
 import { createQuizQuestion } from '@/lib/block-factories'
+import { uid } from '@/lib/uid'
+import { useAIGenerate } from '@/hooks/useAIGenerate'
+import { useFerpaCheck } from '@/hooks/useFerpaCheck'
+import { quizPrompt } from '@/lib/ai'
+import { AIGenerateButton } from '@/components/ui/AIGenerateButton'
+import { FerpaWarningModal } from '@/components/ui/FerpaWarningModal'
 import type { KnowledgeCheckBlock, QuizQuestion } from '@/types/course'
 
 interface KnowledgeCheckBlockEditorProps {
@@ -14,6 +21,42 @@ const PHASES: { value: KnowledgeCheckBlock['phase']; label: string; desc: string
 ]
 
 export function KnowledgeCheckBlockEditor({ block, onUpdate }: KnowledgeCheckBlockEditorProps): JSX.Element {
+  const { generate, isGenerating, isConfigured } = useAIGenerate()
+
+  const doAIGenerate = useCallback(async () => {
+    const objectives = block.objectives.filter(Boolean).join('; ')
+    const prompt = quizPrompt(objectives || 'knowledge check review')
+    const text = await generate(prompt)
+    if (!text) return
+    try {
+      const parsed = JSON.parse(text.replace(/```json?\n?/g, '').replace(/```/g, '').trim())
+      const questions: QuizQuestion[] = (parsed.questions ?? []).map((q: Record<string, unknown>) => {
+        const base = createQuizQuestion((q.type as QuizQuestion['type']) || 'multiple-choice')
+        return {
+          ...base,
+          prompt: (q.prompt as string) || '',
+          choices: Array.isArray(q.choices) ? q.choices.map((c: Record<string, unknown>) => ({
+            id: uid('choice'),
+            label: (c.label as string) || '',
+            isCorrect: !!c.isCorrect
+          })) : base.choices,
+          feedbackCorrect: (q.feedbackCorrect as string) || '',
+          feedbackIncorrect: (q.feedbackIncorrect as string) || ''
+        }
+      })
+      if (questions.length > 0) {
+        onUpdate({ questions: [...block.questions, ...questions] })
+      }
+    } catch { /* ignore parse errors */ }
+  }, [block.objectives, block.questions, generate, onUpdate])
+
+  const ferpa = useFerpaCheck('knowledge-check-ai', doAIGenerate)
+
+  function handleAIGenerate() {
+    if (!ferpa.checkFerpa()) return
+    doAIGenerate()
+  }
+
   function addObjective() {
     onUpdate({ objectives: [...block.objectives, ''] })
   }
@@ -158,14 +201,32 @@ export function KnowledgeCheckBlockEditor({ block, onUpdate }: KnowledgeCheckBlo
               </div>
             ))}
           </div>
-          <button
-            onClick={addQuestion}
-            className="flex items-center gap-1 mt-2 px-3 py-1.5 text-xs font-[var(--font-weight-medium)] text-[var(--brand-magenta)] hover:bg-[var(--bg-hover)] rounded-md cursor-pointer"
-          >
-            <Plus size={12} /> Add Question
-          </button>
+          <div className="flex items-center gap-2 mt-2">
+            <button
+              onClick={addQuestion}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs font-[var(--font-weight-medium)] text-[var(--brand-magenta)] hover:bg-[var(--bg-hover)] rounded-md cursor-pointer"
+            >
+              <Plus size={12} /> Add Question
+            </button>
+            {isConfigured && (
+              <AIGenerateButton
+                label="Generate Questions"
+                onClick={handleAIGenerate}
+                isGenerating={isGenerating}
+                size="sm"
+              />
+            )}
+          </div>
         </div>
       </div>
+
+      <FerpaWarningModal
+        open={ferpa.showModal}
+        provider={ferpa.cloudProvider}
+        featureLabel="AI Knowledge Check Generation"
+        onAcknowledge={ferpa.acknowledge}
+        onCancel={ferpa.cancel}
+      />
     </div>
   )
 }

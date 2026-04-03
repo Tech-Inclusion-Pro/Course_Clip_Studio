@@ -1,5 +1,7 @@
 import { Plus, Trash2, AlertTriangle } from 'lucide-react'
 import { uid } from '@/lib/uid'
+import { useFerpaCheck } from '@/hooks/useFerpaCheck'
+import { FerpaWarningModal } from '@/components/ui/FerpaWarningModal'
 import type { WritingBlock, WritingPromptSection } from '@/types/course'
 
 interface WritingBlockEditorProps {
@@ -15,6 +17,17 @@ const VARIANTS: { value: WritingBlock['variant']; label: string }[] = [
 ]
 
 export function WritingBlockEditor({ block, onUpdate }: WritingBlockEditorProps): JSX.Element {
+  const ferpa = useFerpaCheck('writing-ai-scoring', () => {
+    onUpdate({ aiScoringEnabled: true })
+  })
+
+  function handleAIScoringToggle(checked: boolean) {
+    if (checked) {
+      if (!ferpa.checkFerpa()) return
+    }
+    onUpdate({ aiScoringEnabled: checked })
+  }
+
   function addSection() {
     const section: WritingPromptSection = {
       id: uid('section'),
@@ -130,21 +143,29 @@ export function WritingBlockEditor({ block, onUpdate }: WritingBlockEditorProps)
             Enable rubric
           </label>
           <label className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
-            <input type="checkbox" checked={block.aiScoringEnabled} onChange={(e) => onUpdate({ aiScoringEnabled: e.target.checked })} className="rounded" />
+            <input type="checkbox" checked={block.aiScoringEnabled} onChange={(e) => handleAIScoringToggle(e.target.checked)} className="rounded" />
             Enable AI scoring (Phase 4)
           </label>
         </div>
 
-        {/* FERPA warning */}
+        {/* Inline FERPA reminder when AI scoring is active */}
         {block.aiScoringEnabled && (
           <div className="flex items-start gap-2 p-2 rounded-md bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800">
             <AlertTriangle size={14} className="text-yellow-600 shrink-0 mt-0.5" />
             <p className="text-xs text-yellow-800 dark:text-yellow-200">
-              FERPA Notice: AI scoring sends learner responses to an external AI service. Ensure compliance with your institution&apos;s data policies.
+              FERPA acknowledged: AI scoring sends learner responses to a cloud AI service.
             </p>
           </div>
         )}
       </div>
+
+      <FerpaWarningModal
+        open={ferpa.showModal}
+        provider={ferpa.cloudProvider}
+        featureLabel="AI Writing Scoring"
+        onAcknowledge={ferpa.acknowledge}
+        onCancel={ferpa.cancel}
+      />
     </div>
   )
 }

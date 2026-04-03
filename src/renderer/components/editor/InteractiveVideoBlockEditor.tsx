@@ -1,6 +1,12 @@
 import { Plus, Trash2 } from 'lucide-react'
+import { useCallback } from 'react'
 import { uid } from '@/lib/uid'
 import { createQuizQuestion } from '@/lib/block-factories'
+import { useAIGenerate } from '@/hooks/useAIGenerate'
+import { useFerpaCheck } from '@/hooks/useFerpaCheck'
+import { transcriptPrompt } from '@/lib/ai/prompts'
+import { AIGenerateButton } from '@/components/ui/AIGenerateButton'
+import { FerpaWarningModal } from '@/components/ui/FerpaWarningModal'
 import type { InteractiveVideoBlock, VideoTimedQuestion } from '@/types/course'
 
 interface InteractiveVideoBlockEditorProps {
@@ -15,6 +21,20 @@ function formatTimestamp(seconds: number): string {
 }
 
 export function InteractiveVideoBlockEditor({ block, onUpdate }: InteractiveVideoBlockEditorProps): JSX.Element {
+  const { generate, isGenerating, isConfigured } = useAIGenerate()
+
+  const doAITranscript = useCallback(async () => {
+    const context = block.url ? `Video source: ${block.url}` : 'interactive video'
+    const text = await generate(transcriptPrompt(context))
+    if (text) onUpdate({ transcript: text.trim() })
+  }, [block.url, generate, onUpdate])
+
+  const ferpa = useFerpaCheck('interactive-video-ai', doAITranscript)
+
+  function handleAITranscript() {
+    if (!ferpa.checkFerpa()) return
+    doAITranscript()
+  }
 
   async function handleVideoUpload() {
     try {
@@ -84,7 +104,18 @@ export function InteractiveVideoBlockEditor({ block, onUpdate }: InteractiveVide
 
         {/* Transcript */}
         <div>
-          <p className="text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">Transcript</p>
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)]">Transcript</p>
+            {isConfigured && (
+              <AIGenerateButton
+                label="Generate"
+                onClick={handleAITranscript}
+                isGenerating={isGenerating}
+                size="xs"
+                title="Generate transcript with AI"
+              />
+            )}
+          </div>
           <textarea
             value={block.transcript}
             onChange={(e) => onUpdate({ transcript: e.target.value })}
@@ -144,6 +175,14 @@ export function InteractiveVideoBlockEditor({ block, onUpdate }: InteractiveVide
           </button>
         </div>
       </div>
+
+      <FerpaWarningModal
+        open={ferpa.showModal}
+        provider={ferpa.cloudProvider}
+        featureLabel="AI Transcript Generation"
+        onAcknowledge={ferpa.acknowledge}
+        onCancel={ferpa.cancel}
+      />
     </div>
   )
 }

@@ -654,6 +654,22 @@ export interface CertificateField {
   textAlign: 'left' | 'center' | 'right'
 }
 
+// ─── FERPA Acknowledgments ───
+
+export type FerpaFeature =
+  | 'writing-ai-scoring'
+  | 'quiz-ai-generate'
+  | 'knowledge-check-ai'
+  | 'interactive-video-ai'
+  | 'image-alt-text-ai'
+
+export interface FerpaAcknowledgment {
+  acknowledgedAt: string
+  provider: 'anthropic' | 'openai'
+}
+
+export type FerpaAcknowledgments = Partial<Record<FerpaFeature, FerpaAcknowledgment>>
+
 // ─── Course Settings ───
 
 export interface CourseSettings {
@@ -670,6 +686,7 @@ export interface CourseSettings {
   readmeContent?: string
   xapi: XAPIConfig | null
   scorm: SCORMConfig | null
+  ferpaAcknowledgments?: FerpaAcknowledgments
 }
 
 export interface XAPIConfig {

@@ -4,13 +4,15 @@ import {
   Settings2,
   Library
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { createQuizQuestion } from '@/lib/block-factories'
 import { uid } from '@/lib/uid'
 import { reorder } from '@/lib/course-helpers'
 import { useAIGenerate } from '@/hooks/useAIGenerate'
+import { useFerpaCheck } from '@/hooks/useFerpaCheck'
 import { quizPrompt } from '@/lib/ai'
 import { AIGenerateButton } from '@/components/ui/AIGenerateButton'
+import { FerpaWarningModal } from '@/components/ui/FerpaWarningModal'
 import { QuestionEditor } from './QuestionEditor'
 import { QuestionBankPicker } from './QuestionBankPicker'
 import type { QuizBlock, QuizQuestion } from '@/types/course'
@@ -25,7 +27,7 @@ export function QuizBlockEditor({ block, onUpdate }: QuizBlockEditorProps): JSX.
   const [bankPickerOpen, setBankPickerOpen] = useState(false)
   const { generate, isGenerating, isConfigured } = useAIGenerate()
 
-  async function handleAIGenerate() {
+  const doAIGenerate = useCallback(async () => {
     const topic = block.questions.map((q) => q.prompt).filter(Boolean).join('; ')
     const prompt = quizPrompt(topic || 'general knowledge review')
     const text = await generate(prompt)
@@ -50,6 +52,13 @@ export function QuizBlockEditor({ block, onUpdate }: QuizBlockEditorProps): JSX.
         onUpdate({ questions: [...block.questions, ...questions] })
       }
     } catch { /* ignore parse errors */ }
+  }, [block.questions, generate, onUpdate])
+
+  const ferpa = useFerpaCheck('quiz-ai-generate', doAIGenerate)
+
+  function handleAIGenerate() {
+    if (!ferpa.checkFerpa()) return
+    doAIGenerate()
   }
 
   function handleAddQuestion(type: QuizQuestion['type'] = 'multiple-choice') {
@@ -275,6 +284,14 @@ export function QuizBlockEditor({ block, onUpdate }: QuizBlockEditorProps): JSX.
           </span>
         </div>
       )}
+
+      <FerpaWarningModal
+        open={ferpa.showModal}
+        provider={ferpa.cloudProvider}
+        featureLabel="AI Quiz Question Generation"
+        onAcknowledge={ferpa.acknowledge}
+        onCancel={ferpa.cancel}
+      />
     </div>
   )
 }

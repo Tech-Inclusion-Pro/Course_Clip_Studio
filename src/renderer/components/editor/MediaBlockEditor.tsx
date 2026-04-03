@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { Image, Upload, AlertTriangle, Search } from 'lucide-react'
 import { useAssetUpload } from '@/hooks/useAssetUpload'
 import { useAIGenerate } from '@/hooks/useAIGenerate'
+import { useFerpaCheck } from '@/hooks/useFerpaCheck'
 import { imageDescriptionPrompt } from '@/lib/ai/prompts'
 import { AIGenerateButton } from '@/components/ui/AIGenerateButton'
+import { FerpaWarningModal } from '@/components/ui/FerpaWarningModal'
 import { StockSearchDialog } from '@/components/ui/StockSearchDialog'
 import type { MediaBlock } from '@/types/course'
 
@@ -20,10 +22,17 @@ export function MediaBlockEditor({ block, onUpdate }: MediaBlockEditorProps): JS
   const hasImage = !!block.assetPath
   const missingAlt = !block.altText
 
-  async function handleGenerateAltText() {
+  const doGenerateAltText = useCallback(async () => {
     const filename = block.assetPath?.split('/').pop() || ''
     const result = await generateAI(imageDescriptionPrompt(filename, block.caption || '', ''))
     if (result) onUpdate({ altText: result.trim() })
+  }, [block.assetPath, block.caption, generateAI, onUpdate])
+
+  const ferpa = useFerpaCheck('image-alt-text-ai', doGenerateAltText)
+
+  function handleGenerateAltText() {
+    if (!ferpa.checkFerpa()) return
+    doGenerateAltText()
   }
 
   async function handleDrop(e: React.DragEvent) {
@@ -222,6 +231,14 @@ export function MediaBlockEditor({ block, onUpdate }: MediaBlockEditorProps): JS
         onSelect={(localPath) => onUpdate({ assetPath: localPath })}
         mediaType="image"
         title="Search Stock Photos"
+      />
+
+      <FerpaWarningModal
+        open={ferpa.showModal}
+        provider={ferpa.cloudProvider}
+        featureLabel="AI Alt Text Generation"
+        onAcknowledge={ferpa.acknowledge}
+        onCancel={ferpa.cancel}
       />
     </div>
   )
