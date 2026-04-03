@@ -75,6 +75,9 @@ export function CertificateDesigner({ onClose }: CertificateDesignerProps): JSX.
 
   const fields = cert?.fields ?? DEFAULT_FIELDS
   const backgroundImage = cert?.backgroundImage ?? null
+  const backgroundUrl = backgroundImage
+    ? backgroundImage.startsWith('data:') ? backgroundImage : `file://${backgroundImage}`
+    : null
 
   function updateField(fieldId: string, partial: Partial<CertificateField>) {
     const newFields = fields.map((f) => (f.id === fieldId ? { ...f, ...partial } : f))
@@ -302,8 +305,8 @@ export function CertificateDesigner({ onClose }: CertificateDesignerProps): JSX.
                   width: '100%',
                   maxWidth: '900px',
                   aspectRatio: '297 / 210',
-                  background: backgroundImage
-                    ? `url("${backgroundImage}") center/cover no-repeat`
+                  background: backgroundUrl
+                    ? `url("${backgroundUrl}") center/cover no-repeat`
                     : 'linear-gradient(135deg, #f8f9fa, #e9ecef)'
                 }}
                 onMouseMove={handleCanvasMouseMove}
@@ -691,8 +694,8 @@ export function CertificateDesigner({ onClose }: CertificateDesignerProps): JSX.
                   className="relative border border-[var(--border-default)] rounded-lg overflow-hidden cursor-crosshair"
                   style={{
                     aspectRatio: '297 / 210',
-                    background: backgroundImage
-                      ? `url("${backgroundImage}") center/cover no-repeat`
+                    background: backgroundUrl
+                      ? `url("${backgroundUrl}") center/cover no-repeat`
                       : 'linear-gradient(135deg, #f8f9fa, #e9ecef)'
                   }}
                   onMouseMove={popoutMode === 'closed' ? handleCanvasMouseMove : undefined}

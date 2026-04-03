@@ -258,7 +258,10 @@ export function renderCertificate(
 
   // Inject background image as CSS
   if (variables.backgroundImage) {
-    const bgStyle = `<style>body{background:url("${variables.backgroundImage}") center/cover no-repeat !important;}</style>`
+    const bgUrl = variables.backgroundImage.startsWith('data:')
+      ? variables.backgroundImage
+      : `file://${variables.backgroundImage}`
+    const bgStyle = `<style>body{background:url("${bgUrl}") center/cover no-repeat !important;}</style>`
     html = html.replace('</head>', bgStyle + '\n</head>')
   }
 
