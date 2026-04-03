@@ -61,21 +61,21 @@ Each step is optional and can be skipped. All settings can be changed later from
 - **Slide block** — Free-form canvas block (16:9) for placing buttons, embeds, quiz items, matching activities, text, and images with drag-to-position layout, background color/image, and per-element property editing
 - **URL / Embed block** — Insert any URL with two display modes: "Show in Course" (inline iframe) or "Open External" (opens in browser/new tab)
 - **HTML / Rich Text block** — Full code editor (HTML/CSS/JS tabs via Monaco) with live preview toggle, allowing users to add any custom content
-- **Block animations** — Fade-in, slide-up, slide-left, and scale with configurable duration and delay; animations now render in preview and exports with `@keyframes` and `prefers-reduced-motion` support
+- **Block animations** — Fade-in, slide-up, slide-left, and scale with configurable duration and delay; animations trigger on scroll via IntersectionObserver in preview and exports with `@keyframes` and `prefers-reduced-motion` support
 - **Rich text editing** — TipTap-powered editor with formatting toolbar and font size control (10–48px dropdown)
 - **Drag-and-drop file uploads** — Drag image, video, and audio files directly onto their blocks; files are automatically copied into the course's assets folder for self-contained packaging
 - **SRT/VTT transcript upload** — Video and audio blocks support drag-and-drop or click-to-upload of .srt/.vtt caption files with automatic parsing to plain text and configurable words-per-line wrapping
 - **Block delete confirmation** — Deleting any block shows a confirmation dialog to prevent accidental content loss
-- **Drag-and-drop reordering** — Reorder blocks, lessons, and modules via drag and drop
+- **Drag-and-drop reordering** — Reorder blocks within lessons, drag lessons within a module to reorder, or drag lessons between modules to move them — all via drag and drop with visual drag overlay feedback
 - **Question bank** — Reusable quiz question library per course with CSV import/export, downloadable template, and linking to quiz blocks
 - **Reading level analysis** — Automatic Flesch-Kincaid Grade Level calculation per text block and per course
 - **Lesson completion criteria** — Per-lesson requirements including quiz pass score, interactive block completion, and minimum time on page
 - **Completion criteria display** — Automatic "To complete this lesson" reference block rendered in preview/export when criteria are set
-- **Course enrollment page** — Optional enrollment overlay on course start that captures the learner's name for certificate auto-population
+- **Course enrollment page** — Optional enrollment overlay on course start that captures the learner's name for certificate auto-population; sidebar navigation and next/previous buttons are locked until enrollment is completed
 
 ### Multi-Panel Editor
 
-- **Course tree navigator** — Hierarchical view of modules and lessons with drag-drop reordering
+- **Course tree navigator** — Hierarchical view of modules and lessons with drag-drop reordering within and across modules, grip handle on hover, and empty-module drop zones
 - **Editor canvas** — Visual block editor with insertion toolbar and block property editing
 - **Split preview pane** — Side-by-side editing and preview with scroll synchronization
 - **Theme editor** — Customize colors, fonts, branding, player shell, and loading screens per course
@@ -305,7 +305,9 @@ All settings persist across sessions.
 
 - Multiple pre-designed templates (Formal, Elegant, Modern, Achievement, and more)
 - **Visual field designer** — Drag fields to position them on the certificate canvas
-- **Enlarge mode** — Full-screen overlay for detailed field positioning with properties sidebar
+- **Unified preview/edit popout** — "Show Preview" opens a large popout modal; click "Edit" to switch to the visual field designer with canvas and properties sidebar, then "Preview" to switch back — all in one modal
+- **Background image in edit mode** — Uploaded background images are visible behind draggable fields in both the inline and popout editor canvases, so you can position fields precisely over your certificate design
+- **Background image filename** — Uploaded background images display the actual filename (with icon) and a Remove button, instead of generic text
 - **Custom template upload** — Upload HTML templates or background images (recommended: A4 Landscape, 3508 x 2480 px at 300 DPI)
 - Dynamic field rendering with variables: `{{learner_name}}`, `{{course_title}}`, `{{completion_date}}`, `{{completion_timestamp}}`, `{{score}}`, `{{instructor}}`, `{{signature}}`
 - Configurable field properties: font size, weight, color, alignment, and position
@@ -348,7 +350,7 @@ Start new courses from pre-designed templates:
 - **Publish status tracking** — Draft, In Review, Published, Archived workflow
 - **Course metadata** — Title, description, author, language, estimated duration, tags, thumbnail, version
 - **Asset management** — All uploaded files (images, audio, video, SRT/VTT, theme logos, certificate backgrounds and logos) are automatically copied into the course's `assets/` folder, ensuring courses are fully self-contained for export and packaging
-- **Learner preview** — Full interactive preview with device modes (Desktop, Tablet, Mobile), with working flashcard 3D flip, drag & drop, matching, branching, quiz interactions, and in-iframe navigation buttons
+- **Learner preview** — Full interactive preview with device modes (Desktop, Tablet, Mobile), with working flashcard 3D flip, drag & drop, matching, branching, quiz interactions, in-iframe navigation buttons, and responsive H5P iframe sizing (70–80vh)
 - **Flashcard self-test & review** — After flipping a flashcard, learners can mark "Got It" or "Review Again"; after completing the deck, a "Review Missed" button filters to only the missed cards for targeted study
 - **Per-block feedback** — Optional collapsible feedback section on any content block, shown to learners as a `<details>` element; configured via the "Block Feedback" field in the Properties panel
 - **Student progress saving** — HTML exports track per-lesson completion, quiz scores, and interactive block state in localStorage; SCORM exports persist progress via `cmi.suspend_data` across sessions
