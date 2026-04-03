@@ -100,6 +100,7 @@ export function getHtmlPlayerScript(): string {
     initAutoSave();
     initSaveForLater();
     initFileViewer();
+    initMediaTracking();
     initIncompleteHighlighting();
     restoreCompletionIndicators();
   }
@@ -200,6 +201,9 @@ export function getHtmlPlayerScript(): string {
       cards.forEach(function(card) {
         card.addEventListener('click', function() {
           card.classList.toggle('flipped');
+          if (card.classList.contains('flipped')) {
+            card.setAttribute('data-flipped', 'true');
+          }
           if (selfTest && card.classList.contains('flipped')) {
             selfTest.style.display = 'flex';
           }
@@ -586,78 +590,77 @@ export function getHtmlPlayerScript(): string {
     });
   }
 
+  // Track media ended events for video/audio completion
+  function initMediaTracking() {
+    document.querySelectorAll('.block-video video, .block-audio audio').forEach(function(media) {
+      media.addEventListener('ended', function() {
+        var block = media.closest('.block');
+        if (block) block.setAttribute('data-media-ended', 'true');
+      });
+    });
+  }
+
   // Incomplete section highlighting on Next click
   function initIncompleteHighlighting() {
-    var INTERACTIVE_TYPES = ['video', 'audio', 'quiz', 'accordion', 'drag-drop', 'flashcard', 'feedback-form', 'matching', 'tabs'];
+    if (document.body.getAttribute('data-interactive-required') !== 'true') return;
+
+    var BLOCK_CHECKS = [
+      { sel: '.block-quiz', check: function(b) { var r = b.querySelector('.quiz-result'); return !r || r.hidden; }, msg: 'Submit your answers to complete this quiz' },
+      { sel: '.block-video', check: function(b) { if (b.querySelector('iframe')) return false; return b.getAttribute('data-media-ended') !== 'true'; }, msg: 'Watch the video to the end' },
+      { sel: '.block-audio', check: function(b) { return b.getAttribute('data-media-ended') !== 'true'; }, msg: 'Listen to the audio to the end' },
+      { sel: '.block-dragdrop', check: function(b) { return b.querySelectorAll('.dd-item:not(.placed)').length > 0; }, msg: 'Place all items in their correct zones' },
+      { sel: '.block-flashcard', check: function(b) { var cards = b.querySelectorAll('.flashcard'); var allFlipped = true; cards.forEach(function(c) { if (c.getAttribute('data-flipped') !== 'true') allFlipped = false; }); return !allFlipped; }, msg: 'Flip through all flashcards' },
+      { sel: '.block-matching', check: function(b) { return b.querySelectorAll('.match-left:not(.matched-correct)').length > 0; }, msg: 'Match all items correctly' },
+      { sel: '.block-feedback-form', check: function(b) { var ty = b.querySelector('.feedback-thankyou'); return !ty || ty.hidden; }, msg: 'Submit the feedback form' }
+    ];
+
     var nextBtn = document.getElementById('btn-next');
-    if (!nextBtn) return;
+    var finishBtn = document.getElementById('btn-finish');
 
-    var originalOnclick = nextBtn.onclick;
-    nextBtn.onclick = function(e) {
-      // Check for incomplete interactive blocks
-      var incompleteBlocks = [];
-      INTERACTIVE_TYPES.forEach(function(type) {
-        document.querySelectorAll('.block-' + type.replace('-', '')).forEach(function(block) {
-          incompleteBlocks.push(block);
-        });
-        // Also check with hyphen format
-        document.querySelectorAll('.block-' + type).forEach(function(block) {
-          if (incompleteBlocks.indexOf(block) === -1) incompleteBlocks.push(block);
-        });
-      });
+    function checkAndBlock(e, originalFn) {
+      // Remove old highlights and tooltips
+      document.querySelectorAll('.block-incomplete-highlight').forEach(function(el) { el.classList.remove('block-incomplete-highlight'); });
+      document.querySelectorAll('.block-incomplete-tooltip').forEach(function(el) { el.remove(); });
 
-      // Check which blocks need interaction
       var unfinished = [];
-      incompleteBlocks.forEach(function(block) {
-        // Quiz: check if submitted
-        if (block.classList.contains('block-quiz')) {
-          var result = block.querySelector('.quiz-result');
-          if (!result || result.hidden) unfinished.push(block);
-          return;
-        }
-        // Drag & Drop: check if all items placed
-        if (block.classList.contains('block-dragdrop')) {
-          var unplaced = block.querySelectorAll('.dd-item:not(.placed)');
-          if (unplaced.length > 0) unfinished.push(block);
-          return;
-        }
-        // Matching: check if all matched
-        if (block.classList.contains('block-matching')) {
-          var unmatched = block.querySelectorAll('.match-left:not(.matched-correct)');
-          if (unmatched.length > 0) unfinished.push(block);
-          return;
-        }
-        // Feedback form: check if submitted
-        if (block.classList.contains('block-feedback-form') || block.querySelector('.feedback-submit')) {
-          var submitted = block.querySelector('.feedback-thankyou');
-          if (!submitted || submitted.hidden) unfinished.push(block);
-        }
+      BLOCK_CHECKS.forEach(function(bc) {
+        document.querySelectorAll(bc.sel).forEach(function(block) {
+          if (bc.check(block)) unfinished.push({ block: block, msg: bc.msg });
+        });
       });
 
       if (unfinished.length > 0) {
-        // Remove previous highlights
-        document.querySelectorAll('.block-incomplete-highlight').forEach(function(el) {
-          el.classList.remove('block-incomplete-highlight');
+        unfinished.forEach(function(item) {
+          item.block.classList.add('block-incomplete-highlight');
+          var tip = document.createElement('div');
+          tip.className = 'block-incomplete-tooltip';
+          tip.textContent = item.msg;
+          item.block.appendChild(tip);
         });
-        // Highlight incomplete blocks
-        unfinished.forEach(function(block) {
-          block.classList.add('block-incomplete-highlight');
-        });
-        // Scroll to first incomplete block
-        unfinished[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
+        unfinished[0].block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        return true;
       }
+      return false;
+    }
 
-      // All complete, proceed
-      document.querySelectorAll('.block-incomplete-highlight').forEach(function(el) {
-        el.classList.remove('block-incomplete-highlight');
-      });
-      if (originalOnclick) return originalOnclick.call(nextBtn, e);
-      var next = document.body.getAttribute('data-next-lesson');
-      if (next) window.location.href = next;
-    };
+    if (nextBtn) {
+      var origNext = nextBtn.onclick;
+      nextBtn.onclick = function(e) {
+        if (checkAndBlock(e)) return false;
+        if (origNext) return origNext.call(nextBtn, e);
+        var next = document.body.getAttribute('data-next-lesson');
+        if (next) window.location.href = next;
+      };
+    }
+
+    if (finishBtn) {
+      var origFinish = finishBtn.onclick;
+      finishBtn.onclick = function(e) {
+        if (checkAndBlock(e)) return false;
+        if (origFinish) return origFinish.call(finishBtn, e);
+      };
+    }
   }
 
   // Scroll-triggered block animations via IntersectionObserver

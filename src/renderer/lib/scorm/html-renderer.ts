@@ -402,7 +402,7 @@ export function renderLessonHtml(
     ${theme.customCSS || ''}
   </style>
 </head>
-<body data-course-id="${course.id}" data-lesson-id="${lesson.id}">
+<body data-course-id="${course.id}" data-lesson-id="${lesson.id}"${lesson.completionCriteria?.interactiveRequired ? ' data-interactive-required="true"' : ''}>
   <a href="#main-content" class="skip-link">Skip to main content</a>
 
   ${settings.enrollmentPage && lessonIndex === 0 ? `<!-- Enrollment Overlay -->
@@ -739,8 +739,9 @@ function getPlayerStyles(theme: CourseTheme): string {
     .sfl-item-remove { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 14px; padding: 4px; }
 
     /* Incomplete section highlighting */
-    .block-incomplete-highlight { outline: 3px dashed #ef4444 !important; outline-offset: 4px; border-radius: 4px; animation: pulse-outline 1.5s ease-in-out 3; }
-    @keyframes pulse-outline { 0%, 100% { outline-color: #ef4444; } 50% { outline-color: #fca5a5; } }
+    .block-incomplete-highlight { outline: 4px dotted #dc2626 !important; outline-offset: 6px; border-radius: 4px; position: relative; }
+    .block-incomplete-tooltip { position: absolute; top: -36px; left: 50%; transform: translateX(-50%); background: #dc2626; color: #fff; font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 6px; white-space: nowrap; z-index: 100; pointer-events: none; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+    .block-incomplete-tooltip::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: #dc2626; }
 
     /* Course README */
     .course-readme { margin-bottom: 24px; }
