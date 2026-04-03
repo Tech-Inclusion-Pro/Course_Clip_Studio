@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback } from 'react'
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import {
   X,
   Award,
@@ -75,9 +75,24 @@ export function CertificateDesigner({ onClose }: CertificateDesignerProps): JSX.
 
   const fields = cert?.fields ?? DEFAULT_FIELDS
   const backgroundImage = cert?.backgroundImage ?? null
-  const backgroundUrl = backgroundImage
-    ? backgroundImage.startsWith('data:') ? backgroundImage : `file://${backgroundImage}`
-    : null
+
+  // Resolve background image path to a displayable data URI
+  const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null)
+  useEffect(() => {
+    if (!backgroundImage) { setBackgroundUrl(null); return }
+    if (backgroundImage.startsWith('data:')) { setBackgroundUrl(backgroundImage); return }
+    // Read local file and convert to data URI
+    window.electronAPI.fs.readFileBuffer(backgroundImage)
+      .then((buffer: ArrayBuffer) => {
+        const ext = backgroundImage.split('.').pop()?.toLowerCase() ?? 'png'
+        const mime = ext === 'svg' ? 'image/svg+xml' : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/png'
+        const blob = new Blob([buffer], { type: mime })
+        const reader = new FileReader()
+        reader.onload = () => setBackgroundUrl(reader.result as string)
+        reader.readAsDataURL(blob)
+      })
+      .catch(() => setBackgroundUrl(null))
+  }, [backgroundImage])
 
   function updateField(fieldId: string, partial: Partial<CertificateField>) {
     const newFields = fields.map((f) => (f.id === fieldId ? { ...f, ...partial } : f))
@@ -197,9 +212,9 @@ export function CertificateDesigner({ onClose }: CertificateDesignerProps): JSX.
       instructor: course.meta.author || 'Course Author',
       signature: cert.signatureLine || course.meta.author || 'Course Author',
       logoPath: cert.logoPath ?? course.theme.logoPath,
-      backgroundImage: cert.backgroundImage ?? null
+      backgroundImage: backgroundUrl
     })
-  }, [cert?.template, cert?.signatureLine, cert?.logoPath, cert?.backgroundImage, course])
+  }, [cert?.template, cert?.signatureLine, cert?.logoPath, backgroundUrl, course])
 
   async function handleExportPreview() {
     if (!previewHtml) return
