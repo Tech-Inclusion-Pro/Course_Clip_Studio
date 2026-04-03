@@ -235,6 +235,7 @@ export function renderCertificate(
     instructor: string
     signature: string
     logoPath: string | null
+    backgroundImage?: string | null
   }
 ): string {
   let html = template
@@ -253,6 +254,12 @@ export function renderCertificate(
     )
   } else {
     html = html.replace(/\{\{logo_img\}\}/g, '')
+  }
+
+  // Inject background image as CSS
+  if (variables.backgroundImage) {
+    const bgStyle = `<style>body{background:url("${variables.backgroundImage}") center/cover no-repeat !important;}</style>`
+    html = html.replace('</head>', bgStyle + '\n</head>')
   }
 
   return html

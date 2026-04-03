@@ -20,6 +20,10 @@ export async function saveLuminaFile(course: Course): Promise<ArrayBuffer> {
     }
   }
 
+  // Certificate assets
+  if (course.certificate?.backgroundImage) mediaPaths.add(course.certificate.backgroundImage)
+  if (course.certificate?.logoPath) mediaPaths.add(course.certificate.logoPath)
+
   // Try to bundle local media files
   for (const path of mediaPaths) {
     if (path.startsWith('http://') || path.startsWith('https://')) continue

@@ -32,6 +32,10 @@ function collectAssetPaths(course: Course): string[] {
   // Theme logo
   addPath(course.theme.logoPath)
 
+  // Certificate assets
+  addPath(course.certificate?.backgroundImage)
+  addPath(course.certificate?.logoPath)
+
   for (const mod of course.modules) {
     for (const lesson of mod.lessons) {
       for (const block of lesson.blocks) {

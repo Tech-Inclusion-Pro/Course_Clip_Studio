@@ -193,9 +193,10 @@ export function CertificateDesigner({ onClose }: CertificateDesignerProps): JSX.
       score: '92%',
       instructor: course.meta.author || 'Course Author',
       signature: cert.signatureLine || course.meta.author || 'Course Author',
-      logoPath: cert.logoPath ?? course.theme.logoPath
+      logoPath: cert.logoPath ?? course.theme.logoPath,
+      backgroundImage: cert.backgroundImage ?? null
     })
-  }, [cert?.template, cert?.signatureLine, cert?.logoPath, course])
+  }, [cert?.template, cert?.signatureLine, cert?.logoPath, cert?.backgroundImage, course])
 
   async function handleExportPreview() {
     if (!previewHtml) return
