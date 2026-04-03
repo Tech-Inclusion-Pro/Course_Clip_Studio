@@ -28,8 +28,15 @@ export function getPreviewPlayerScript(): string {
     setSessionTime: function() {}
   };
 
+  // Check if enrollment is required and not yet completed
+  function isEnrollmentBlocking() {
+    var overlay = document.getElementById('enrollment-overlay');
+    return overlay && overlay.style.display !== 'none';
+  }
+
   // Navigation via postMessage to parent
   window.scormNav = function(direction) {
+    if (isEnrollmentBlocking()) return;
     window.parent.postMessage({
       type: 'lumina:nav',
       direction: direction > 0 ? 'next' : 'prev'
@@ -37,6 +44,7 @@ export function getPreviewPlayerScript(): string {
   };
 
   window.scormFinish = function() {
+    if (isEnrollmentBlocking()) return;
     window.parent.postMessage({
       type: 'lumina:nav',
       direction: 'finish'

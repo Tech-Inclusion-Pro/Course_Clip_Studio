@@ -127,6 +127,12 @@ export function getHtmlPlayerScript(): string {
     _initAll();
   }
 
+  // Check if enrollment overlay is blocking navigation
+  function isEnrollmentBlocking() {
+    var overlay = document.getElementById('enrollment-overlay');
+    return overlay && overlay.style.display !== 'none';
+  }
+
   // Navigation via data attributes
   function initNavigation() {
     var prevBtn = document.getElementById('btn-prev');
@@ -135,18 +141,21 @@ export function getHtmlPlayerScript(): string {
 
     if (prevBtn) {
       prevBtn.onclick = function() {
+        if (isEnrollmentBlocking()) return;
         var prev = document.body.getAttribute('data-prev-lesson');
         if (prev) window.location.href = prev;
       };
     }
     if (nextBtn) {
       nextBtn.onclick = function() {
+        if (isEnrollmentBlocking()) return;
         var next = document.body.getAttribute('data-next-lesson');
         if (next) window.location.href = next;
       };
     }
     if (finishBtn) {
       finishBtn.onclick = function() {
+        if (isEnrollmentBlocking()) return;
         window.location.href = 'index.html';
       };
     }

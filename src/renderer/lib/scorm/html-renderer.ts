@@ -27,6 +27,7 @@ function ensureContrast(textHex: string, bgHex: string): string {
 }
 
 function escapeHtml(str: string): string {
+  if (!str) return ''
   return str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -77,7 +78,13 @@ function getAnimationClass(block: ContentBlock): string {
 function renderBlock(block: ContentBlock, options?: { enableSaveForLater?: boolean }): string {
   const animStyle = getAnimationStyle(block)
   const animClass = getAnimationClass(block)
-  let html = renderBlockInner(block, animStyle, animClass)
+  let html: string
+  try {
+    html = renderBlockInner(block, animStyle, animClass)
+  } catch (err) {
+    console.error('Error rendering block:', block.type, block.id, err)
+    html = `<section class="block"><p style="color:#999;font-style:italic;">Block could not be rendered.</p></section>`
+  }
 
   // Append per-block feedback if present
   if (block.feedback) {
@@ -115,7 +122,7 @@ function renderBlockInner(block: ContentBlock, animStyle: string, animClass: str
       return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-video${animClass}"${animStyle}>
   <video controls aria-label="${escapeHtml(block.ariaLabel)}"${block.poster ? ` poster="${escapeHtml(block.poster)}"` : ''}>
     <source src="${escapeHtml(block.url)}" />
-    ${block.captions.map((c) => `<track kind="captions" src="${escapeHtml(c.src)}" srclang="${escapeHtml(c.language)}" label="${escapeHtml(c.label)}"${c.isDefault ? ' default' : ''} />`).join('\n    ')}
+    ${(block.captions || []).map((c) => `<track kind="captions" src="${escapeHtml(c.src)}" srclang="${escapeHtml(c.language)}" label="${escapeHtml(c.label)}"${c.isDefault ? ' default' : ''} />`).join('\n    ')}
   </video>
   ${block.transcript ? `<details class="transcript"><summary>View Transcript</summary><div>${escapeHtml(block.transcript)}</div></details>` : ''}
 </section>`
@@ -676,10 +683,20 @@ function getPlayerStyles(theme: CourseTheme): string {
     @keyframes lumina-slide-left { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
     @keyframes lumina-scale { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
 
+    /* Enrollment overlay — force black text on white background */
+    #enrollment-overlay { color: #000000; }
+    #enrollment-overlay h1 { color: #000000 !important; }
+    #enrollment-overlay p { color: #000000 !important; }
+    #enrollment-overlay label { color: #000000 !important; }
+    #enrollment-overlay input { color: #000000 !important; background: #ffffff !important; }
+    #enrollment-overlay > div { background: #ffffff !important; }
+
     /* Accordion horizontal layout */
     .accordion-horizontal .accordion-items { display: grid; gap: 12px; }
     .accordion-horizontal.accordion-cols-2 .accordion-items { grid-template-columns: repeat(2, 1fr); }
     .accordion-horizontal.accordion-cols-3 .accordion-items { grid-template-columns: repeat(3, 1fr); }
+    .accordion-horizontal details { margin-bottom: 0; }
+    .accordion-horizontal details[open] .accordion-content { padding: 10px 14px; }
     @media (max-width: 768px) {
       .accordion-horizontal.accordion-cols-3 .accordion-items { grid-template-columns: repeat(2, 1fr); }
     }

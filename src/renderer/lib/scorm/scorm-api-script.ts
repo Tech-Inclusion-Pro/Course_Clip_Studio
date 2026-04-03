@@ -223,8 +223,15 @@ export function getPlayerScript(): string {
     SCORM.finish();
   });
 
+  // Check if enrollment overlay is blocking navigation
+  function isEnrollmentBlocking() {
+    var overlay = document.getElementById('enrollment-overlay');
+    return overlay && overlay.style.display !== 'none';
+  }
+
   // Navigation
   window.scormNav = function(direction) {
+    if (isEnrollmentBlocking()) return;
     var elapsed = Math.floor((Date.now() - startTime) / 1000);
     SCORM.setSessionTime(elapsed);
     SCORM.setComplete();
@@ -233,6 +240,7 @@ export function getPlayerScript(): string {
   };
 
   window.scormFinish = function() {
+    if (isEnrollmentBlocking()) return;
     SCORM.setComplete();
     var elapsed = Math.floor((Date.now() - startTime) / 1000);
     SCORM.setSessionTime(elapsed);

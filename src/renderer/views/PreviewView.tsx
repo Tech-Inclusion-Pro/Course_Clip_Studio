@@ -74,6 +74,7 @@ export function PreviewView(): JSX.Element {
   const [notesSidebarOpen, setNotesSidebarOpen] = useState(false)
   const [device, setDevice] = useState<DeviceMode>('desktop')
   const [a11yMode, setA11yMode] = useState(false)
+  const [enrollmentCompleted, setEnrollmentCompleted] = useState(false)
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
   const addNote = usePreviewStore((s) => s.addNote)
@@ -82,6 +83,7 @@ export function PreviewView(): JSX.Element {
   const flatLessons = useMemo(() => (course ? flattenLessons(course) : []), [course])
   const totalLessons = flatLessons.length
   const current = flatLessons[currentIdx]
+  const needsEnrollment = course?.settings?.enrollmentPage ?? false
 
   // Mark lesson as visited
   useEffect(() => {
@@ -103,12 +105,14 @@ export function PreviewView(): JSX.Element {
 
       if (data.type === 'lumina:nav') {
         if (data.direction === 'next' && currentIdx < totalLessons - 1) {
-          setCurrentIdx((i) => i + 1)
+          setCurrentIdx((i) => Math.min(i + 1, totalLessons - 1))
         } else if (data.direction === 'prev' && currentIdx > 0) {
-          setCurrentIdx((i) => i - 1)
+          setCurrentIdx((i) => Math.max(i - 1, 0))
         } else if (data.direction === 'finish') {
           // Stay on last lesson, could show completion message
         }
+      } else if (data.type === 'lumina:enrollment') {
+        setEnrollmentCompleted(true)
       } else if (data.type === 'lumina:quiz-score' && current) {
         setQuizScores((prev) => ({
           ...prev,
@@ -162,6 +166,12 @@ export function PreviewView(): JSX.Element {
     ).then((html) => {
       if (!cancelled) {
         setLessonHtml(html)
+        setPreviewLoading(false)
+      }
+    }).catch((err) => {
+      console.error('Preview render error:', err)
+      if (!cancelled) {
+        setLessonHtml('<html><body><p style="padding:40px;color:red;">Error rendering preview. Please try again.</p></body></html>')
         setPreviewLoading(false)
       }
     })
@@ -393,7 +403,7 @@ export function PreviewView(): JSX.Element {
       <div className="flex items-center justify-between px-4 py-2 border-t border-[var(--border-default)] bg-[var(--bg-surface)] shrink-0">
         <button
           onClick={() => setCurrentIdx((i) => Math.max(0, i - 1))}
-          disabled={currentIdx === 0}
+          disabled={currentIdx === 0 || (currentIdx === 0 && needsEnrollment && !enrollmentCompleted)}
           className="flex items-center gap-1 px-3 py-1.5 text-xs font-[var(--font-weight-medium)] rounded-md border border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <ChevronLeft size={14} />
@@ -406,8 +416,11 @@ export function PreviewView(): JSX.Element {
 
         {currentIdx < totalLessons - 1 ? (
           <button
-            onClick={() => setCurrentIdx((i) => i + 1)}
-            className="flex items-center gap-1 px-3 py-1.5 text-xs font-[var(--font-weight-medium)] rounded-md bg-[var(--brand-magenta)] text-white hover:opacity-90 cursor-pointer"
+            onClick={() => setCurrentIdx((i) => Math.min(i + 1, totalLessons - 1))}
+            disabled={needsEnrollment && !enrollmentCompleted && currentIdx === 0}
+            className={`flex items-center gap-1 px-3 py-1.5 text-xs font-[var(--font-weight-medium)] rounded-md bg-[var(--brand-magenta)] text-white hover:opacity-90 cursor-pointer ${
+              needsEnrollment && !enrollmentCompleted && currentIdx === 0 ? 'opacity-40 cursor-not-allowed' : ''
+            }`}
           >
             Next
             <ChevronRight size={14} />
