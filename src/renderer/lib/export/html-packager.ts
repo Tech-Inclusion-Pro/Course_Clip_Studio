@@ -44,7 +44,7 @@ export async function buildHtmlPackage(
     }
   }
 
-  const totalSteps = allLessons.length + 3
+  const totalSteps = allLessons.length + 4
   let currentStep = 0
 
   function progress(step: string) {
@@ -87,6 +87,11 @@ export async function buildHtmlPackage(
   progress('Generating index.html...')
   const indexHtml = generateStandaloneIndex(course, allLessons)
   zip.file('index.html', indexHtml)
+
+  // 5. Generate combined all-lessons page
+  progress('Generating combined page...')
+  const combinedHtml = generateCombinedHtml(course, allLessons)
+  zip.file('course-complete.html', combinedHtml)
 
   const blob = await zip.generateAsync({
     type: 'blob',
@@ -191,6 +196,133 @@ function generateStandaloneIndex(
       </ol>
     </div>`
     }).join('\n    ')}
+  </main>
+
+  <div style="text-align:center;margin:24px 0;">
+    <a href="course-complete.html" style="display:inline-block;padding:10px 24px;background:${theme.primaryColor};color:#fff;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">View all lessons on one page</a>
+  </div>
+
+  <footer>
+    <p>Built with LuminaUDL</p>
+  </footer>
+</body>
+</html>`
+}
+
+function generateCombinedHtml(
+  course: Course,
+  allLessons: Array<{ lesson: typeof course.modules[0]['lessons'][0]; moduleTitle: string; moduleIdx: number; lessonIdx: number; fileName: string }>
+): string {
+  const theme = course.theme
+
+  // Render each lesson's content by extracting the body portion from renderLessonHtml
+  const lessonSections = allLessons.map((entry, idx) => {
+    const fullHtml = renderLessonHtml(course, entry.lesson, entry.moduleTitle, idx, allLessons.length)
+    // Extract content between <body> and </body>
+    const bodyMatch = fullHtml.match(/<body[^>]*>([\s\S]*?)<\/body>/)
+    const bodyContent = bodyMatch ? bodyMatch[1] : ''
+
+    return `<section id="lesson-${entry.moduleIdx}-${entry.lessonIdx}" class="lesson-section">
+      <div class="lesson-divider">
+        <span class="lesson-divider-module">${escapeHtml(entry.moduleTitle)}</span>
+        <h2 class="lesson-divider-title">Lesson ${idx + 1}: ${escapeHtml(entry.lesson.title)}</h2>
+      </div>
+      <div class="lesson-body">${bodyContent}</div>
+    </section>`
+  }).join('\n')
+
+  // Build table of contents grouped by module
+  const tocHtml = course.modules.map((mod, mi) => {
+    const modLessons = allLessons.filter((l) => l.moduleIdx === mi)
+    return `<div class="toc-module">
+      <div class="toc-module-title">${escapeHtml(mod.title)}</div>
+      <ul class="toc-list">
+        ${modLessons.map((l) => {
+          const globalIdx = allLessons.indexOf(l) + 1
+          return `<li><a href="#lesson-${l.moduleIdx}-${l.lessonIdx}">${globalIdx}. ${escapeHtml(l.lesson.title)}</a></li>`
+        }).join('\n        ')}
+      </ul>
+    </div>`
+  }).join('\n    ')
+
+  return `<!DOCTYPE html>
+<html lang="${course.meta.language || 'en'}">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${escapeHtml(course.meta.title)} — Complete Course</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: ${theme.fontFamily || 'Arial, sans-serif'};
+      background: ${theme.backgroundColor}; color: ${theme.textColor};
+      min-height: 100vh; line-height: 1.6;
+    }
+    .skip-link {
+      position: absolute; left: -9999px; top: 0; z-index: 100;
+      background: ${theme.primaryColor}; color: #fff; padding: 8px 16px;
+    }
+    .skip-link:focus { left: 8px; top: 8px; }
+    header {
+      background: ${theme.playerShell.headerColor}; color: #fff;
+      padding: 32px 24px; text-align: center;
+    }
+    header h1 { font-size: 28px; font-family: ${theme.fontFamilyHeading || theme.fontFamily || 'Arial, sans-serif'}; margin-bottom: 8px; }
+    header p { font-size: 14px; opacity: 0.85; max-width: 600px; margin: 0 auto; }
+    .stats {
+      display: flex; justify-content: center; gap: 24px; margin-top: 16px;
+      font-size: 12px; opacity: 0.8;
+    }
+    .back-link { text-align: center; margin: 16px 0; }
+    .back-link a { color: ${theme.primaryColor}; font-size: 13px; text-decoration: none; }
+    .back-link a:hover { text-decoration: underline; }
+    main { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+    .toc { background: ${theme.textColor}08; border: 1px solid ${theme.textColor}15; border-radius: 12px; padding: 24px; margin-bottom: 40px; }
+    .toc h2 { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: ${theme.primaryColor}; }
+    .toc-module { margin-bottom: 12px; }
+    .toc-module-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: ${theme.primaryColor}; margin-bottom: 4px; }
+    .toc-list { list-style: none; padding-left: 8px; }
+    .toc-list li { margin-bottom: 2px; }
+    .toc-list a { color: ${theme.textColor}; text-decoration: none; font-size: 13px; }
+    .toc-list a:hover { color: ${theme.primaryColor}; text-decoration: underline; }
+    .lesson-section { margin-bottom: 48px; scroll-margin-top: 24px; }
+    .lesson-divider { border-top: 3px solid ${theme.primaryColor}; padding-top: 16px; margin-bottom: 24px; }
+    .lesson-divider-module { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: ${theme.primaryColor}; }
+    .lesson-divider-title { font-size: 22px; font-weight: 700; margin-top: 4px; font-family: ${theme.fontFamilyHeading || theme.fontFamily || 'Arial, sans-serif'}; }
+    .lesson-body { margin-top: 16px; }
+    .lesson-body img { max-width: 100%; height: auto; }
+    footer {
+      text-align: center; padding: 24px; font-size: 11px;
+      color: ${theme.textColor}60; border-top: 1px solid ${theme.textColor}10;
+    }
+    @media (max-width: 600px) {
+      main { padding: 16px 12px; }
+      header { padding: 24px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <header>
+    <h1>${escapeHtml(course.meta.title)}</h1>
+    <p>${escapeHtml(course.meta.description)}</p>
+    <div class="stats">
+      <span>${course.modules.length} module${course.modules.length !== 1 ? 's' : ''}</span>
+      <span>${allLessons.length} lesson${allLessons.length !== 1 ? 's' : ''}</span>
+      ${course.meta.estimatedDuration ? `<span>${course.meta.estimatedDuration} min</span>` : ''}
+    </div>
+  </header>
+
+  <div class="back-link"><a href="index.html">&larr; Back to course index</a></div>
+
+  <main id="main-content">
+    <nav class="toc">
+      <h2>Table of Contents</h2>
+      ${tocHtml}
+    </nav>
+
+    ${lessonSections}
   </main>
 
   <footer>

@@ -153,27 +153,26 @@ A centralized Media Library panel for browsing, uploading, and managing all cour
 | Tab | Description |
 |-----|-------------|
 | **All Assets** | Combined search view across built-in, uploaded, and global assets with filtering by type, UDL principle, and WCAG status |
-| **Built-In** | Browse 50 built-in SVG assets organized by type (Icons, Shapes, Text Shapes) and category (Navigation, Education, Accessibility, Geometric, Arrows, Callouts, Section Headers, Labels, Instructional Prompts) |
+| **Built-In** | Browse 420+ built-in SVG assets organized by type (Icons, Shapes, Text Shapes) and 38 categories including Navigation, Education, Communication, Science, Health, Finance, Flowchart, Diagrams, Badges, and more |
 | **Search Online** | Placeholder for Phase 2 API-connected search (Pexels, Unsplash, Pixabay) |
 | **My Uploads** | Upload images, video, audio, and documents via file dialog or drag-and-drop with automatic metadata entry |
 | **Generated** | View generated assets; Chart Builder, Diagram Builder, and Narration Studio stubs for Phase 2 |
 
-#### Built-In Asset Library (50 Starter Assets)
+#### Built-In Asset Library (420+ Assets)
 
-| Category | Count | Examples |
-|----------|-------|---------|
-| **Navigation Icons** | 5 | Home, Arrow Right/Left, Menu, Search |
-| **Accessibility Icons** | 3 | Accessibility, Vision Impaired, Closed Captions |
-| **Education Icons** | 4 | Book Open, Graduation Cap, Lightbulb, Pencil |
-| **People Icons** | 2 | User, Users Group |
-| **Technology Icons** | 2 | Monitor, Link |
-| **Media Icons** | 2 | Image, Play |
-| **Feedback Icons** | 2 | Check Circle, Alert Triangle |
-| **Basic Geometric Shapes** | 8 | Circle, Square, Triangle, Diamond, Pentagon, Hexagon, Star, Oval |
-| **Rounded Shapes** | 4 | Rounded Rectangle, Pill, Rounded Square, Squircle |
-| **Arrow Shapes** | 4 | Right, Left, Up, Down |
-| **Callout Shapes** | 4 | Speech Bubble, Thought Bubble, Banner, Badge |
-| **Text Shapes** | 10 | Tip Box, Warning Box, Note Box, Section Headers (Underline, Pill, Gradient), Tag Label, Step Number, Question Prompt, Activity Prompt |
+| Category Group | Categories | Total |
+|----------------|-----------|-------|
+| **Icons — Original** | Navigation (10), Accessibility (8), Education (9), People (7), Technology (7), Media (7), Feedback (7) | 55 |
+| **Icons — Communication & Social** | Communication (10), Social (10) | 20 |
+| **Icons — Science & Math** | Science (10), Math (10), Health (10) | 30 |
+| **Icons — Lifestyle** | Weather (10), Food & Drink (10), Sports (10), Nature (10) | 40 |
+| **Icons — Professional** | Finance (10), Transport (10), Music & Audio (10) | 30 |
+| **Icons — Technical** | Security (10), Files (10), Time (10), Tools (10), UI Controls (10) | 50 |
+| **Shapes — Geometric** | Basic Geometric (18), Rounded (9), Arrows (14), Callouts (14) | 55 |
+| **Shapes — Flowchart & Diagrams** | Flowchart (18), Connectors (12), Diagrams (15) | 45 |
+| **Shapes — Visual Design** | Frames (12), Infographic (15), Decorative (15), Badges (12) | 54 |
+| **Shapes — Layout & UI** | Containers (12), Progress (12), Punctuation (10) | 34 |
+| **Text Shapes** | Callout Boxes (3), Section Headers (3), Labels (2), Instructional Prompts (2) | 10 |
 
 All built-in assets include pre-filled accessibility metadata (alt text, ARIA labels, UDL tags, WCAG status).
 
@@ -305,7 +304,7 @@ TIPPY is a pedagogically grounded AI co-pilot built into Course Clip Studio. Unl
 | **4-Layer System Prompt** | TIPPY assembles its context from: (1) core identity rules, (2) a searchable features knowledge base, (3) the author's personal design profile, and (4) live session context — active panel, block type, recent actions, and WCAG flags |
 | **Features Knowledge Base** | A comprehensive 15-section reference covering all Course Clip Studio features. TIPPY retrieves the most relevant sections for each query using keyword-scored retrieval |
 | **Context-Aware Chat** | TIPPY reads the current view, active course, module, lesson, selected block, open panels, AI provider, and accessibility settings — then responds with help specific to your situation |
-| **Quick Actions** | Four one-click prompts: "Give me a tour," "Help me get started," "What can I do here?" and "Assess my course" |
+| **Quick Actions** | Six one-click prompts: "Give me a tour," "Help me get started," "What can I do here?", "TIPPY Assess," and "How do you use AI?" |
 | **Draggable Button** | Drag TIPPY's floating button anywhere on screen — position persists across sessions |
 | **Session Save / Restore** | Save your conversation, reload it later, or clear and start fresh |
 | **Markdown Responses** | TIPPY's responses render with bold, links, inline code, and bullet lists |
@@ -385,13 +384,13 @@ TIPPY Assesses evaluates your course against three frameworks simultaneously:
 
 The report is displayed in a tabbed interface with: Summary Scorecard, WCAG Findings (with Fix It / Show Me actions), UDL Findings (strengths and gaps per principle), Inclusion Findings, Top 5 Recommendations (prioritized by combined impact with estimated time), and a Methodology Appendix (AI provider, tool versions, confidence notes, limitations, human review statement).
 
-Trigger by typing "assess this course," "check accessibility," "run assessment," or clicking the "Assess my course" quick action. Enable **auto-run Assesses on export** in Settings > TIPPY.
+Trigger by typing "assess this course," "check accessibility," "run assessment," or clicking the "TIPPY Assess" quick action. Enable **auto-run Assesses on export** in Settings > TIPPY.
 
 #### How to Use TIPPY
 
 1. **Click the TIPPY icon** — the floating character in the bottom-left corner of the app
 2. **Ask anything** — type a question about course authoring, accessibility, UDL, or how to use a feature
-3. **Use quick actions** — start a tour, get onboarded, learn what's available, or assess your course
+3. **Use quick actions** — start a tour, get onboarded, learn what's available, run TIPPY Assess, or ask how TIPPY uses AI
 4. **Say "Show me"** — TIPPY detects feature questions and offers guided walkthroughs with highlighted UI
 5. **Assess your course** — type "assess this course" for a full WCAG + UDL + Inclusion report with actionable recommendations
 6. **Set up your profile** — go to Settings > TIPPY > Get to Know You for personalized suggestions
@@ -418,7 +417,7 @@ API keys are encrypted via Electron's `safeStorage` API. Provider settings are m
 | SCORM 1.2 | Legacy SCORM packaging with API script, manifest, lesson HTML, and bundled media assets |
 | SCORM 2004 | Modern SCORM 2004 (2nd, 3rd, 4th edition) with updated API and manifest |
 | xAPI (Experience API) | LRS-compatible statements with configurable endpoint and authentication |
-| HTML5 | Self-contained ZIP with localStorage-based progress tracking — no server required |
+| HTML5 | Self-contained ZIP with localStorage-based progress tracking, per-lesson pages, and a combined all-lessons `course-complete.html` page with table of contents — no server required |
 | PDF | Print-optimized export with optional quiz answers and UDL checklist inclusion |
 | cmi5 | LRS-backed Assignable Unit export with `cmi5.xml` course structure, per-lesson AU entry points, session lifecycle management (initialized/completed/passed/failed/terminated), and optional UDL context extensions |
 
@@ -749,7 +748,7 @@ lumina-udl/
 │       │   ├── ai/             # LLM provider abstraction + syllabus AI prompts + inline generation prompts
 │       │   ├── stock-api.ts    # Unified stock media API client (Pexels, Unsplash, Pixabay)
 │       │   ├── tippy/          # TIPPY 4-layer prompt, features KB, profile generator, walkthrough engine/library, assesses engine/prompts, demo course
-│       │   ├── built-in-assets.ts # 50 built-in SVG icon, shape, and text-shape definitions
+│       │   ├── built-in-assets.ts # 420+ built-in SVG icon, shape, and text-shape definitions
 │       │   ├── media-manifest.ts  # Asset manifest read/write helpers
 │       │   └── accessibility/  # Audit engine, contrast checker
 │       ├── types/              # Course data model + media library TypeScript types

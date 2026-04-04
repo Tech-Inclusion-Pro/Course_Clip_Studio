@@ -125,6 +125,9 @@ export function TippyPanel(): JSX.Element | null {
       case 'assess':
         runAssesses('course')
         break
+      case 'ai-reasoning':
+        sendMessage("How do you use AI to help me?")
+        break
     }
   }
 
@@ -257,8 +260,12 @@ export function TippyPanel(): JSX.Element | null {
                 onClick={() => handleQuickAction('context')}
               />
               <QuickActionButton
-                label={t('tippy.quickAssess', 'Assess my course')}
+                label={t('tippy.quickAssess', 'TIPPY Assess')}
                 onClick={() => handleQuickAction('assess')}
+              />
+              <QuickActionButton
+                label={t('tippy.quickAiReasoning', 'How do you use AI?')}
+                onClick={() => handleQuickAction('ai-reasoning')}
               />
             </div>
           </div>
