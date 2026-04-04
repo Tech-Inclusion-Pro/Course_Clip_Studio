@@ -43,14 +43,17 @@ import { SettingsCard } from '@/components/ui/SettingsCard'
 import { FieldRow } from '@/components/ui/FieldRow'
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch'
 import { ColorInput } from '@/components/ui/ColorInput'
+import { AnalyticsSettingsTab } from '@/components/settings/AnalyticsSettingsTab'
+import type { LRSSettings } from '@/types/course'
 
-type SettingsTab = 'general' | 'brand' | 'ai' | 'accessibility'
+type SettingsTab = 'general' | 'brand' | 'ai' | 'accessibility' | 'analytics'
 
 const TABS: Array<{ id: SettingsTab; label: string; icon: typeof Settings }> = [
   { id: 'general', label: 'General', icon: User },
   { id: 'brand', label: 'Brand Kits', icon: Palette },
   { id: 'ai', label: 'AI / LLM', icon: Brain },
-  { id: 'accessibility', label: 'Accessibility', icon: PersonStanding }
+  { id: 'accessibility', label: 'Accessibility', icon: PersonStanding },
+  { id: 'analytics', label: 'Analytics', icon: BarChart3 }
 ]
 
 export function SettingsView(): JSX.Element {
@@ -95,6 +98,7 @@ export function SettingsView(): JSX.Element {
         {activeTab === 'brand' && <BrandKitSettings />}
         {activeTab === 'ai' && <AISettingsPanel />}
         {activeTab === 'accessibility' && <AccessibilitySettingsPanel />}
+        {activeTab === 'analytics' && <AnalyticsSettings />}
       </div>
     </div>
   )
@@ -2196,6 +2200,64 @@ function AccessibilitySettingsPanel(): JSX.Element {
         </p>
       </div>
     </div>
+  )
+}
+
+// ─── Analytics Settings ───
+
+function AnalyticsSettings(): JSX.Element {
+  const course = useCourseStore((s) => s.activeCourse)
+  const updateCourse = useCourseStore((s) => s.updateCourse)
+  const workspacePath = useAppStore((s) => s.workspacePath)
+
+  if (!course) {
+    return (
+      <div className="p-8 text-center text-sm text-[var(--text-tertiary)]">
+        Open a course to configure analytics settings.
+      </div>
+    )
+  }
+
+  const lrs = course.settings.lrs ?? null
+  const identifiedReportingEnabled = course.settings.identifiedReportingEnabled ?? false
+
+  function handleLRSChange(newLrs: LRSSettings | null) {
+    updateCourse(course!.id, {
+      settings: { ...course!.settings, lrs: newLrs }
+    })
+  }
+
+  function handleIdentifiedReportingChange(enabled: boolean) {
+    const ferpaAcks = { ...course!.settings.ferpaAcknowledgments }
+    if (enabled) {
+      ferpaAcks['identified-reporting'] = {
+        acknowledgedAt: new Date().toISOString(),
+        provider: 'anthropic'
+      }
+    }
+    updateCourse(course!.id, {
+      settings: {
+        ...course!.settings,
+        identifiedReportingEnabled: enabled,
+        ferpaAcknowledgments: ferpaAcks
+      }
+    })
+  }
+
+  async function handleClearData() {
+    if (!workspacePath) return
+    const { useAnalyticsStore } = await import('@/stores/useAnalyticsStore')
+    await useAnalyticsStore.getState().clearData(workspacePath, course!)
+  }
+
+  return (
+    <AnalyticsSettingsTab
+      lrs={lrs}
+      identifiedReportingEnabled={identifiedReportingEnabled}
+      onLRSChange={handleLRSChange}
+      onIdentifiedReportingChange={handleIdentifiedReportingChange}
+      onClearData={handleClearData}
+    />
   )
 }
 

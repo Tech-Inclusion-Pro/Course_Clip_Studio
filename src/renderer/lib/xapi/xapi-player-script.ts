@@ -17,8 +17,31 @@ export function getXapiPlayerScript(): string {
   var activityId = config.activityId || window.location.href;
   var courseTitle = config.courseTitle || document.title;
 
+  // UDL verb principle lookup
+  var UDL_PRINCIPLES = {
+    'accessed-audio-alternative': 'representation',
+    'accessed-text-alternative': 'representation',
+    'accessed-visual-alternative': 'representation',
+    'accessed-caption-track': 'representation',
+    'switched-language': 'representation',
+    'expanded-definition': 'representation',
+    'used-extended-time': 'action-expression',
+    'used-text-to-speech': 'action-expression',
+    'submitted-drawing': 'action-expression',
+    'submitted-audio-response': 'action-expression',
+    'chose-pathway': 'engagement',
+    'replayed-content': 'engagement',
+    'bookmarked': 'engagement',
+    'rated-difficulty': 'engagement'
+  };
+
   function sendStatement(verb, verbDisplay, extensions) {
     if (!endpoint) return;
+
+    var isUdlVerb = UDL_PRINCIPLES.hasOwnProperty(verb);
+    var verbIri = isUdlVerb
+      ? 'https://luminaudl.app/verbs/' + verb
+      : 'http://adlnet.gov/expapi/verbs/' + verb;
 
     var statement = {
       actor: {
@@ -27,7 +50,7 @@ export function getXapiPlayerScript(): string {
         mbox: actor.mbox
       },
       verb: {
-        id: 'http://adlnet.gov/expapi/verbs/' + verb,
+        id: verbIri,
         display: { 'en-US': verbDisplay }
       },
       object: {
@@ -45,6 +68,13 @@ export function getXapiPlayerScript(): string {
       statement.result = extensions;
     }
 
+    // Add UDL context if applicable
+    if (isUdlVerb) {
+      if (!statement.context) statement.context = {};
+      if (!statement.context.extensions) statement.context.extensions = {};
+      statement.context.extensions['https://luminaudl.app/context/udl-principle'] = UDL_PRINCIPLES[verb];
+    }
+
     try {
       var xhr = new XMLHttpRequest();
       xhr.open('POST', endpoint + '/statements', true);
@@ -57,20 +87,201 @@ export function getXapiPlayerScript(): string {
     }
   }
 
+  var courseId = document.body.getAttribute('data-course-id') || 'lumina-course';
+  var lessonId = document.body.getAttribute('data-lesson-id') || '';
+  var localStatementsKey = 'lumina_xapi_statements_' + courseId;
+  var bookmarkKey = 'lumina_xapi_bookmark_' + courseId;
+
+  // Local statement storage alongside LRS POST
+  function storeLocally(verb, verbDisplay, extensions) {
+    try {
+      var isUdlVerb = UDL_PRINCIPLES.hasOwnProperty(verb);
+      var verbIri = isUdlVerb
+        ? 'https://luminaudl.app/verbs/' + verb
+        : 'http://adlnet.gov/expapi/verbs/' + verb;
+      var stmts = JSON.parse(localStorage.getItem(localStatementsKey) || '[]');
+      stmts.push({
+        verb: verbIri,
+        verbDisplay: verbDisplay,
+        actorName: actor.name,
+        activityId: activityId,
+        timestamp: new Date().toISOString(),
+        udlPrinciple: isUdlVerb ? UDL_PRINCIPLES[verb] : null,
+        result: extensions || null,
+        accessibilityMode: extensions && extensions.accessibilityMode || undefined
+      });
+      localStorage.setItem(localStatementsKey, JSON.stringify(stmts));
+    } catch(e) {}
+  }
+
+  var origSendStatement = sendStatement;
+  sendStatement = function(verb, verbDisplay, extensions) {
+    origSendStatement(verb, verbDisplay, extensions);
+    storeLocally(verb, verbDisplay, extensions);
+  };
+
+  // Block view tracking via IntersectionObserver
+  function initBlockViewTracking() {
+    var blocks = document.querySelectorAll('.block[data-block-id]');
+    if (blocks.length === 0) return;
+    var dwellTimers = {};
+    var logged = {};
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        var bid = entry.target.getAttribute('data-block-id');
+        if (entry.isIntersecting) {
+          if (!dwellTimers[bid]) {
+            dwellTimers[bid] = setTimeout(function() {
+              if (!logged[bid]) {
+                logged[bid] = true;
+                sendStatement('experienced', 'experienced', { extensions: { blockId: bid, blockType: entry.target.getAttribute('data-block-type') || '' } });
+              }
+            }, 3000);
+          }
+        } else {
+          if (dwellTimers[bid]) { clearTimeout(dwellTimers[bid]); dwellTimers[bid] = null; }
+        }
+      });
+    }, { threshold: 0.5 });
+    blocks.forEach(function(b) { observer.observe(b); });
+  }
+
+  // ─── UDL Tracking: Transcript toggle ───
+  function initTranscriptTracking() {
+    var transcriptLogged = {};
+    document.querySelectorAll('details.transcript').forEach(function(details) {
+      details.addEventListener('toggle', function() {
+        if (!details.open) return;
+        var block = details.closest('.block');
+        var bid = block ? block.getAttribute('data-block-id') : null;
+        var key = bid || 'transcript_' + Math.random();
+        if (transcriptLogged[key]) return;
+        transcriptLogged[key] = true;
+        sendStatement('accessed-text-alternative', 'accessed text alternative', { extensions: { blockId: bid, blockType: block ? (block.classList.contains('block-video') ? 'video' : 'audio') : '' } });
+      });
+    });
+  }
+
+  // ─── UDL Tracking: Caption enable ───
+  function initCaptionTracking() {
+    var captionLogged = {};
+    document.querySelectorAll('.block-video video').forEach(function(video) {
+      var tracks = video.textTracks;
+      if (!tracks || tracks.length === 0) return;
+      var block = video.closest('.block');
+      var bid = block ? block.getAttribute('data-block-id') : null;
+
+      for (var i = 0; i < tracks.length; i++) {
+        (function(track, idx) {
+          var origMode = track.mode;
+          var interval = setInterval(function() {
+            if (track.mode === 'showing' && origMode !== 'showing') {
+              var key = bid || 'caption_' + idx;
+              if (!captionLogged[key]) {
+                captionLogged[key] = true;
+                sendStatement('accessed-caption-track', 'accessed caption track', { extensions: { blockId: bid, blockType: 'video' } });
+              }
+              clearInterval(interval);
+            }
+            origMode = track.mode;
+          }, 1000);
+        })(tracks[i], i);
+      }
+    });
+  }
+
+  // ─── UDL Tracking: Media replay ───
+  function initMediaReplayTracking() {
+    document.querySelectorAll('.block-video video, .block-audio audio').forEach(function(media) {
+      var hasEnded = false;
+      media.addEventListener('ended', function() { hasEnded = true; });
+      media.addEventListener('play', function() {
+        if (!hasEnded) return;
+        hasEnded = false;
+        var block = media.closest('.block');
+        var bid = block ? block.getAttribute('data-block-id') : null;
+        var btype = media.tagName === 'VIDEO' ? 'video' : 'audio';
+        sendStatement('replayed-content', 'replayed content', { extensions: { blockId: bid, blockType: btype } });
+      });
+    });
+  }
+
+  // ─── UDL Tracking: Branching choice logging ───
+  function initBranchingTracking() {
+    document.querySelectorAll('.block-branching').forEach(function(block) {
+      var bid = block.getAttribute('data-block-id') || '';
+      block.querySelectorAll('.branch-choice').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var choiceLabel = btn.textContent || 'Choice';
+          sendStatement('chose-pathway', 'chose pathway', { extensions: { blockId: bid, blockType: 'branching', choice: choiceLabel.trim() } });
+        });
+      });
+    });
+  }
+
+  // ─── UDL Tracking: Bookmark/save-for-later ───
+  function initBookmarkTracking() {
+    document.querySelectorAll('.sfl-save-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        if (btn.classList.contains('saved')) return; // only log on save, not unsave
+        var blockId = btn.getAttribute('data-block-id') || '';
+        sendStatement('bookmarked', 'bookmarked', { extensions: { blockId: blockId, blockType: btn.getAttribute('data-block-type') || '' } });
+      });
+    });
+  }
+
+  // ─── UDL Tracking: Accessibility mode detection ───
+  function detectAccessibilityMode() {
+    var mode = {};
+    try {
+      mode.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      mode.highContrast = window.matchMedia('(prefers-contrast: more)').matches || window.matchMedia('(-ms-high-contrast: active)').matches;
+    } catch(e) {}
+    var videos = document.querySelectorAll('video');
+    for (var i = 0; i < videos.length; i++) {
+      var tracks = videos[i].textTracks;
+      if (tracks) {
+        for (var j = 0; j < tracks.length; j++) {
+          if (tracks[j].mode === 'showing') { mode.captionsEnabled = true; break; }
+        }
+      }
+      if (mode.captionsEnabled) break;
+    }
+    mode.screenReaderActive = !!(document.querySelector('[role="log"][aria-live]') || (navigator.userAgent && /NVDA|JAWS|VoiceOver/i.test(navigator.userAgent)));
+    return mode;
+  }
+
   // Emit launched on load
   window.addEventListener('load', function() {
-    sendStatement('launched', 'launched');
+    // Check for bookmark/resume
+    try {
+      var bm = JSON.parse(localStorage.getItem(bookmarkKey) || 'null');
+      if (bm && bm.lessonId === lessonId) {
+        sendStatement('resumed', 'resumed');
+      }
+    } catch(e) {}
+    var a11yMode = detectAccessibilityMode();
+    sendStatement('launched', 'launched', { accessibilityMode: a11yMode });
     sendStatement('initialized', 'initialized');
     initTabs();
     initFlashcards();
     initQuiz();
+    initBlockViewTracking();
+    initTranscriptTracking();
+    initCaptionTracking();
+    initMediaReplayTracking();
+    initBranchingTracking();
+    initBookmarkTracking();
   });
 
-  // Emit completed on unload
+  // Emit suspended on unload + save bookmark
   window.addEventListener('beforeunload', function() {
     var elapsed = Math.floor((Date.now() - startTime) / 1000);
     var duration = 'PT' + elapsed + 'S';
-    sendStatement('progressed', 'progressed', { duration: duration });
+    sendStatement('suspended', 'suspended', { duration: duration });
+    try {
+      localStorage.setItem(bookmarkKey, JSON.stringify({ lessonId: lessonId, timestamp: new Date().toISOString() }));
+    } catch(e) {}
   });
 
   window.scormNav = function(direction) {
@@ -150,6 +361,10 @@ export function getXapiPlayerScript(): string {
       var passThreshold = parseInt(quiz.getAttribute('data-pass') || '70');
       var showFeedback = quiz.getAttribute('data-feedback') === 'true';
       var allowRetry = quiz.getAttribute('data-retry') === 'true';
+      var quizBlockId = quiz.getAttribute('data-block-id') || '';
+      var quizPhase = quiz.getAttribute('data-phase') || '';
+      var quizObjectivesRaw = quiz.getAttribute('data-objectives') || '';
+      var quizObjectives = quizObjectivesRaw ? quizObjectivesRaw.split('|') : [];
 
       if (!submitBtn) return;
 
@@ -166,11 +381,21 @@ export function getXapiPlayerScript(): string {
           var isCorrect = selected && selected.getAttribute('data-correct') === 'true';
           if (isCorrect) correct++;
 
-          // Send answered statement per question
-          sendStatement('answered', 'answered', {
+          // Send answered statement per question with assessment context
+          var qId = q.getAttribute('data-question') || q.getAttribute('data-id') || '';
+          var choiceId = selected ? (selected.getAttribute('data-choice-id') || selected.value) : '';
+          var bankQId = q.getAttribute('data-bank-question-id') || '';
+          var difficulty = q.getAttribute('data-difficulty') || '';
+          var extensions = {
             success: !!isCorrect,
-            response: selected ? selected.value : ''
-          });
+            response: selected ? selected.value : '',
+            extensions: { blockId: quizBlockId, blockType: 'quiz', questionId: qId, choiceId: choiceId }
+          };
+          if (quizPhase) extensions.extensions.phase = quizPhase;
+          if (quizObjectives.length > 0) extensions.extensions.objectives = quizObjectives;
+          if (bankQId) extensions.extensions.bankQuestionId = bankQId;
+          if (difficulty) extensions.extensions.difficulty = difficulty;
+          sendStatement('answered', 'answered', extensions);
 
           if (showFeedback) {
             var fbCorrect = q.querySelector('.feedback-correct');
@@ -186,11 +411,15 @@ export function getXapiPlayerScript(): string {
 
         // Send passed/failed statement
         var verb = passed ? 'passed' : 'failed';
-        sendStatement(verb, verb, {
+        var resultExt = {
           score: { scaled: scaled, raw: score, min: 0, max: 100 },
           success: passed,
-          completion: true
-        });
+          completion: true,
+          extensions: { blockId: quizBlockId, blockType: 'quiz' }
+        };
+        if (quizPhase) resultExt.extensions.phase = quizPhase;
+        if (quizObjectives.length > 0) resultExt.extensions.objectives = quizObjectives;
+        sendStatement(verb, verb, resultExt);
 
         resultDiv.hidden = false;
         resultDiv.style.background = passed ? '#dcfce7' : '#fee2e2';
@@ -203,6 +432,91 @@ export function getXapiPlayerScript(): string {
           submitBtn.disabled = true;
           submitBtn.textContent = 'Submitted';
         }
+      });
+    });
+
+    // Knowledge Check blocks
+    document.querySelectorAll('.block-knowledge-check').forEach(function(kc) {
+      var submitBtn = kc.querySelector('.quiz-submit');
+      var resultDiv = kc.querySelector('.quiz-result');
+      var kcBlockId = kc.getAttribute('data-block-id') || '';
+      var kcPhase = kc.getAttribute('data-phase') || '';
+      var kcObjectivesRaw = kc.getAttribute('data-objectives') || '';
+      var kcObjectives = kcObjectivesRaw ? kcObjectivesRaw.split('|') : [];
+
+      if (!submitBtn) return;
+
+      // Log attempted when KC first visible
+      var attemptLogged = false;
+      var kcObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting && !attemptLogged) {
+            attemptLogged = true;
+            var ext = { extensions: { blockId: kcBlockId, blockType: 'knowledge-check' } };
+            if (kcPhase) ext.extensions.phase = kcPhase;
+            if (kcObjectives.length > 0) ext.extensions.objectives = kcObjectives;
+            sendStatement('attempted', 'attempted', ext);
+            kcObserver.disconnect();
+          }
+        });
+      }, { threshold: 0.3 });
+      kcObserver.observe(kc);
+
+      submitBtn.addEventListener('click', function() {
+        var questions = kc.querySelectorAll('.quiz-question');
+        var correct = 0;
+        var total = 0;
+
+        questions.forEach(function(q) {
+          var type = q.getAttribute('data-type');
+          if (type === 'short-answer') return;
+          total++;
+          var selected = q.querySelector('input:checked');
+          var isCorrect = selected && selected.getAttribute('data-correct') === 'true';
+          if (isCorrect) correct++;
+
+          var fbCorrect = q.querySelector('.feedback-correct');
+          var fbIncorrect = q.querySelector('.feedback-incorrect');
+          if (isCorrect && fbCorrect) fbCorrect.hidden = false;
+          if (!isCorrect && fbIncorrect) fbIncorrect.hidden = false;
+
+          var qId = q.getAttribute('data-question') || q.getAttribute('data-id') || '';
+          var choiceId = selected ? (selected.getAttribute('data-choice-id') || selected.value) : '';
+          var bankQId = q.getAttribute('data-bank-question-id') || '';
+          var difficulty = q.getAttribute('data-difficulty') || '';
+          var extensions = {
+            success: !!isCorrect,
+            response: selected ? selected.value : '',
+            extensions: { blockId: kcBlockId, blockType: 'knowledge-check', questionId: qId, choiceId: choiceId }
+          };
+          if (kcPhase) extensions.extensions.phase = kcPhase;
+          if (kcObjectives.length > 0) extensions.extensions.objectives = kcObjectives;
+          if (bankQId) extensions.extensions.bankQuestionId = bankQId;
+          if (difficulty) extensions.extensions.difficulty = difficulty;
+          sendStatement('answered', 'answered', extensions);
+        });
+
+        var score = total > 0 ? Math.round((correct / total) * 100) : 0;
+        var passed = score >= 70;
+        var scaled = total > 0 ? correct / total : 0;
+
+        var verb = passed ? 'passed' : 'failed';
+        var resultExt = {
+          score: { scaled: scaled, raw: score, min: 0, max: 100 },
+          success: passed,
+          completion: true,
+          extensions: { blockId: kcBlockId, blockType: 'knowledge-check' }
+        };
+        if (kcPhase) resultExt.extensions.phase = kcPhase;
+        if (kcObjectives.length > 0) resultExt.extensions.objectives = kcObjectives;
+        sendStatement(verb, verb, resultExt);
+
+        resultDiv.hidden = false;
+        resultDiv.style.background = passed ? '#dcfce7' : '#fee2e2';
+        resultDiv.style.color = passed ? '#166534' : '#991b1b';
+        resultDiv.textContent = passed
+          ? 'Good job! Score: ' + score + '%'
+          : 'Score: ' + score + '%. Review the material and try again.';
       });
     });
   }

@@ -283,6 +283,23 @@ export function PropertiesPanel(): JSX.Element {
             <option value="scale">Scale</option>
           </select>
         </FieldGroup>
+
+        {/* Completion & Tracking */}
+        <div className="border-t border-[var(--border-default)] pt-4 space-y-2">
+          <h3 className="text-xs font-[var(--font-weight-semibold)] text-[var(--text-primary)] mb-2">
+            Completion & Tracking
+          </h3>
+          <ToggleField
+            label="Required for completion"
+            checked={block.required !== false}
+            onChange={(v) => handleUpdate({ required: v } as Partial<ContentBlock>)}
+          />
+          <ToggleField
+            label="Track completion"
+            checked={block.trackCompletion !== false}
+            onChange={(v) => handleUpdate({ trackCompletion: v } as Partial<ContentBlock>)}
+          />
+        </div>
       </div>
     </div>
   )

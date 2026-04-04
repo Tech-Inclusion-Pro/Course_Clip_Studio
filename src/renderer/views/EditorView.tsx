@@ -19,6 +19,7 @@ import { QuestionBankPanel } from '@/components/editor/QuestionBankPanel'
 import { SplitPreviewPane } from '@/components/editor/SplitPreviewPane'
 import { BranchingGraphView } from '@/components/editor/BranchingGraphView'
 import { MediaLibraryPanel } from '@/components/media-library/MediaLibraryPanel'
+import { AnalyticsPanel } from '@/components/editor/AnalyticsPanel'
 import { useScrollSync } from '@/hooks/useScrollSync'
 
 export function EditorView(): JSX.Element {
@@ -42,6 +43,8 @@ export function EditorView(): JSX.Element {
   const toggleQuestionBank = useEditorStore((s) => s.toggleQuestionBank)
   const mediaLibraryOpen = useEditorStore((s) => s.mediaLibraryOpen)
   const toggleMediaLibrary = useEditorStore((s) => s.toggleMediaLibrary)
+  const analyticsOpen = useEditorStore((s) => s.analyticsOpen)
+  const toggleAnalytics = useEditorStore((s) => s.toggleAnalytics)
   const splitPreviewOpen = useEditorStore((s) => s.splitPreviewOpen)
   const activeLessonId = useEditorStore((s) => s.activeLessonId)
   const branchingGraphOpen = useEditorStore((s) => s.branchingGraphOpen)
@@ -231,6 +234,16 @@ export function EditorView(): JSX.Element {
             aria-label="Question bank"
           >
             <QuestionBankPanel onClose={toggleQuestionBank} />
+          </aside>
+        )}
+
+        {/* Analytics Panel */}
+        {analyticsOpen && (
+          <aside
+            className="w-96 shrink-0 border-l border-[var(--border-default)] bg-[var(--bg-surface)] overflow-y-auto"
+            aria-label="Analytics"
+          >
+            <AnalyticsPanel onClose={toggleAnalytics} />
           </aside>
         )}
 

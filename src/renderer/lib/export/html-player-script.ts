@@ -12,6 +12,160 @@ export function getHtmlPlayerScript(): string {
   var startTime = Date.now();
   var courseId = document.body.getAttribute('data-course-id') || 'lumina-course';
   var storageKey = 'lumina_progress_' + courseId;
+  var statementsKey = 'lumina_statements_' + courseId;
+  var bookmarkKey = 'lumina_bookmark_' + courseId;
+  var sessionId = 'sess_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+
+  // ─── Statement Logging ───
+  function getStatements() {
+    try { var d = localStorage.getItem(statementsKey); return d ? JSON.parse(d) : []; } catch(e) { return []; }
+  }
+  function saveStatements(stmts) {
+    try { localStorage.setItem(statementsKey, JSON.stringify(stmts)); } catch(e) {}
+  }
+  // UDL verb principle lookup
+  var UDL_PRINCIPLES = {
+    'accessed-audio-alternative': 'representation',
+    'accessed-text-alternative': 'representation',
+    'accessed-visual-alternative': 'representation',
+    'accessed-caption-track': 'representation',
+    'switched-language': 'representation',
+    'expanded-definition': 'representation',
+    'used-extended-time': 'action-expression',
+    'used-text-to-speech': 'action-expression',
+    'submitted-drawing': 'action-expression',
+    'submitted-audio-response': 'action-expression',
+    'chose-pathway': 'engagement',
+    'replayed-content': 'engagement',
+    'bookmarked': 'engagement',
+    'rated-difficulty': 'engagement'
+  };
+
+  function logStatement(verb, verbDisplay, objectId, objectName, extras) {
+    var isUdlVerb = UDL_PRINCIPLES.hasOwnProperty(verb);
+    var verbIri = isUdlVerb
+      ? 'https://luminaudl.app/verbs/' + verb
+      : 'http://adlnet.gov/expapi/verbs/' + verb;
+    var udlPrinciple = (extras && extras.udlPrinciple) || (isUdlVerb ? UDL_PRINCIPLES[verb] : null);
+
+    var stmt = {
+      id: sessionId + '_' + Date.now(),
+      actorId: getActorId(),
+      verb: verbIri,
+      verbDisplay: verbDisplay,
+      objectId: objectId || (courseId + '/' + lessonId),
+      objectType: extras && extras.objectType || 'lesson',
+      objectName: objectName || '',
+      udlPrinciple: udlPrinciple,
+      blockId: extras && extras.blockId || null,
+      blockType: extras && extras.blockType || null,
+      scoreRaw: extras && extras.scoreRaw,
+      scoreMax: extras && extras.scoreMax,
+      scoreScaled: extras && extras.scoreScaled,
+      success: extras && extras.success,
+      completion: extras && extras.completion,
+      durationSeconds: extras && extras.durationSeconds,
+      timestamp: new Date().toISOString(),
+      questionId: extras && extras.questionId || undefined,
+      choiceId: extras && extras.choiceId || undefined,
+      phase: extras && extras.phase || undefined,
+      objectives: extras && extras.objectives || undefined,
+      bankQuestionId: extras && extras.bankQuestionId || undefined,
+      difficulty: extras && extras.difficulty || undefined,
+      accessibilityMode: extras && extras.accessibilityMode || undefined
+    };
+    var stmts = getStatements();
+    stmts.push(stmt);
+    saveStatements(stmts);
+  }
+  function getActorId() {
+    var key = 'lumina_actor_' + courseId;
+    var id = '';
+    try { id = localStorage.getItem(key) || ''; } catch(e) {}
+    if (!id) {
+      id = 'actor_' + Math.random().toString(36).slice(2, 10);
+      try { localStorage.setItem(key, id); } catch(e) {}
+    }
+    return id;
+  }
+
+  // ─── Bookmark / Resume ───
+  function getBookmark() {
+    try { var d = localStorage.getItem(bookmarkKey); return d ? JSON.parse(d) : null; } catch(e) { return null; }
+  }
+  function saveBookmark() {
+    var data = { lessonId: lessonId, scrollY: window.scrollY, timestamp: new Date().toISOString() };
+    try { localStorage.setItem(bookmarkKey, JSON.stringify(data)); } catch(e) {}
+  }
+  function initBookmarkResume() {
+    var bm = getBookmark();
+    if (bm && bm.lessonId && bm.lessonId !== lessonId) {
+      // Show resume banner at top
+      var banner = document.createElement('div');
+      banner.id = 'resume-banner';
+      banner.setAttribute('role', 'alert');
+      banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9998;background:#1e293b;color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,0.2);';
+      banner.innerHTML = '<span>Resume where you left off?</span><div style="display:flex;gap:8px;"><button id="btn-resume" style="padding:6px 16px;border-radius:6px;background:#e11d8f;color:#fff;border:none;cursor:pointer;font-size:13px;">Resume</button><button id="btn-start-over" style="padding:6px 16px;border-radius:6px;background:transparent;color:#fff;border:1px solid #fff4;cursor:pointer;font-size:13px;">Start Over</button></div>';
+      document.body.prepend(banner);
+
+      document.getElementById('btn-resume').addEventListener('click', function() {
+        logStatement('resumed', 'resumed', courseId + '/' + bm.lessonId, 'Resume session', { objectType: 'course' });
+        // Navigate to bookmarked lesson — find nav btn with matching lesson id
+        var navBtns = document.querySelectorAll('.nav-btn[data-lesson-id]');
+        for (var i = 0; i < navBtns.length; i++) {
+          if (navBtns[i].getAttribute('data-lesson-id') === bm.lessonId) {
+            var href = navBtns[i].getAttribute('data-href') || navBtns[i].getAttribute('href');
+            if (href) { window.location.href = href; return; }
+          }
+        }
+        banner.remove();
+      });
+      document.getElementById('btn-start-over').addEventListener('click', function() {
+        try { localStorage.removeItem(bookmarkKey); } catch(e) {}
+        banner.remove();
+      });
+    } else if (bm && bm.lessonId === lessonId && bm.scrollY > 0) {
+      // Same lesson — restore scroll position
+      logStatement('resumed', 'resumed', courseId + '/' + lessonId, 'Resume lesson', { objectType: 'lesson' });
+      setTimeout(function() { window.scrollTo(0, bm.scrollY); }, 100);
+    }
+  }
+
+  // Save bookmark + suspended statement on page unload
+  window.addEventListener('beforeunload', function() {
+    saveBookmark();
+    var elapsed = Math.floor((Date.now() - startTime) / 1000);
+    logStatement('suspended', 'suspended', courseId + '/' + lessonId, 'Session suspended', { objectType: 'lesson', durationSeconds: elapsed });
+  });
+
+  // ─── Block View Tracking via IntersectionObserver ───
+  function initBlockViewTracking() {
+    var blocks = document.querySelectorAll('.block[data-block-id]');
+    if (blocks.length === 0) return;
+    var dwellTimers = {};
+    var logged = {};
+
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        var bid = entry.target.getAttribute('data-block-id');
+        var btype = entry.target.getAttribute('data-block-type') || '';
+        if (entry.isIntersecting) {
+          if (!dwellTimers[bid]) {
+            dwellTimers[bid] = setTimeout(function() {
+              if (!logged[bid]) {
+                logged[bid] = true;
+                logStatement('experienced', 'experienced', courseId + '/' + lessonId + '/' + bid, entry.target.getAttribute('aria-label') || btype, { objectType: 'block', blockId: bid, blockType: btype });
+              }
+            }, 3000);
+          }
+        } else {
+          if (dwellTimers[bid]) { clearTimeout(dwellTimers[bid]); dwellTimers[bid] = null; }
+        }
+      });
+    }, { threshold: 0.5 });
+
+    blocks.forEach(function(b) { observer.observe(b); });
+  }
 
   function getProgress() {
     try {
@@ -87,7 +241,94 @@ export function getHtmlPlayerScript(): string {
     setSessionTime: function() {}
   };
 
+  // ─── UDL Tracking: Transcript toggle ───
+  function initTranscriptTracking() {
+    var transcriptLogged = {};
+    document.querySelectorAll('details.transcript').forEach(function(details) {
+      details.addEventListener('toggle', function() {
+        if (!details.open) return;
+        var block = details.closest('.block');
+        var bid = block ? block.getAttribute('data-block-id') : null;
+        var key = bid || 'transcript_' + Math.random();
+        if (transcriptLogged[key]) return;
+        transcriptLogged[key] = true;
+        var btype = block ? (block.classList.contains('block-video') ? 'video' : block.classList.contains('block-audio') ? 'audio' : '') : '';
+        logStatement('accessed-text-alternative', 'accessed text alternative', courseId + '/' + lessonId + '/' + (bid || ''), 'Transcript', { objectType: 'block', blockId: bid, blockType: btype, udlPrinciple: 'representation' });
+      });
+    });
+  }
+
+  // ─── UDL Tracking: Caption enable ───
+  function initCaptionTracking() {
+    var captionLogged = {};
+    document.querySelectorAll('.block-video video').forEach(function(video) {
+      var tracks = video.textTracks;
+      if (!tracks || tracks.length === 0) return;
+      var block = video.closest('.block');
+      var bid = block ? block.getAttribute('data-block-id') : null;
+
+      for (var i = 0; i < tracks.length; i++) {
+        (function(track) {
+          var origMode = track.mode;
+          var interval = setInterval(function() {
+            if (track.mode === 'showing' && origMode !== 'showing') {
+              var key = bid || 'caption_' + i;
+              if (!captionLogged[key]) {
+                captionLogged[key] = true;
+                logStatement('accessed-caption-track', 'accessed caption track', courseId + '/' + lessonId + '/' + (bid || ''), 'Captions', { objectType: 'block', blockId: bid, blockType: 'video', udlPrinciple: 'representation' });
+              }
+              clearInterval(interval);
+            }
+            origMode = track.mode;
+          }, 1000);
+        })(tracks[i]);
+      }
+    });
+  }
+
+  // ─── UDL Tracking: Media replay ───
+  function initMediaReplayTracking() {
+    document.querySelectorAll('.block-video video, .block-audio audio').forEach(function(media) {
+      var hasEnded = false;
+      media.addEventListener('ended', function() { hasEnded = true; });
+      media.addEventListener('play', function() {
+        if (!hasEnded) return;
+        hasEnded = false;
+        var block = media.closest('.block');
+        var bid = block ? block.getAttribute('data-block-id') : null;
+        var btype = media.tagName === 'VIDEO' ? 'video' : 'audio';
+        logStatement('replayed-content', 'replayed content', courseId + '/' + lessonId + '/' + (bid || ''), 'Replay ' + btype, { objectType: 'block', blockId: bid, blockType: btype, udlPrinciple: 'engagement' });
+      });
+    });
+  }
+
+  // ─── UDL Tracking: Accessibility mode detection ───
+  function detectAccessibilityMode() {
+    var mode = {};
+    try {
+      mode.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      mode.highContrast = window.matchMedia('(prefers-contrast: more)').matches || window.matchMedia('(-ms-high-contrast: active)').matches;
+    } catch(e) {}
+    // Check if any captions are enabled by default
+    var videos = document.querySelectorAll('video');
+    for (var i = 0; i < videos.length; i++) {
+      var tracks = videos[i].textTracks;
+      if (tracks) {
+        for (var j = 0; j < tracks.length; j++) {
+          if (tracks[j].mode === 'showing') { mode.captionsEnabled = true; break; }
+        }
+      }
+      if (mode.captionsEnabled) break;
+    }
+    // Screen reader hint: check for aria-live regions or known SR indicators
+    mode.screenReaderActive = !!(document.querySelector('[role="log"][aria-live]') || (navigator.userAgent && /NVDA|JAWS|VoiceOver/i.test(navigator.userAgent)));
+    return mode;
+  }
+
   function _initAll() {
+    var a11yMode = detectAccessibilityMode();
+    logStatement('launched', 'launched', courseId, document.title, { objectType: 'course', accessibilityMode: a11yMode });
+    initBookmarkResume();
     initEnrollment();
     initTabs();
     initFlashcards();
@@ -103,6 +344,10 @@ export function getHtmlPlayerScript(): string {
     initMediaTracking();
     initIncompleteHighlighting();
     restoreCompletionIndicators();
+    initBlockViewTracking();
+    initTranscriptTracking();
+    initCaptionTracking();
+    initMediaReplayTracking();
   }
 
   function initEnrollment() {
@@ -143,6 +388,7 @@ export function getHtmlPlayerScript(): string {
     if (prevBtn) {
       prevBtn.onclick = function() {
         if (isEnrollmentBlocking()) return;
+        logStatement('progressed', 'progressed', courseId + '/' + lessonId, 'Navigate previous', { objectType: 'lesson' });
         var prev = document.body.getAttribute('data-prev-lesson');
         if (prev) window.location.href = prev;
       };
@@ -150,6 +396,9 @@ export function getHtmlPlayerScript(): string {
     if (nextBtn) {
       nextBtn.onclick = function() {
         if (isEnrollmentBlocking()) return;
+        var elapsed = Math.floor((Date.now() - startTime) / 1000);
+        logStatement('completed', 'completed', courseId + '/' + lessonId, document.title, { objectType: 'lesson', completion: true, durationSeconds: elapsed });
+        logStatement('progressed', 'progressed', courseId + '/' + lessonId, 'Navigate next', { objectType: 'lesson' });
         var next = document.body.getAttribute('data-next-lesson');
         if (next) window.location.href = next;
       };
@@ -157,6 +406,8 @@ export function getHtmlPlayerScript(): string {
     if (finishBtn) {
       finishBtn.onclick = function() {
         if (isEnrollmentBlocking()) return;
+        var elapsed = Math.floor((Date.now() - startTime) / 1000);
+        logStatement('completed', 'completed', courseId, document.title, { objectType: 'course', completion: true, durationSeconds: elapsed });
         window.location.href = 'index.html';
       };
     }
@@ -203,6 +454,8 @@ export function getHtmlPlayerScript(): string {
           card.classList.toggle('flipped');
           if (card.classList.contains('flipped')) {
             card.setAttribute('data-flipped', 'true');
+            var deckId = deck.getAttribute('data-block-id') || '';
+            logStatement('interacted', 'interacted', courseId + '/' + lessonId + '/' + deckId, 'Flashcard flip', { objectType: 'block', blockId: deckId, blockType: 'flashcard' });
           }
           if (selfTest && card.classList.contains('flipped')) {
             selfTest.style.display = 'flex';
@@ -301,6 +554,9 @@ export function getHtmlPlayerScript(): string {
           var correct = pair === zone.dataset.pair;
           zone.classList.add(correct ? 'dd-correct' : 'dd-incorrect');
 
+          var ddBlockId = block.getAttribute('data-block-id') || '';
+          logStatement('interacted', 'interacted', courseId + '/' + lessonId + '/' + ddBlockId, 'Drag-drop placement', { objectType: 'block', blockId: ddBlockId, blockType: 'drag-drop', success: correct });
+
           if (correct) {
             var draggedItem = block.querySelector('.dd-item[data-id="' + itemId + '"]');
             if (draggedItem) {
@@ -334,6 +590,8 @@ export function getHtmlPlayerScript(): string {
         item.addEventListener('click', function() {
           if (!selectedLeft || item.classList.contains('matched-correct')) return;
           var correct = selectedLeft.dataset.pair === item.dataset.id;
+          var matchBlockId = block.getAttribute('data-block-id') || '';
+          logStatement('interacted', 'interacted', courseId + '/' + lessonId + '/' + matchBlockId, 'Matching selection', { objectType: 'block', blockId: matchBlockId, blockType: 'matching', success: correct });
           if (correct) {
             selectedLeft.classList.remove('selected');
             selectedLeft.classList.add('matched-correct');
@@ -359,11 +617,16 @@ export function getHtmlPlayerScript(): string {
       var choices = block.querySelectorAll('.branch-choice');
       var consequenceDiv = block.querySelector('.branch-consequence');
       var continueBtn = block.querySelector('.branch-continue');
+      var branchBlockId = block.getAttribute('data-block-id') || '';
 
       choices.forEach(function(btn) {
         btn.addEventListener('click', function() {
           choices.forEach(function(c) { c.classList.remove('chosen'); });
           btn.classList.add('chosen');
+
+          // Log UDL chose-pathway statement
+          var choiceLabel = btn.textContent || btn.getAttribute('data-choice') || 'Choice';
+          logStatement('chose-pathway', 'chose pathway', courseId + '/' + lessonId + '/' + branchBlockId, choiceLabel.trim(), { objectType: 'block', blockId: branchBlockId, blockType: 'branching', udlPrinciple: 'engagement' });
 
           var consequence = btn.dataset.consequence;
           if (consequence && consequenceDiv) {
@@ -398,6 +661,10 @@ export function getHtmlPlayerScript(): string {
       var passThreshold = parseInt(quiz.getAttribute('data-pass') || '70');
       var showFeedback = quiz.getAttribute('data-feedback') === 'true';
       var allowRetry = quiz.getAttribute('data-retry') === 'true';
+      var quizBlockId = quiz.getAttribute('data-block-id') || '';
+      var quizPhase = quiz.getAttribute('data-phase') || '';
+      var quizObjectivesRaw = quiz.getAttribute('data-objectives') || '';
+      var quizObjectives = quizObjectivesRaw ? quizObjectivesRaw.split('|') : [];
 
       if (!submitBtn) return;
 
@@ -424,8 +691,42 @@ export function getHtmlPlayerScript(): string {
 
         var score = total > 0 ? Math.round((correct / total) * 100) : 0;
         var passed = score >= passThreshold;
+        var scaled = total > 0 ? correct / total : 0;
 
         SCORM.setScore(score);
+
+        // Log answered statements per question
+        questions.forEach(function(q) {
+          var qType = q.getAttribute('data-type');
+          if (qType === 'short-answer' || qType === 'likert') return;
+          var sel = q.querySelector('input:checked');
+          var qCorrect = sel && sel.getAttribute('data-correct') === 'true';
+          var qId = q.getAttribute('data-question') || q.getAttribute('data-id') || '';
+          var choiceId = sel ? (sel.getAttribute('data-choice-id') || sel.value) : '';
+          var bankQId = q.getAttribute('data-bank-question-id') || '';
+          var difficulty = q.getAttribute('data-difficulty') || '';
+          var promptEl = q.querySelector('.question-prompt');
+          var extras = {
+            objectType: 'block',
+            blockId: quizBlockId,
+            blockType: 'quiz',
+            success: !!qCorrect,
+            questionId: qId,
+            choiceId: choiceId
+          };
+          if (quizPhase) extras.phase = quizPhase;
+          if (quizObjectives.length > 0) extras.objectives = quizObjectives;
+          if (bankQId) extras.bankQuestionId = bankQId;
+          if (difficulty) extras.difficulty = difficulty;
+          logStatement('answered', 'answered', courseId + '/' + lessonId + '/' + qId, promptEl ? promptEl.textContent : 'Question', extras);
+        });
+
+        // Log passed/failed statement
+        var verb = passed ? 'passed' : 'failed';
+        var passExtras = { objectType: 'block', blockId: quizBlockId, blockType: 'quiz', scoreRaw: score, scoreMax: 100, scoreScaled: scaled, success: passed, completion: true };
+        if (quizPhase) passExtras.phase = quizPhase;
+        if (quizObjectives.length > 0) passExtras.objectives = quizObjectives;
+        logStatement(verb, verb, courseId + '/' + lessonId + '/' + quizBlockId, 'Quiz', passExtras);
 
         resultDiv.hidden = false;
         resultDiv.style.background = passed ? '#dcfce7' : '#fee2e2';
@@ -438,6 +739,99 @@ export function getHtmlPlayerScript(): string {
           submitBtn.disabled = true;
           submitBtn.textContent = 'Submitted';
         }
+      });
+    });
+
+    // Knowledge Check blocks — same scoring logic
+    document.querySelectorAll('.block-knowledge-check').forEach(function(kc) {
+      var submitBtn = kc.querySelector('.quiz-submit');
+      var resultDiv = kc.querySelector('.quiz-result');
+      var kcBlockId = kc.getAttribute('data-block-id') || '';
+      var kcPhase = kc.getAttribute('data-phase') || '';
+      var kcObjectivesRaw = kc.getAttribute('data-objectives') || '';
+      var kcObjectives = kcObjectivesRaw ? kcObjectivesRaw.split('|') : [];
+
+      if (!submitBtn) return;
+
+      // Log attempted when KC first becomes visible
+      var attemptLogged = false;
+      var kcObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting && !attemptLogged) {
+            attemptLogged = true;
+            var extras = { objectType: 'block', blockId: kcBlockId, blockType: 'knowledge-check' };
+            if (kcPhase) extras.phase = kcPhase;
+            if (kcObjectives.length > 0) extras.objectives = kcObjectives;
+            logStatement('attempted', 'attempted', courseId + '/' + lessonId + '/' + kcBlockId, 'Knowledge Check', extras);
+            kcObserver.disconnect();
+          }
+        });
+      }, { threshold: 0.3 });
+      kcObserver.observe(kc);
+
+      submitBtn.addEventListener('click', function() {
+        var questions = kc.querySelectorAll('.quiz-question');
+        var correct = 0;
+        var total = 0;
+
+        questions.forEach(function(q) {
+          var type = q.getAttribute('data-type');
+          if (type === 'short-answer') return;
+          total++;
+          var selected = q.querySelector('input:checked');
+          var isCorrect = selected && selected.getAttribute('data-correct') === 'true';
+          if (isCorrect) correct++;
+
+          // Show feedback
+          var fbCorrect = q.querySelector('.feedback-correct');
+          var fbIncorrect = q.querySelector('.feedback-incorrect');
+          if (isCorrect && fbCorrect) fbCorrect.hidden = false;
+          if (!isCorrect && fbIncorrect) fbIncorrect.hidden = false;
+        });
+
+        var score = total > 0 ? Math.round((correct / total) * 100) : 0;
+        var passed = score >= 70;
+        var scaled = total > 0 ? correct / total : 0;
+
+        // Log answered per question
+        questions.forEach(function(q) {
+          var qType = q.getAttribute('data-type');
+          if (qType === 'short-answer') return;
+          var sel = q.querySelector('input:checked');
+          var qCorrect = sel && sel.getAttribute('data-correct') === 'true';
+          var qId = q.getAttribute('data-question') || q.getAttribute('data-id') || '';
+          var choiceId = sel ? (sel.getAttribute('data-choice-id') || sel.value) : '';
+          var bankQId = q.getAttribute('data-bank-question-id') || '';
+          var difficulty = q.getAttribute('data-difficulty') || '';
+          var promptEl = q.querySelector('.question-prompt');
+          var extras = {
+            objectType: 'block',
+            blockId: kcBlockId,
+            blockType: 'knowledge-check',
+            success: !!qCorrect,
+            questionId: qId,
+            choiceId: choiceId
+          };
+          if (kcPhase) extras.phase = kcPhase;
+          if (kcObjectives.length > 0) extras.objectives = kcObjectives;
+          if (bankQId) extras.bankQuestionId = bankQId;
+          if (difficulty) extras.difficulty = difficulty;
+          logStatement('answered', 'answered', courseId + '/' + lessonId + '/' + qId, promptEl ? promptEl.textContent : 'Question', extras);
+        });
+
+        // Log passed/failed
+        var verb = passed ? 'passed' : 'failed';
+        var passExtras = { objectType: 'block', blockId: kcBlockId, blockType: 'knowledge-check', scoreRaw: score, scoreMax: 100, scoreScaled: scaled, success: passed, completion: true };
+        if (kcPhase) passExtras.phase = kcPhase;
+        if (kcObjectives.length > 0) passExtras.objectives = kcObjectives;
+        logStatement(verb, verb, courseId + '/' + lessonId + '/' + kcBlockId, 'Knowledge Check', passExtras);
+
+        resultDiv.hidden = false;
+        resultDiv.style.background = passed ? '#dcfce7' : '#fee2e2';
+        resultDiv.style.color = passed ? '#166534' : '#991b1b';
+        resultDiv.textContent = passed
+          ? 'Good job! Score: ' + score + '%'
+          : 'Score: ' + score + '%. Review the material and try again.';
       });
     });
   }
@@ -530,6 +924,8 @@ export function getHtmlPlayerScript(): string {
           });
           btn.textContent = '\u2605 Saved';
           btn.classList.add('saved');
+          // Log UDL bookmarked statement
+          logStatement('bookmarked', 'bookmarked', courseId + '/' + lessonId + '/' + blockId, btn.getAttribute('data-block-label') || 'Block', { objectType: 'block', blockId: blockId, blockType: btn.getAttribute('data-block-type') || '', udlPrinciple: 'engagement' });
         }
         setSaved(items);
         renderSflLists();

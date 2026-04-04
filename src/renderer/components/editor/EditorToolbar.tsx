@@ -28,7 +28,8 @@ import {
   Columns,
   Grid3x3,
   Magnet,
-  BookmarkPlus
+  BookmarkPlus,
+  BarChart3
 } from 'lucide-react'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useEditorStore, type PreviewDevice } from '@/stores/useEditorStore'
@@ -87,6 +88,8 @@ export function EditorToolbar(): JSX.Element {
   const toggleBranchingGraph = useEditorStore((s) => s.toggleBranchingGraph)
   const questionBankOpen = useEditorStore((s) => s.questionBankOpen)
   const toggleQuestionBank = useEditorStore((s) => s.toggleQuestionBank)
+  const analyticsOpen = useEditorStore((s) => s.analyticsOpen)
+  const toggleAnalytics = useEditorStore((s) => s.toggleAnalytics)
   const showGrid = useEditorStore((s) => s.showGrid)
   const toggleGrid = useEditorStore((s) => s.toggleGrid)
   const showSmartGuides = useEditorStore((s) => s.showSmartGuides)
@@ -304,6 +307,12 @@ export function EditorToolbar(): JSX.Element {
           label={t('toolbar.aiAssistant', 'AI Assistant')}
           active={aiPanelOpen}
           onClick={toggleAIPanel}
+        />
+        <ToolbarButton
+          icon={BarChart3}
+          label={t('toolbar.analytics', 'Analytics')}
+          active={analyticsOpen}
+          onClick={toggleAnalytics}
         />
 
         <div className="w-px h-5 bg-[var(--border-default)] mx-1" aria-hidden="true" />

@@ -115,6 +115,8 @@ export interface BaseBlock {
   notes: string
   animation?: BlockAnimation
   feedback?: string
+  required?: boolean
+  trackCompletion?: boolean
 }
 
 export interface BlockAnimation {
@@ -662,6 +664,7 @@ export type FerpaFeature =
   | 'knowledge-check-ai'
   | 'interactive-video-ai'
   | 'image-alt-text-ai'
+  | 'identified-reporting'
 
 export interface FerpaAcknowledgment {
   acknowledgedAt: string
@@ -687,6 +690,21 @@ export interface CourseSettings {
   xapi: XAPIConfig | null
   scorm: SCORMConfig | null
   ferpaAcknowledgments?: FerpaAcknowledgments
+  /** Phase 4: LRS configuration for remote statement delivery */
+  lrs?: LRSSettings | null
+  /** Phase 4: Whether identified learner reporting is enabled */
+  identifiedReportingEnabled?: boolean
+}
+
+export interface LRSSettings {
+  endpointUrl: string
+  key: string
+  secret: string
+  statementMode: 'realtime' | 'batch'
+  batchIntervalMinutes: number
+  anonymization: boolean
+  queueOnFailure: boolean
+  enabled: boolean
 }
 
 export interface XAPIConfig {
@@ -727,7 +745,7 @@ export interface CollaboratorNote {
 
 // ─── Export Formats ───
 
-export type ExportFormat = 'scorm-1.2' | 'scorm-2004' | 'xapi' | 'html5' | 'pdf'
+export type ExportFormat = 'scorm-1.2' | 'scorm-2004' | 'xapi' | 'html5' | 'pdf' | 'cmi5'
 
 // ─── Block Type Literal ───
 

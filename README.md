@@ -341,6 +341,7 @@ API keys are encrypted via Electron's `safeStorage` API. Provider settings are m
 | xAPI (Experience API) | LRS-compatible statements with configurable endpoint and authentication |
 | HTML5 | Self-contained ZIP with localStorage-based progress tracking — no server required |
 | PDF | Print-optimized export with optional quiz answers and UDL checklist inclusion |
+| cmi5 | LRS-backed Assignable Unit export with `cmi5.xml` course structure, per-lesson AU entry points, session lifecycle management (initialized/completed/passed/failed/terminated), and optional UDL context extensions |
 
 ### Import Capabilities
 
@@ -360,6 +361,76 @@ Direct upload to learning management systems via a guided wizard:
 - **Blackboard Learn** — Application key/secret-based authentication
 
 Includes connection testing, course/module selection, and progress tracking.
+
+### Analytics & Reporting
+
+Course Clip Studio includes a full analytics and reporting engine built on the xAPI 1.0.3 standard with UDL-mapped tracking. All analytics run locally by default — no learner data leaves the machine unless the author explicitly configures a remote LRS.
+
+#### LRS Integration (Settings > Analytics)
+
+| Feature | Description |
+|---|---|
+| Remote LRS | Optional xAPI endpoint with Basic auth (key/secret stored in Electron safeStorage) |
+| Statement Mode | Real-time (send immediately) or batch (flush at configurable intervals: 1–30 minutes) |
+| Connection Test | One-click test button that sends a GET request to the LRS and reports HTTP status |
+| Statement Queue | Automatic local queue with retry (up to 5 attempts, exponential backoff) when the LRS is unreachable |
+| Queue Dashboard | Live queue stats (pending/failed/total) with manual flush button in the analytics store |
+| Anonymization | On by default — strips learner name and email before sending to the LRS |
+| FERPA Notice | Warning displayed when anonymization is disabled, reminding authors to verify their LRS provider's DPA |
+
+#### Identified Learner Mode
+
+| Feature | Description |
+|---|---|
+| Anonymized by Default | Learners appear as `Learner A1B2C3` until identified mode is explicitly enabled |
+| FERPA Gating | Non-dismissible FERPA compliance modal before enabling identified reporting |
+| Identity Map | Maps anonymized UUIDs to real names/emails; stored per-course at `analytics/identity-map.json` |
+| Bulk Roster Import | Import learner identities from structured data for pre-enrollment |
+| Re-Authentication | Downloading identified reports requires password re-entry to prevent unauthorized access |
+
+#### Educator Reports
+
+| Feature | Description |
+|---|---|
+| Educator Learner Progress Report | Per-learner table with completion %, scores, time, phase scores, UDL pathways, and activity log |
+| HTML Report | WCAG-tagged printable HTML with Print/Save as PDF button; page breaks between learners |
+| CSV Export | Raw data export with learner ID, scores, time, and UDL pathway columns |
+| Anonymize Toggle | Generate reports with real names or anonymized IDs |
+| Activity Log Inclusion | Optional plain-language activity log per learner in educator voice ("Completed Lesson 2, scored 80%") |
+
+#### Learner Self-Report
+
+| Feature | Description |
+|---|---|
+| Plain-Language Log | First-person activity summaries ("You completed Lesson 2. You scored 80% on the Module 2 quiz.") |
+| Verb Template System | 26 verb-specific templates for natural-language statement rendering |
+| Grouped by Date | Activity entries grouped by day with daily summaries |
+| Text Download | Plain-text export grouped by date with scores, UDL pathways, and activity entries |
+| PDF Download | Opens a print-ready HTML page with auto-print dialog |
+| Dual Download Buttons | "Download as Text" and "Download as PDF" in the learner progress overlay |
+
+#### Item Analysis (Psychometrics)
+
+| Feature | Description |
+|---|---|
+| Difficulty Index | Proportion of learners who answered each question correctly |
+| Discrimination Index | Upper 27% vs. lower 27% comparison to flag questions that don't distinguish performers |
+| Point-Biserial Correlation | Per-choice correlation between selecting an option and total test score |
+| Distractor Analysis | Each incorrect choice flagged as Effective, Non-functional (<5% selection), or Implausible |
+| KR-20 Reliability | Kuder-Richardson Formula 20 estimate for overall assessment reliability |
+| Item Flags | Automatic quality flags: Good, Needs Review, Poor — with plain-language reasons |
+| Expandable Detail | Click any question in the item analysis table to see distractor distribution, point-biserial values, and improvement suggestions |
+
+#### cmi5 Export
+
+| Feature | Description |
+|---|---|
+| Course Structure | Generates `cmi5.xml` with module/lesson hierarchy mapped to cmi5 blocks and Assignable Units |
+| AU Player Runtime | Embedded JavaScript handles fetch-based auth token retrieval, session lifecycle (initialize → complete/pass/fail → terminate), and xAPI statement delivery |
+| Per-Lesson Entry Points | Each lesson gets a standalone HTML entry page for LMS AU launch |
+| MoveOn Criteria | Configurable per-export: Completed, Passed, CompletedAndPassed, CompletedOrPassed, NotApplicable |
+| Mastery Score | Configurable pass threshold injected into AU definitions |
+| UDL Extensions | Optional UDL principle context extensions on all cmi5 statements |
 
 ### Accessibility
 
@@ -572,7 +643,9 @@ lumina-udl/
 │       │   └── tippy/          # Tippy AI assistant icon
 │       ├── components/
 │       │   ├── layout/         # AppShell, Sidebar, TopBar
-│       │   ├── editor/         # Block editors, AI panel, tree navigator
+│       │   ├── editor/         # Block editors, AI panel, analytics panel, tree navigator
+│       │   ├── analytics/      # Dashboards, charts, item analysis, educator report dialog
+│       │   ├── settings/       # AnalyticsSettingsTab (LRS config, FERPA controls)
 │       │   ├── dashboard/      # Course cards, import dialog, templates, MediaLibrarySection
 │       │   ├── media-library/  # MediaLibraryPanel, tabs, AssetGrid, AssetTile, AssetMetadataEditor, ColorPaletteManager
 │       │   ├── syllabus/       # Syllabus Builder wizard, cards, library, preview
@@ -583,17 +656,19 @@ lumina-udl/
 │       │   ├── publish/        # Export wizard, LMS upload
 │       │   ├── auth/           # PinInput component
 │       │   ├── onboarding/     # First-launch setup wizard
-│       │   └── ui/             # Button, ThemeToggle, SettingsCard, FieldRow, ToggleSwitch, ColorInput, AIGenerateButton, StockSearchDialog
+│       │   └── ui/             # Button, ThemeToggle, SettingsCard, FieldRow, ToggleSwitch, ColorInput, AIGenerateButton, StockSearchDialog, FerpaWarningModal, ReauthPrompt
 │       ├── views/              # Dashboard, Editor, Preview, Settings, SignIn, Publish
-│       ├── stores/             # Zustand stores (app, auth, course, editor, media-library)
+│       ├── stores/             # Zustand stores (app, auth, course, editor, media-library, analytics)
 │       ├── hooks/              # useTheme, useAccessibility, useWorkspaceInit, useAssetUpload, useAssetInsert, useAIGenerate
 │       ├── lib/
-│       │   ├── export/         # HTML packager, PDF renderer, syllabus .docx export
+│       │   ├── analytics/      # Statement store, aggregators (course, assessment, UDL), LRS queue, identity map, activity log generator, educator report renderer, item analysis
+│       │   ├── cmi5/           # cmi5 verbs, course structure XML, AU player script, packager
+│       │   ├── export/         # HTML packager, PDF renderer, syllabus .docx export, learner progress script
 │       │   ├── import/         # Markdown, PPTX, SCORM parsers
 │       │   ├── scorm/          # SCORM 1.2 & 2004 packagers
 │       │   ├── xapi/           # xAPI packager
 │       │   ├── ai/             # LLM provider abstraction + syllabus AI prompts + inline generation prompts
-│       │   ├── stock-api.ts   # Unified stock media API client (Pexels, Unsplash, Pixabay)
+│       │   ├── stock-api.ts    # Unified stock media API client (Pexels, Unsplash, Pixabay)
 │       │   ├── tippy/          # Tippy context gatherer, system prompt, tour steps
 │       │   ├── built-in-assets.ts # 50 built-in SVG icon, shape, and text-shape definitions
 │       │   ├── media-manifest.ts  # Asset manifest read/write helpers

@@ -4,6 +4,7 @@
  */
 
 import type { Course, Lesson, ContentBlock, CourseTheme, SlideElement, ChartBlock } from '@/types/course'
+import { getLearnerProgressScript } from '@/lib/export/learner-progress-script'
 
 /** Compute relative luminance of a hex color (WCAG formula). */
 function luminance(hex: string): number {
@@ -114,12 +115,12 @@ function renderBlockInner(block: ContentBlock, animStyle: string, animClass: str
 
     case 'video':
       if (block.source === 'embed') {
-        return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-video${animClass}"${animStyle}>
+        return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-video${animClass}" data-block-id="${escapeHtml(block.id)}"${block.transcript ? ' data-has-transcript="true"' : ''}${animStyle}>
   <div class="video-embed"><iframe src="${escapeHtml(block.url)}" allowfullscreen title="${escapeHtml(block.ariaLabel)}"></iframe></div>
   ${block.transcript ? `<details class="transcript"><summary>View Transcript</summary><div>${escapeHtml(block.transcript)}</div></details>` : ''}
 </section>`
       }
-      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-video${animClass}"${animStyle}>
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-video${animClass}" data-block-id="${escapeHtml(block.id)}"${block.transcript ? ' data-has-transcript="true"' : ''}${(block.captions || []).length > 0 ? ' data-has-captions="true"' : ''}${animStyle}>
   <video controls aria-label="${escapeHtml(block.ariaLabel)}"${block.poster ? ` poster="${escapeHtml(block.poster)}"` : ''}>
     <source src="${escapeHtml(block.url)}" />
     ${(block.captions || []).map((c) => `<track kind="captions" src="${escapeHtml(c.src)}" srclang="${escapeHtml(c.language)}" label="${escapeHtml(c.label)}"${c.isDefault ? ' default' : ''} />`).join('\n    ')}
@@ -128,7 +129,7 @@ function renderBlockInner(block: ContentBlock, animStyle: string, animClass: str
 </section>`
 
     case 'audio':
-      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-audio${animClass}"${animStyle}>
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-audio${animClass}" data-block-id="${escapeHtml(block.id)}"${block.transcript ? ' data-has-transcript="true"' : ''}${animStyle}>
   <audio controls aria-label="${escapeHtml(block.ariaLabel)}">
     <source src="${escapeHtml(block.assetPath)}" />
   </audio>
@@ -416,14 +417,14 @@ function renderBlockInner(block: ContentBlock, animStyle: string, animClass: str
           choicesHtml = `<fieldset>
             <legend class="sr-only">Choices for question ${qi + 1}</legend>
             ${q.choices.map((c) => `<label class="quiz-choice">
-              <input type="radio" name="kc-q-${q.id}" value="${c.id}" data-correct="${c.isCorrect}" />
+              <input type="radio" name="kc-q-${q.id}" value="${c.id}" data-correct="${c.isCorrect}" data-choice-id="${c.id}" />
               <span>${escapeHtml(c.label)}</span>
             </label>`).join('\n            ')}
           </fieldset>`
         } else if (q.type === 'short-answer') {
           choicesHtml = `<input type="text" class="short-answer" data-question="${q.id}" placeholder="Type your answer..." />`
         }
-        return `<div class="quiz-question" data-type="${q.type}" data-id="${q.id}">
+        return `<div class="quiz-question" data-type="${q.type}" data-id="${q.id}" data-question="${q.id}" data-bank-question-id="${q.bankQuestionId || ''}" data-difficulty="${q.difficulty || ''}">
           <p class="question-prompt"><strong>Q${qi + 1}.</strong> ${escapeHtml(q.prompt)}</p>
           ${choicesHtml}
           <div class="feedback feedback-correct" hidden>${escapeHtml(q.feedbackCorrect)}</div>
@@ -431,7 +432,7 @@ function renderBlockInner(block: ContentBlock, animStyle: string, animClass: str
         </div>`
       }).join('\n    ')
 
-      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-knowledge-check${animClass}"${animStyle}>
+      return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-knowledge-check${animClass}" data-block-id="${block.id}" data-block-type="knowledge-check" data-phase="${block.phase}" data-objectives="${block.objectives.join('|')}"${animStyle}>
   <div class="kc-phase-badge">${escapeHtml(block.phase)}</div>
   ${block.objectives.length > 0 ? `<ul class="kc-objectives">${block.objectives.map((o) => `<li>${escapeHtml(o)}</li>`).join('')}</ul>` : ''}
   ${kcQuestions}
@@ -476,7 +477,7 @@ function renderQuiz(block: ContentBlock & { type: 'quiz' }, animStyle: string = 
       choicesHtml = `<fieldset>
         <legend class="sr-only">Choices for question ${qi + 1}</legend>
         ${q.choices.map((c) => `<label class="quiz-choice">
-          <input type="radio" name="q-${q.id}" value="${c.id}" data-correct="${c.isCorrect}" />
+          <input type="radio" name="q-${q.id}" value="${c.id}" data-correct="${c.isCorrect}" data-choice-id="${c.id}" />
           <span>${escapeHtml(c.label)}</span>
         </label>`).join('\n        ')}
       </fieldset>`
@@ -490,14 +491,14 @@ function renderQuiz(block: ContentBlock & { type: 'quiz' }, animStyle: string = 
         <legend class="sr-only">Rate for question ${qi + 1}</legend>
         <div class="likert-scale">
           ${q.choices.map((c) => `<label class="likert-option">
-            <input type="radio" name="q-${q.id}" value="${c.id}" />
+            <input type="radio" name="q-${q.id}" value="${c.id}" data-choice-id="${c.id}" />
             <span>${escapeHtml(c.label)}</span>
           </label>`).join('\n          ')}
         </div>
       </fieldset>`
     }
 
-    return `<div class="quiz-question" data-type="${q.type}" data-id="${q.id}">
+    return `<div class="quiz-question" data-type="${q.type}" data-id="${q.id}" data-question="${q.id}" data-bank-question-id="${q.bankQuestionId || ''}" data-difficulty="${q.difficulty || ''}">
       <p class="question-prompt"><strong>Q${qi + 1}.</strong> ${escapeHtml(q.prompt)}</p>
       ${choicesHtml}
       <div class="feedback feedback-correct" hidden>${escapeHtml(q.feedbackCorrect)}</div>
@@ -505,7 +506,7 @@ function renderQuiz(block: ContentBlock & { type: 'quiz' }, animStyle: string = 
     </div>`
   }).join('\n    ')
 
-  return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-quiz${animClass}" data-pass="${block.passThreshold}" data-feedback="${block.showFeedback}" data-retry="${block.allowRetry}"${animStyle}>
+  return `<section role="region" aria-label="${escapeHtml(block.ariaLabel)}" class="block block-quiz${animClass}" data-block-id="${block.id}" data-pass="${block.passThreshold}" data-feedback="${block.showFeedback}" data-retry="${block.allowRetry}"${animStyle}>
     ${questions}
     <div class="quiz-actions">
       <button class="quiz-submit" type="button">Submit Answers</button>
@@ -569,6 +570,7 @@ export function renderLessonHtml(
         <div class="progress-fill" style="width:${Math.round(((lessonIndex + 1) / totalLessons) * 100)}%;background:${theme.playerShell.progressBarColor}"></div>
       </div>` : ''}
       ${settings.showEstimatedTime ? `<span class="est-time">${course.meta.estimatedDuration} min</span>` : ''}
+      <button id="btn-progress" onclick="toggleProgress()" style="padding:4px 12px;font-size:12px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:transparent;color:inherit;cursor:pointer;" aria-label="My Progress">My Progress</button>
     </div>
   </header>
 
@@ -606,6 +608,7 @@ export function renderLessonHtml(
     ? `<script>${options.inlineScript}</script>`
     : `<script src="scorm-api.js"></script>
   <script src="player.js"></script>`}
+  <script>${getLearnerProgressScript()}</script>
 </body>
 </html>`
 }
