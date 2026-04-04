@@ -290,34 +290,113 @@ Every content block in the editor includes contextual "Generate with AI" buttons
 
 The stock media search dialog supports paginated results, thumbnail previews, photographer attribution, and automatic download to the course assets folder.
 
-### Tippy — Context-Aware AI Assistant
+### TIPPY — Teaching Inclusion and Pedagogy Partner for You
 
 <p align="center">
   <img src="resources/tippy-icon.png" alt="Tippy AI Assistant" width="120" height="120" />
 </p>
 
-Tippy is a friendly, draggable AI assistant that lives inside Course Clip Studio. Powered by the same AI provider you configure in Settings (Anthropic, OpenAI, or Ollama), Tippy understands where you are in the app and what you're working on — then gives you targeted help, wayfinding, and instructional design guidance.
+TIPPY is a pedagogically grounded AI co-pilot built into Course Clip Studio. Unlike a generic chatbot, every TIPPY response is filtered through Universal Design for Learning (UDL), WCAG 2.1/2.2 accessibility standards, and inclusive instructional design principles. TIPPY runs on the active AI provider configured in Settings (Anthropic, OpenAI, or Ollama) and recommends local Ollama for privacy-sensitive work.
+
+#### Core Chat and Context Awareness
 
 | Feature | Description |
 |---|---|
-| **Context-Aware Chat** | Tippy reads the current view, active course, module, lesson, selected block, open panels, and accessibility settings — then responds with help specific to your situation |
-| **Guided Tour** | Click "Give me a tour" and Tippy walks you through every area of the app step-by-step, narrating each highlight with a chat message and advancing when you're ready |
-| **Quick Actions** | Three one-click prompts on first open: "Give me a tour," "Help me get started," and "What can I do here?" |
-| **Draggable Button** | Drag Tippy's floating button anywhere on screen — position persists across sessions |
-| **Error Recovery** | Tippy automatically detects AI or translation errors, opens the chat, and offers to help resolve them |
+| **4-Layer System Prompt** | TIPPY assembles its context from: (1) core identity rules, (2) a searchable features knowledge base, (3) the author's personal design profile, and (4) live session context — active panel, block type, recent actions, and WCAG flags |
+| **Features Knowledge Base** | A comprehensive 15-section reference covering all Course Clip Studio features. TIPPY retrieves the most relevant sections for each query using keyword-scored retrieval |
+| **Context-Aware Chat** | TIPPY reads the current view, active course, module, lesson, selected block, open panels, AI provider, and accessibility settings — then responds with help specific to your situation |
+| **Quick Actions** | Four one-click prompts: "Give me a tour," "Help me get started," "What can I do here?" and "Assess my course" |
+| **Draggable Button** | Drag TIPPY's floating button anywhere on screen — position persists across sessions |
 | **Session Save / Restore** | Save your conversation, reload it later, or clear and start fresh |
-| **Markdown Responses** | Tippy's responses render with bold, links, inline code, and bullet lists |
-| **Onboarding Tour Highlights** | 10-step tour with animated highlight rings around sidebar, dashboard, toolbar, outline, canvas, properties, block palette, AI assistant, preview, and publish |
-| **Full Accessibility** | `role="dialog"`, `aria-label`, `aria-expanded`, keyboard navigation (Escape to close, arrow keys during tour), focus management, and reduced-motion awareness |
-| **Localized** | Tippy responds in your selected UI language |
+| **Markdown Responses** | TIPPY's responses render with bold, links, inline code, and bullet lists |
+| **Localized** | TIPPY responds in your selected UI language |
 
-#### How to Use Tippy
+#### AI Reasoning Transparency
 
-1. **Click the Tippy icon** — the floating purple character in the bottom-left corner of the app
+Every substantive TIPPY response includes an expandable "How does TIPPY reason?" panel with five sections:
+
+| Section | What It Shows |
+|---|---|
+| **Sources** | Specific sources TIPPY drew on — WCAG criteria, UDL checkpoints, features KB sections, author profile data, axe-core results, AI provider info |
+| **Confidence** | Overall confidence level (High / Medium / Low / Uncertain) with per-category breakdown |
+| **Limitations** | What TIPPY cannot evaluate or what might be wrong — e.g., cultural context, lived experience, domain vocabulary |
+| **Human Review Required** | Specific, actionable items the author needs to verify or decide |
+| **AI Note** | A persistent reminder that AI supports but does not replace human judgment in accessibility work |
+
+Cloud provider responses are marked with a visible indicator. Confidence levels are color-coded (green/yellow/orange/red).
+
+#### FERPA Compliance
+
+TIPPY detects when messages contain learner data keywords (student, grade, score, disability, IEP, Section 504, etc.) and blocks cloud AI transmission until the author acknowledges a non-dismissible FERPA warning. Options: proceed with cloud, switch to Ollama (local), or cancel. The FERPA warning toggle is always on and cannot be disabled.
+
+#### Get to Know You — Author Design Profile
+
+TIPPY conducts a warm, conversational onboarding flow across six sections:
+
+| Section | What TIPPY Learns |
+|---|---|
+| **About You** | Name, role, organization, credentials (CPACC, BCBA, UDL certification, etc.) |
+| **Your Audience** | Learner demographics, disability communities, multilingual needs |
+| **Design Philosophy** | Accessibility principles, UDL approach, inclusion values, frameworks (DisCrit, etc.) |
+| **Brand & Visual Style** | Brand colors, typography, visual preferences — pre-populated from Settings > Brand if configured |
+| **Workflow** | How you start courses, team composition, pain points |
+| **AI Preferences** | Draft vs. check preference, reasoning detail level, privacy defaults |
+
+The profile is stored locally and injected into TIPPY's system prompt so every response is personally relevant. Export your profile as markdown, update any section anytime, or reset to start fresh. Manage in **Settings > TIPPY > Get to Know You**.
+
+#### Full Help — 15 Guided Walkthroughs
+
+When you ask "how do I..." or mention a feature, TIPPY detects the topic and offers a step-by-step walkthrough. Click **Show Me** in the chat to launch it. Each walkthrough highlights UI elements with a dark red dotted border (`#8B0000`), shows a speech bubble with instructions, and narrates each step in the chat panel.
+
+| Walkthrough | What It Covers |
+|---|---|
+| Adding Your First Block | Block palette, inserting, configuring |
+| Setting Up a Question Bank | Quiz bank creation, CSV import, randomization |
+| Using the Media Library | Built-in assets, API search, uploads |
+| Generating Narration | AI text-to-speech, voice selection |
+| Translating a Block | Multi-language translation workflow |
+| Pre/Post Knowledge Checks | Baseline assessments, phase setup |
+| Building Nested Blocks | Blocks inside blocks, depth limits |
+| Creating a Hotspot Image Map | Interactive image regions |
+| Fixing a WCAG Issue | Accessibility flag resolution |
+| Exporting to SCORM | LMS-ready packaging |
+| Reading the Analytics Dashboard | Learner data, quiz results, completion |
+| Setting Up Your TIPPY Profile | Get to Know You onboarding |
+| Building a Chart with AI | Data visualization blocks |
+| Writing Block with Rubric | Open response, AI feedback setup |
+| Converting PDF to Accessible HTML | PDF import and remediation |
+
+Keyboard navigation: Arrow Right/Enter = next step, Arrow Left = back, Escape = stop. Reduced motion: pulse animations disabled when `prefers-reduced-motion` is active. All 15 walkthroughs are also launchable from **Settings > TIPPY > Walkthrough Library**.
+
+#### TIPPY Assesses — Course Accessibility Assessment
+
+TIPPY Assesses evaluates your course against three frameworks simultaneously:
+
+**WCAG 2.1 AA** — Runs the built-in accessibility audit engine checking alt text, transcripts, captions, color contrast, heading structure, ARIA labels, reading level, and quiz accessibility. Findings organized by POUR principle (Perceivable, Operable, Understandable, Robust) and impact level (Critical, Serious, Moderate, Minor).
+
+**UDL (CAST Guidelines 3.0)** — Maps content against 12 checkpoints across three principles:
+- *Representation*: multiple formats, reading level, visuals explained, language options, transcripts
+- *Action & Expression*: multiple response options, goals stated, scaffolding before assessment
+- *Engagement*: relevance communicated, learner choice, self-monitoring checkpoints, actionable feedback
+
+**Inclusion (DisCrit Framework)** — Pattern analysis checking for deficit language, medical model framing, assessment format diversity, access flexibility, and representation of diverse communities. Rated: Exemplary / Proficient / Developing / Needs Review.
+
+**Overall Grade**: Weighted composite — WCAG 50%, UDL 30%, Inclusion 20% — yielding a letter grade (A through F).
+
+The report is displayed in a tabbed interface with: Summary Scorecard, WCAG Findings (with Fix It / Show Me actions), UDL Findings (strengths and gaps per principle), Inclusion Findings, Top 5 Recommendations (prioritized by combined impact with estimated time), and a Methodology Appendix (AI provider, tool versions, confidence notes, limitations, human review statement).
+
+Trigger by typing "assess this course," "check accessibility," "run assessment," or clicking the "Assess my course" quick action. Enable **auto-run Assesses on export** in Settings > TIPPY.
+
+#### How to Use TIPPY
+
+1. **Click the TIPPY icon** — the floating character in the bottom-left corner of the app
 2. **Ask anything** — type a question about course authoring, accessibility, UDL, or how to use a feature
-3. **Use quick actions** — click a suggestion button to start a tour, get onboarded, or learn what's available on the current screen
-4. **Drag to reposition** — grab and move Tippy's button to any edge of the screen
-5. **Save conversations** — click the save icon to preserve your chat; reload saved sessions anytime
+3. **Use quick actions** — start a tour, get onboarded, learn what's available, or assess your course
+4. **Say "Show me"** — TIPPY detects feature questions and offers guided walkthroughs with highlighted UI
+5. **Assess your course** — type "assess this course" for a full WCAG + UDL + Inclusion report with actionable recommendations
+6. **Set up your profile** — go to Settings > TIPPY > Get to Know You for personalized suggestions
+7. **Drag to reposition** — grab and move TIPPY's button to any edge of the screen
+8. **Save conversations** — click the save icon to preserve your chat; reload saved sessions anytime
 
 ### Visual / Image API Integration
 
@@ -640,7 +719,7 @@ lumina-udl/
 │       │   ├── styles/         # Design tokens, themes, Tailwind
 │       │   ├── fonts/          # OpenDyslexic woff2 font files
 │       │   ├── base-brain/     # Bundled screener MD files (WCAG, UDL, DisCrit)
-│       │   └── tippy/          # Tippy AI assistant icon
+│       │   └── tippy/          # TIPPY AI assistant icon
 │       ├── components/
 │       │   ├── layout/         # AppShell, Sidebar, TopBar
 │       │   ├── editor/         # Block editors, AI panel, analytics panel, tree navigator
@@ -652,13 +731,13 @@ lumina-udl/
 │       │   │   ├── steps/      # 6 wizard step components
 │       │   │   ├── cards/      # ObjectiveCard, AssignmentCard, RubricEditor
 │       │   │   └── library/    # SyllabusLibraryView, SyllabusCard
-│       │   ├── tippy/          # Tippy AI assistant (button, panel, chat, tour, error watcher)
+│       │   ├── tippy/          # TIPPY AI assistant (chat panel, tour, highlights, reasoning panel, FERPA warning, Get to Know You, Assesses report)
 │       │   ├── publish/        # Export wizard, LMS upload
 │       │   ├── auth/           # PinInput component
 │       │   ├── onboarding/     # First-launch setup wizard
 │       │   └── ui/             # Button, ThemeToggle, SettingsCard, FieldRow, ToggleSwitch, ColorInput, AIGenerateButton, StockSearchDialog, FerpaWarningModal, ReauthPrompt
 │       ├── views/              # Dashboard, Editor, Preview, Settings, SignIn, Publish
-│       ├── stores/             # Zustand stores (app, auth, course, editor, media-library, analytics)
+│       ├── stores/             # Zustand stores (app, auth, course, editor, media-library, analytics, tippy, author-profile)
 │       ├── hooks/              # useTheme, useAccessibility, useWorkspaceInit, useAssetUpload, useAssetInsert, useAIGenerate
 │       ├── lib/
 │       │   ├── analytics/      # Statement store, aggregators (course, assessment, UDL), LRS queue, identity map, activity log generator, educator report renderer, item analysis
@@ -669,7 +748,7 @@ lumina-udl/
 │       │   ├── xapi/           # xAPI packager
 │       │   ├── ai/             # LLM provider abstraction + syllabus AI prompts + inline generation prompts
 │       │   ├── stock-api.ts    # Unified stock media API client (Pexels, Unsplash, Pixabay)
-│       │   ├── tippy/          # Tippy context gatherer, system prompt, tour steps
+│       │   ├── tippy/          # TIPPY 4-layer prompt, features KB, profile generator, walkthrough engine/library, assesses engine/prompts, demo course
 │       │   ├── built-in-assets.ts # 50 built-in SVG icon, shape, and text-shape definitions
 │       │   ├── media-manifest.ts  # Asset manifest read/write helpers
 │       │   └── accessibility/  # Audit engine, contrast checker

@@ -1,16 +1,20 @@
-// ─── Tippy Tour Manager ───
-// Tippy narrates each step in the chat panel as the user advances through the tour.
+// ─── Tippy Walkthrough Runner ───
+// Phase 3: Generalized walkthrough system that supports the basic app tour
+// and all 15 feature-specific walkthroughs. Narrates each step in the chat
+// panel and renders the highlight overlay with speech bubble.
 
 import { useCallback, useEffect, useRef } from 'react'
 import { useTippyStore } from '@/stores/useTippyStore'
 import { TOUR_STEPS } from '@/lib/tippy/tippyTourSteps'
+import { getWalkthroughById } from '@/lib/tippy/walkthrough-library'
+import { injectHighlightStyles } from '@/lib/tippy/walkthrough-engine'
 import { TippyHighlight } from './TippyHighlight'
-import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { useT } from '@/hooks/useT'
 
 export function TippyTour(): JSX.Element | null {
   const tourActive = useTippyStore((s) => s.tourActive)
   const tourStepIndex = useTippyStore((s) => s.tourStepIndex)
+  const activeWalkthroughId = useTippyStore((s) => s.activeWalkthroughId)
   const nextTourStep = useTippyStore((s) => s.nextTourStep)
   const prevTourStep = useTippyStore((s) => s.prevTourStep)
   const endTour = useTippyStore((s) => s.endTour)
@@ -18,133 +22,121 @@ export function TippyTour(): JSX.Element | null {
   const open = useTippyStore((s) => s.open)
   const t = useT()
 
-  const currentStep = TOUR_STEPS[tourStepIndex]
-  const isLast = tourStepIndex >= TOUR_STEPS.length - 1
-  const isFirst = tourStepIndex === 0
-
   // Track which step we last narrated so we don't duplicate messages
   const lastNarratedStep = useRef(-1)
+  const lastWalkthroughId = useRef<string | null>(null)
+
+  // Inject highlight CSS on first walkthrough
+  useEffect(() => {
+    if (tourActive) {
+      injectHighlightStyles()
+    }
+  }, [tourActive])
+
+  // Determine if we're running a basic tour or a feature walkthrough
+  const walkthrough = activeWalkthroughId ? getWalkthroughById(activeWalkthroughId) : null
+  const isFeatureWalkthrough = !!walkthrough
+
+  // Get current step data
+  let stepInstruction = ''
+  let stepTargetSelector = ''
+  let stepHighlightStyle: 'border' | 'spotlight' | 'pulse' = 'border'
+  let totalSteps = 0
+  let currentStepTitle = ''
+
+  if (isFeatureWalkthrough && walkthrough) {
+    totalSteps = walkthrough.steps.length
+    const step = walkthrough.steps[tourStepIndex]
+    if (step) {
+      stepInstruction = step.instruction
+      stepTargetSelector = step.targetSelector
+      stepHighlightStyle = step.highlightStyle
+      currentStepTitle = walkthrough.title
+    }
+  } else {
+    // Basic app tour (legacy 10-step tour)
+    totalSteps = TOUR_STEPS.length
+    const step = TOUR_STEPS[tourStepIndex]
+    if (step) {
+      stepInstruction = t(step.tippyMessage, t(step.description, ''))
+      stepTargetSelector = step.targetSelector
+      stepHighlightStyle = 'border'
+      currentStepTitle = t(step.title, step.id)
+    }
+  }
+
+  const isLast = tourStepIndex >= totalSteps - 1
+  const isFirst = tourStepIndex === 0
 
   // Narrate the current step whenever it changes
   useEffect(() => {
-    if (!tourActive || !currentStep) return
-    if (lastNarratedStep.current === tourStepIndex) return
+    if (!tourActive) return
+    if (lastNarratedStep.current === tourStepIndex && lastWalkthroughId.current === activeWalkthroughId) return
 
     lastNarratedStep.current = tourStepIndex
+    lastWalkthroughId.current = activeWalkthroughId
 
     // Ensure panel is open so user can read Tippy's narration
     open()
 
-    const stepLabel = `**Step ${tourStepIndex + 1} of ${TOUR_STEPS.length}: ${t(currentStep.title, currentStep.id)}**`
-    const stepMessage = t(currentStep.tippyMessage, t(currentStep.description, ''))
+    const label = isFeatureWalkthrough
+      ? `**${currentStepTitle} — Step ${tourStepIndex + 1} of ${totalSteps}**`
+      : `**Step ${tourStepIndex + 1} of ${totalSteps}: ${currentStepTitle}**`
 
     addMessage({
       role: 'assistant',
-      content: `${stepLabel}\n\n${stepMessage}`
+      content: `${label}\n\n${stepInstruction}`
     })
-  }, [tourActive, tourStepIndex, currentStep, addMessage, open, t])
+  }, [tourActive, tourStepIndex, activeWalkthroughId, stepInstruction, currentStepTitle, totalSteps, isFeatureWalkthrough, addMessage, open])
 
   // Reset narration tracker when tour ends
   useEffect(() => {
     if (!tourActive) {
       lastNarratedStep.current = -1
+      lastWalkthroughId.current = null
     }
   }, [tourActive])
 
   const handleNext = useCallback(() => {
     if (isLast) {
       endTour()
-      addMessage({
-        role: 'assistant',
-        content: t('tippy.tourComplete', "That's the tour! You now know your way around Course Clip Studio. Feel free to ask me anything as you explore.")
-      })
+      const completionMsg = isFeatureWalkthrough
+        ? `That covers the **${currentStepTitle}** walkthrough. If you have more questions, just ask!`
+        : t('tippy.tourComplete', "That's the tour! You now know your way around Course Clip Studio. Feel free to ask me anything as you explore.")
+      addMessage({ role: 'assistant', content: completionMsg })
     } else {
       nextTourStep()
     }
-  }, [isLast, endTour, addMessage, nextTourStep, t])
+  }, [isLast, endTour, addMessage, nextTourStep, isFeatureWalkthrough, currentStepTitle, t])
 
   const handlePrev = useCallback(() => {
     if (!isFirst) prevTourStep()
   }, [isFirst, prevTourStep])
 
-  const handleSkip = useCallback(() => {
+  const handleStop = useCallback(() => {
     endTour()
     addMessage({
       role: 'assistant',
-      content: t('tippy.tourSkipped', 'No problem! The tour is always here if you want to pick it up later. Just ask me "Give me a tour" anytime.')
+      content: isFeatureWalkthrough
+        ? `Walkthrough stopped. You can restart it anytime by asking about **${currentStepTitle}**.`
+        : t('tippy.tourSkipped', 'No problem! The tour is always here if you want to pick it up later. Just ask me "Give me a tour" anytime.')
     })
-  }, [endTour, addMessage, t])
+  }, [endTour, addMessage, isFeatureWalkthrough, currentStepTitle, t])
 
-  // Keyboard navigation
-  useEffect(() => {
-    if (!tourActive) return
-    const handle = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') handleSkip()
-      else if (e.key === 'ArrowRight' || e.key === 'Enter') handleNext()
-      else if (e.key === 'ArrowLeft') handlePrev()
-    }
-    document.addEventListener('keydown', handle)
-    return () => document.removeEventListener('keydown', handle)
-  }, [tourActive, handleSkip, handleNext, handlePrev])
-
-  if (!tourActive || !currentStep) return null
+  if (!tourActive || !stepTargetSelector) return null
 
   return (
-    <>
-      <TippyHighlight step={currentStep} />
-
-      {/* Tour controls */}
-      <div
-        className="fixed z-[10003] flex items-center gap-3 px-4 py-2.5 rounded-full"
-        style={{
-          bottom: '2rem',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          backgroundColor: 'var(--bg-surface)',
-          border: '1px solid var(--border-default)',
-          boxShadow: 'var(--shadow-xl)'
-        }}
-      >
-        <button
-          onClick={handlePrev}
-          disabled={isFirst}
-          className="p-1 rounded cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-          style={{ color: 'var(--text-primary)' }}
-          aria-label="Previous step"
-        >
-          <ChevronLeft size={18} />
-        </button>
-
-        <span
-          className="text-xs font-medium tabular-nums"
-          style={{ color: 'var(--text-secondary)' }}
-        >
-          {tourStepIndex + 1} / {TOUR_STEPS.length}
-        </span>
-
-        <button
-          onClick={handleNext}
-          className="p-1 rounded cursor-pointer"
-          style={{ color: 'var(--text-primary)' }}
-          aria-label={isLast ? 'Finish tour' : 'Next step'}
-        >
-          <ChevronRight size={18} />
-        </button>
-
-        <div
-          className="w-px h-5"
-          style={{ backgroundColor: 'var(--border-default)' }}
-        />
-
-        <button
-          onClick={handleSkip}
-          className="p-1 rounded cursor-pointer"
-          style={{ color: 'var(--text-tertiary)' }}
-          aria-label="Skip tour"
-        >
-          <X size={16} />
-        </button>
-      </div>
-    </>
+    <TippyHighlight
+      targetSelector={stepTargetSelector}
+      instruction={stepInstruction}
+      highlightStyle={stepHighlightStyle}
+      stepNumber={tourStepIndex + 1}
+      totalSteps={totalSteps}
+      onNext={handleNext}
+      onPrev={handlePrev}
+      onStop={handleStop}
+      hasPrev={!isFirst}
+      hasNext={!isLast}
+    />
   )
 }

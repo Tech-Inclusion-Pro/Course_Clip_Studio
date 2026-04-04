@@ -5,6 +5,8 @@ import { X, Save, Trash2, FolderOpen } from 'lucide-react'
 import { useTippyStore } from '@/stores/useTippyStore'
 import { TippyMessage } from './TippyMessage'
 import { TippyInput } from './TippyInput'
+import { FerpaCloudWarning } from './FerpaCloudWarning'
+import { TippyAssessesReport } from './TippyAssessesReport'
 import { useT } from '@/hooks/useT'
 
 export function TippyPanel(): JSX.Element | null {
@@ -13,6 +15,7 @@ export function TippyPanel(): JSX.Element | null {
   const isGenerating = useTippyStore((s) => s.isGenerating)
   const position = useTippyStore((s) => s.position)
   const savedSessions = useTippyStore((s) => s.savedSessions)
+  const ferpaWarning = useTippyStore((s) => s.ferpaWarning)
   const close = useTippyStore((s) => s.close)
   const sendMessage = useTippyStore((s) => s.sendMessage)
   const clearMessages = useTippyStore((s) => s.clearMessages)
@@ -20,6 +23,11 @@ export function TippyPanel(): JSX.Element | null {
   const loadSession = useTippyStore((s) => s.loadSession)
   const deleteSession = useTippyStore((s) => s.deleteSession)
   const startTour = useTippyStore((s) => s.startTour)
+  const acknowledgeFerpa = useTippyStore((s) => s.acknowledgeFerpa)
+  const dismissFerpaWarning = useTippyStore((s) => s.dismissFerpaWarning)
+  const assessReport = useTippyStore((s) => s.assessReport)
+  const isAssessing = useTippyStore((s) => s.isAssessing)
+  const runAssesses = useTippyStore((s) => s.runAssesses)
 
   const panelRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -113,6 +121,9 @@ export function TippyPanel(): JSX.Element | null {
         break
       case 'context':
         sendMessage("What can I do from where I am right now?")
+        break
+      case 'assess':
+        runAssesses('course')
         break
     }
   }
@@ -245,6 +256,10 @@ export function TippyPanel(): JSX.Element | null {
                 label={t('tippy.quickContext', 'What can I do here?')}
                 onClick={() => handleQuickAction('context')}
               />
+              <QuickActionButton
+                label={t('tippy.quickAssess', 'Assess my course')}
+                onClick={() => handleQuickAction('assess')}
+              />
             </div>
           </div>
         ) : (
@@ -252,7 +267,7 @@ export function TippyPanel(): JSX.Element | null {
             {messages.map((msg) => (
               <TippyMessage key={msg.id} message={msg} />
             ))}
-            {isGenerating && (
+            {(isGenerating || isAssessing) && (
               <div className="flex gap-2 my-2">
                 <div className="shrink-0 w-7 h-7" />
                 <div
@@ -271,6 +286,12 @@ export function TippyPanel(): JSX.Element | null {
                 </div>
               </div>
             )}
+            {/* Assessment report */}
+            {assessReport && (
+              <div className="my-3">
+                <TippyAssessesReport report={assessReport} />
+              </div>
+            )}
             <div ref={messagesEndRef} />
           </>
         )}
@@ -278,6 +299,16 @@ export function TippyPanel(): JSX.Element | null {
 
       {/* Input */}
       <TippyInput onSend={sendMessage} isGenerating={isGenerating} />
+
+      {/* FERPA Cloud Warning Modal */}
+      {ferpaWarning.visible && (
+        <FerpaCloudWarning
+          providerName={ferpaWarning.providerName}
+          actionDescription="send a message that may contain learner data"
+          onAcknowledge={acknowledgeFerpa}
+          onCancel={dismissFerpaWarning}
+        />
+      )}
     </div>
   )
 }

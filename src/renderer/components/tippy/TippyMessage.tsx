@@ -1,6 +1,9 @@
 // ─── Tippy Chat Message Bubble ───
+// Phase 3: includes reasoning transparency, "Show Me" walkthrough button.
 
 import type { TippyMessage as TippyMessageType } from '@/stores/useTippyStore'
+import { useTippyStore } from '@/stores/useTippyStore'
+import { TippyReasoningPanel } from './TippyReasoningPanel'
 import TippyIcon from '@/assets/tippy/Tippy_Icon.png'
 
 function formatTime(ts: number): string {
@@ -122,6 +125,9 @@ function inlineMarkdown(text: string): JSX.Element {
 }
 
 export function TippyMessage({ message }: { message: TippyMessageType }): JSX.Element {
+  const reasoningViewCount = useTippyStore((s) => s.reasoningViewCount)
+  const startWalkthrough = useTippyStore((s) => s.startWalkthrough)
+
   if (message.role === 'system') {
     return (
       <div className="flex justify-center my-2">
@@ -148,14 +154,51 @@ export function TippyMessage({ message }: { message: TippyMessageType }): JSX.El
 
       {/* Bubble */}
       <div
-        className="relative group max-w-[80%] px-3 py-2 rounded-xl text-sm leading-relaxed"
-        style={{
-          backgroundColor: isUser ? 'var(--brand-indigo)' : 'var(--bg-surface)',
-          color: isUser ? '#ffffff' : 'var(--text-primary)',
-          border: isUser ? 'none' : '1px solid var(--border-default)'
-        }}
+        className="relative group max-w-[80%]"
       >
-        {isUser ? message.content : renderMarkdown(message.content)}
+        <div
+          className="px-3 py-2 rounded-xl text-sm leading-relaxed"
+          style={{
+            backgroundColor: isUser ? 'var(--brand-indigo)' : 'var(--bg-surface)',
+            color: isUser ? '#ffffff' : 'var(--text-primary)',
+            border: isUser ? 'none' : '1px solid var(--border-default)'
+          }}
+        >
+          {isUser ? message.content : renderMarkdown(message.content)}
+        </div>
+
+        {/* "Show Me" walkthrough button (when TIPPY offers a walkthrough) */}
+        {!isUser && message.walkthroughId && (
+          <button
+            onClick={() => startWalkthrough(message.walkthroughId!)}
+            className="flex items-center gap-1.5 mt-2 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors"
+            style={{
+              backgroundColor: '#8B0000',
+              color: '#fff',
+              border: 'none'
+            }}
+            type="button"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <polygon points="10 8 16 12 10 16 10 8" fill="currentColor" />
+            </svg>
+            Show Me
+          </button>
+        )}
+
+        {/* Reasoning transparency panel (assistant messages only) */}
+        {!isUser && message.reasoning && (
+          <TippyReasoningPanel
+            reasoning={message.reasoning}
+            showFullAINote={reasoningViewCount <= 3}
+          />
+        )}
+
+        {/* Cloud provider indicator for assistant messages */}
+        {!isUser && (
+          <CloudIndicator />
+        )}
 
         {/* Timestamp on hover */}
         <span
@@ -169,5 +212,27 @@ export function TippyMessage({ message }: { message: TippyMessageType }): JSX.El
         </span>
       </div>
     </div>
+  )
+}
+
+/** Small cloud indicator showing when responses come from a cloud provider */
+function CloudIndicator(): JSX.Element | null {
+  // Import useAppStore lazily to avoid circular deps
+  const { useAppStore: appStore } = require('@/stores/useAppStore')
+  const provider = appStore.getState().ai.provider
+
+  if (!provider || provider === 'ollama') return null
+
+  return (
+    <span
+      className="inline-flex items-center gap-1 mt-1 text-[10px]"
+      style={{ color: 'var(--text-tertiary)' }}
+      title={`Response generated via ${provider} (cloud)`}
+    >
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M19.35 10.04A7.49 7.49 0 0012 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 000 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z" />
+      </svg>
+      {provider}
+    </span>
   )
 }

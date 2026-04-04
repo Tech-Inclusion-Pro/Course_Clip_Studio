@@ -417,3 +417,282 @@ export interface Cmi5ExportOptions {
   moveOnCriteria: Cmi5AUDefinition['moveOn']
   launchMethod: Cmi5AUDefinition['launchMethod']
 }
+
+// ─── TIPPY Phase 1: Reasoning Transparency Types ───
+
+export type TippyConfidenceLevel = 'high' | 'medium' | 'low' | 'uncertain'
+
+export interface TippySource {
+  label: string
+  type: 'standard' | 'feature-kb' | 'author-profile' | 'tool-result' | 'ai-provider'
+  reference?: string
+}
+
+export interface TippyConfidenceBreakdown {
+  category: string
+  level: TippyConfidenceLevel
+  explanation: string
+}
+
+export interface TippyReasoningData {
+  sources: TippySource[]
+  overallConfidence: TippyConfidenceLevel
+  confidenceBreakdown: TippyConfidenceBreakdown[]
+  limitations: string[]
+  humanReviewRequired: string[]
+}
+
+export interface FerpaCloudWarningState {
+  visible: boolean
+  actionDescription: string
+  providerName: string
+  onAcknowledge: (() => void) | null
+  onCancel: (() => void) | null
+}
+
+// ─── TIPPY Phase 1: Features KB Section ───
+
+export interface TippyFeatureSection {
+  heading: string
+  keywords: string[]
+  content: string
+}
+
+export interface TippyFeaturesIndex {
+  sections: TippyFeatureSection[]
+  version: string
+  lastUpdated: string
+}
+
+// ─── TIPPY Phase 2: Author Profile / Get to Know You ───
+
+export type OnboardingSectionId =
+  | 'about-you'
+  | 'your-audience'
+  | 'design-philosophy'
+  | 'brand-visual'
+  | 'workflow'
+  | 'ai-preferences'
+
+export interface OnboardingSectionMeta {
+  id: OnboardingSectionId
+  title: string
+  icon: string
+  questions: string[]
+}
+
+export interface OnboardingSectionData {
+  id: OnboardingSectionId
+  completed: boolean
+  responses: string[]
+  summary: string
+  updatedAt: string | null
+}
+
+export interface AuthorProfile {
+  name: string
+  preferredName: string
+  role: string
+  organization: string
+  credentials: string
+
+  audienceDescription: string
+  disabilityFocus: string
+  multilingualFocus: string
+  audienceWishes: string
+
+  designApproach: string
+  accessibilityPrinciples: string
+  inclusionMeaning: string
+  frameworks: string
+
+  brandColors: string
+  typography: string
+  visualStyle: string
+  visualAvoidances: string
+
+  workflowStart: string
+  teamComposition: string
+  biggestPainPoint: string
+  aiWorkflowWishes: string
+
+  aiSupportPreference: string
+  reasoningDetail: string
+  cautionTopics: string
+  privacyPreferences: string
+}
+
+export interface AuthorProfileStore {
+  profile: AuthorProfile | null
+  sections: OnboardingSectionData[]
+  profileMarkdown: string
+  createdAt: string | null
+  updatedAt: string | null
+}
+
+// ─── TIPPY Phase 3: Walkthrough Types ───
+
+export type WalkthroughHighlightStyle = 'border' | 'spotlight' | 'pulse'
+export type WalkthroughAction = 'click' | 'focus' | 'scroll-to' | 'open-modal' | 'none'
+
+export interface WalkthroughStep {
+  id: string
+  instruction: string
+  targetSelector: string
+  highlightStyle: WalkthroughHighlightStyle
+  navigateTo?: {
+    panel: string
+    subPanel?: string
+    blockType?: string
+  }
+  action?: WalkthroughAction
+  waitForEvent?: string
+  allowSkip: boolean
+}
+
+export interface TIPPYWalkthrough {
+  id: string
+  title: string
+  triggerPhrases: string[]
+  featureSection: string
+  steps: WalkthroughStep[]
+  dummyCourseRequired: boolean
+}
+
+export interface WalkthroughState {
+  active: boolean
+  walkthroughId: string | null
+  stepIndex: number
+  totalSteps: number
+}
+
+export interface DemoCourseDefinition {
+  id: string
+  title: string
+  description: string
+  modules: {
+    id: string
+    title: string
+    lessons: {
+      id: string
+      title: string
+      blockTypes: string[]
+    }[]
+  }[]
+}
+
+// ─── TIPPY Phase 4: Assesses Types ───
+
+export type AssessesScope = 'block' | 'lesson' | 'module' | 'course'
+
+export type WCAGFindingImpact = 'critical' | 'serious' | 'moderate' | 'minor'
+
+export type WCAGPrinciple = 'perceivable' | 'operable' | 'understandable' | 'robust'
+
+export interface WCAGFinding {
+  id: string
+  criterion: string
+  criterionTitle: string
+  conformanceLevel: 'A' | 'AA'
+  principle: WCAGPrinciple
+  impact: WCAGFindingImpact
+  blockId: string | null
+  blockName: string
+  blockType: string | null
+  description: string
+  suggestion: string
+  estimatedMinutes: number
+  canAutoFix: boolean
+  walkthroughId?: string
+}
+
+export type UDLPrinciple = 'representation' | 'action-expression' | 'engagement'
+
+export interface UDLCheckpointFinding {
+  checkpointId: string
+  checkpointTitle: string
+  principle: UDLPrinciple
+  addressed: boolean
+  explanation: string
+  suggestion?: string
+  relatedBlocks: string[]
+}
+
+export interface UDLPrincipleFindings {
+  principle: UDLPrinciple
+  score: number
+  strengths: string[]
+  gaps: UDLCheckpointFinding[]
+}
+
+export type InclusionRating = 'exemplary' | 'proficient' | 'developing' | 'needs-review'
+
+export type InclusionCriterion =
+  | 'representation-of-people'
+  | 'language-and-framing'
+  | 'assessment-design'
+  | 'access-and-flexibility'
+
+export interface InclusionFinding {
+  id: string
+  criterion: InclusionCriterion
+  criterionTitle: string
+  description: string
+  suggestion: string
+  blockId?: string
+  blockName?: string
+}
+
+export type OverallGrade = 'A' | 'B' | 'C' | 'D' | 'F'
+
+export interface AssessesScorecard {
+  wcagScore: number
+  wcagPass: boolean
+  udlScore: number
+  udlRepresentation: number
+  udlActionExpression: number
+  udlEngagement: number
+  udlLabel: 'Excellent' | 'Good' | 'Developing' | 'Needs Work'
+  inclusionRating: InclusionRating
+  overallGrade: OverallGrade
+}
+
+export interface AssessesRecommendation {
+  rank: number
+  description: string
+  frameworks: ('wcag' | 'udl' | 'inclusion')[]
+  estimatedMinutes: number
+  actionType: 'fix-it' | 'show-me' | 'learn-more'
+  walkthroughId?: string
+}
+
+export interface AssessesMethodology {
+  aiProvider: string
+  aiModel: string
+  auditEngineVersion: string
+  wcagVersion: string
+  udlGuidelinesVersion: string
+  confidenceNotes: string[]
+  limitations: string[]
+  humanReviewStatement: string
+}
+
+export interface AssessesReport {
+  id: string
+  title: string
+  scope: AssessesScope
+  scopeId: string
+  scopeTitle: string
+  assessedAt: string
+  scorecard: AssessesScorecard
+  wcagFindings: WCAGFinding[]
+  wcagPassingCriteria: string[]
+  udlFindings: UDLPrincipleFindings[]
+  inclusionStrengths: string[]
+  inclusionFindings: InclusionFinding[]
+  recommendations: AssessesRecommendation[]
+  methodology: AssessesMethodology
+  /** Progress tracking for module-by-module assessment */
+  modulesAssessed?: number
+  modulesTotal?: number
+}
