@@ -7,14 +7,26 @@ import type { HotkeyCategory, HotkeyDefinition } from '@/types/hotkeys'
 const CATEGORY_LABELS: Record<HotkeyCategory, string> = {
   global: 'Global',
   recording: 'Recording',
-  'slide-editor': 'Slide Editor'
+  'slide-editor': 'Slide Editor',
+  timeline: 'Timeline Editor',
+  text: 'Text Formatting',
+  media: 'Media Library',
+  syllabus: 'Syllabus Builder',
+  export: 'Export',
+  accessibility: 'Accessibility'
 }
 
 const CATEGORIES: Array<{ id: HotkeyCategory | 'all'; label: string }> = [
   { id: 'all', label: 'All' },
   { id: 'global', label: 'Global' },
   { id: 'recording', label: 'Recording' },
-  { id: 'slide-editor', label: 'Slide Editor' }
+  { id: 'slide-editor', label: 'Slide Editor' },
+  { id: 'timeline', label: 'Timeline' },
+  { id: 'text', label: 'Text' },
+  { id: 'media', label: 'Media' },
+  { id: 'syllabus', label: 'Syllabus' },
+  { id: 'export', label: 'Export' },
+  { id: 'accessibility', label: 'Accessibility' }
 ]
 
 function KeyCombo({ binding }: { binding: string }): JSX.Element {

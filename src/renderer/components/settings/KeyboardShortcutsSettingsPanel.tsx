@@ -7,10 +7,19 @@ import type { HotkeyCategory, HotkeyDefinition } from '@/types/hotkeys'
 const CATEGORY_LABELS: Record<HotkeyCategory, string> = {
   global: 'Global Shortcuts',
   recording: 'Recording Panel',
-  'slide-editor': 'Slide Editor'
+  'slide-editor': 'Slide Editor',
+  timeline: 'Timeline Editor',
+  text: 'Text Formatting',
+  media: 'Media Library',
+  syllabus: 'Syllabus Builder',
+  export: 'Export',
+  accessibility: 'Accessibility'
 }
 
-const CATEGORY_ORDER: HotkeyCategory[] = ['global', 'recording', 'slide-editor']
+const CATEGORY_ORDER: HotkeyCategory[] = [
+  'global', 'recording', 'slide-editor', 'timeline',
+  'text', 'media', 'syllabus', 'export', 'accessibility'
+]
 
 function ShortcutKbd({ binding }: { binding: string }): JSX.Element {
   const platform = getPlatform()

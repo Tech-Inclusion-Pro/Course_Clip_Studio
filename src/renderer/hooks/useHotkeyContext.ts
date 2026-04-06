@@ -7,6 +7,10 @@ import type { HotkeyContext } from '@/types/hotkeys'
 function getRouteContext(pathname: string): HotkeyContext {
   if (pathname.includes('/editor')) return 'slide-editor'
   if (pathname.includes('/record')) return 'recording-panel'
+  if (pathname.includes('/timeline')) return 'timeline'
+  if (pathname.includes('/media')) return 'media-library'
+  if (pathname.includes('/syllabus')) return 'syllabus-builder'
+  if (pathname.includes('/export') || pathname.includes('/publish')) return 'export-panel'
   return 'global'
 }
 
