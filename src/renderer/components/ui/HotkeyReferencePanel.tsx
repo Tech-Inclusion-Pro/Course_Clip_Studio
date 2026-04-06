@@ -66,7 +66,11 @@ function HotkeyRow({ hotkey }: { hotkey: HotkeyDefinition }): JSX.Element {
         )}
       </div>
       <div className="flex-shrink-0 ml-4">
-        <KeyCombo binding={binding} />
+        {binding ? (
+          <KeyCombo binding={binding} />
+        ) : (
+          <span className="text-xs italic text-[var(--text-tertiary)]">No shortcut assigned</span>
+        )}
       </div>
     </div>
   )

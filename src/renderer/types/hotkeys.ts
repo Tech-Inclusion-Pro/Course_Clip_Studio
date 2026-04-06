@@ -40,3 +40,27 @@ export interface HotkeyDefinition {
 }
 
 export type HotkeyMap = Record<string, HotkeyDefinition>
+
+export type Platform = 'mac' | 'windows' | 'linux'
+
+export interface ConflictResult {
+  hasConflict: boolean
+  conflictingActionId?: string
+  conflictingActionLabel?: string
+  conflictContext?: HotkeyContext
+  isCrossContext: boolean
+}
+
+export interface ImportResult {
+  success: boolean
+  appliedCount: number
+  skippedCount: number
+  conflicts: ConflictResult[]
+}
+
+export interface HotkeyExportFile {
+  version: string
+  platform: Platform
+  exportedAt: string
+  bindings: Record<string, string>
+}
