@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react'
-import { Search, X } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Search, X, Download, FileText, FileCode, Printer } from 'lucide-react'
 import { useHotkeyStore } from '@/stores/useHotkeyStore'
 import { formatKeyForDisplay, getPlatform } from '@/lib/hotkey-utils'
+import { generateHTML, generateMarkdown, generatePDF, downloadFile } from '@/lib/hotkey-export'
 import type { HotkeyCategory, HotkeyDefinition } from '@/types/hotkeys'
 
 const CATEGORY_LABELS: Record<HotkeyCategory, string> = {
@@ -72,6 +73,84 @@ function HotkeyRow({ hotkey }: { hotkey: HotkeyDefinition }): JSX.Element {
           <span className="text-xs italic text-[var(--text-tertiary)]">No shortcut assigned</span>
         )}
       </div>
+    </div>
+  )
+}
+
+function ExportDropdown({ hotkeys }: { hotkeys: HotkeyDefinition[] }): JSX.Element {
+  const [open, setOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function handleClick(e: MouseEvent): void {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [open])
+
+  function exportHTML(): void {
+    const html = generateHTML(hotkeys)
+    downloadFile(html, 'course-clip-studio-shortcuts.html', 'text/html')
+    setOpen(false)
+  }
+
+  function exportMarkdown(): void {
+    const md = generateMarkdown(hotkeys)
+    downloadFile(md, 'course-clip-studio-shortcuts.md', 'text/markdown')
+    setOpen(false)
+  }
+
+  function exportPDFAction(): void {
+    generatePDF(hotkeys)
+    setOpen(false)
+  }
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs
+          text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] cursor-pointer transition-colors"
+      >
+        <Download size={12} />
+        Export
+      </button>
+      {open && (
+        <div
+          className="absolute bottom-full right-0 mb-1 w-48 rounded-lg border border-[var(--border-default)]
+            bg-[var(--bg-surface)] shadow-lg overflow-hidden"
+          style={{ zIndex: 10004 }}
+        >
+          <button
+            onClick={exportHTML}
+            className="flex items-center gap-2 w-full px-3 py-2 text-xs text-[var(--text-primary)]
+              hover:bg-[var(--bg-hover)] cursor-pointer text-left"
+          >
+            <FileCode size={14} className="text-[var(--text-tertiary)]" />
+            Export as HTML
+          </button>
+          <button
+            onClick={exportMarkdown}
+            className="flex items-center gap-2 w-full px-3 py-2 text-xs text-[var(--text-primary)]
+              hover:bg-[var(--bg-hover)] cursor-pointer text-left"
+          >
+            <FileText size={14} className="text-[var(--text-tertiary)]" />
+            Export as Markdown
+          </button>
+          <button
+            onClick={exportPDFAction}
+            className="flex items-center gap-2 w-full px-3 py-2 text-xs text-[var(--text-primary)]
+              hover:bg-[var(--bg-hover)] cursor-pointer text-left"
+          >
+            <Printer size={14} className="text-[var(--text-tertiary)]" />
+            Print / Save as PDF
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -218,8 +297,11 @@ export function HotkeyReferencePanel(): JSX.Element | null {
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-[var(--border-default)] text-xs text-[var(--text-tertiary)] text-center">
-          Press <KeyCombo binding={getPlatform() === 'mac' ? 'Cmd+/' : 'Ctrl+/'} /> to toggle this panel
+        <div className="px-5 py-3 border-t border-[var(--border-default)] flex items-center justify-between">
+          <div className="text-xs text-[var(--text-tertiary)]">
+            Press <KeyCombo binding={getPlatform() === 'mac' ? 'Cmd+/' : 'Ctrl+/'} /> to toggle
+          </div>
+          <ExportDropdown hotkeys={Object.values(useHotkeyStore.getState().keymap)} />
         </div>
       </div>
     </div>
