@@ -28,7 +28,8 @@ import {
   Upload,
   FileText,
   X,
-  MessageCircle
+  MessageCircle,
+  Keyboard
 } from 'lucide-react'
 import { useAppStore, type ThemeMode } from '@/stores/useAppStore'
 import { useLocaleStore } from '@/stores/useLocaleStore'
@@ -46,15 +47,17 @@ import { ToggleSwitch } from '@/components/ui/ToggleSwitch'
 import { ColorInput } from '@/components/ui/ColorInput'
 import { AnalyticsSettingsTab } from '@/components/settings/AnalyticsSettingsTab'
 import { TippySettingsPanel } from '@/components/tippy/TippySettingsPanel'
+import { KeyboardShortcutsSettingsPanel } from '@/components/settings/KeyboardShortcutsSettingsPanel'
 import type { LRSSettings } from '@/types/course'
 
-type SettingsTab = 'general' | 'brand' | 'ai' | 'accessibility' | 'analytics' | 'tippy'
+type SettingsTab = 'general' | 'brand' | 'ai' | 'accessibility' | 'shortcuts' | 'analytics' | 'tippy'
 
 const TABS: Array<{ id: SettingsTab; label: string; icon: typeof Settings }> = [
   { id: 'general', label: 'General', icon: User },
   { id: 'brand', label: 'Brand Kits', icon: Palette },
   { id: 'ai', label: 'AI / LLM', icon: Brain },
   { id: 'accessibility', label: 'Accessibility', icon: PersonStanding },
+  { id: 'shortcuts', label: 'Keyboard Shortcuts', icon: Keyboard },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   { id: 'tippy', label: 'TIPPY', icon: MessageCircle }
 ]
@@ -101,6 +104,7 @@ export function SettingsView(): JSX.Element {
         {activeTab === 'brand' && <BrandKitSettings />}
         {activeTab === 'ai' && <AISettingsPanel />}
         {activeTab === 'accessibility' && <AccessibilitySettingsPanel />}
+        {activeTab === 'shortcuts' && <KeyboardShortcutsSettingsPanel />}
         {activeTab === 'analytics' && <AnalyticsSettings />}
         {activeTab === 'tippy' && <TippySettingsPanel />}
       </div>

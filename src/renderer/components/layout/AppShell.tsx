@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Outlet } from 'react-router-dom'
 import { SkipLink } from '@/components/ui/SkipLink'
 import { Sidebar } from './Sidebar'
@@ -8,11 +9,15 @@ import { useWorkspaceInit } from '@/hooks/useWorkspaceInit'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useDeepLink } from '@/hooks/useDeepLink'
 import { useAccessibility } from '@/hooks/useAccessibility'
+import { useHotkeyContext } from '@/hooks/useHotkeyContext'
+import { useGlobalHotkeys } from '@/hooks/useGlobalHotkeys'
 import { AccessibilityWidget } from '@/components/ui/AccessibilityWidget'
+import { HotkeyReferencePanel } from '@/components/ui/HotkeyReferencePanel'
 import { TippyButton } from '@/components/tippy/TippyButton'
 import { TippyPanel } from '@/components/tippy/TippyPanel'
 import { TippyTour } from '@/components/tippy/TippyTour'
 import { TippyErrorWatcher } from '@/components/tippy/TippyErrorWatcher'
+import { useHotkeyStore } from '@/stores/useHotkeyStore'
 
 export function AppShell(): JSX.Element {
   useTheme()
@@ -20,6 +25,16 @@ export function AppShell(): JSX.Element {
   useAutoSave()
   useDeepLink()
   useAccessibility()
+  useHotkeyContext()
+
+  const toggleReference = useHotkeyStore((s) => s.toggleReference)
+
+  const handlers = useMemo(
+    () => ({ 'global.hotkeyReference': toggleReference }),
+    [toggleReference]
+  )
+
+  useGlobalHotkeys(handlers)
 
   return (
     <>
@@ -44,6 +59,7 @@ export function AppShell(): JSX.Element {
       <TippyPanel />
       <TippyTour />
       <TippyErrorWatcher />
+      <HotkeyReferencePanel />
     </>
   )
 }
