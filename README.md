@@ -304,7 +304,7 @@ TIPPY is a pedagogically grounded AI co-pilot built into Course Clip Studio. Unl
 | **4-Layer System Prompt** | TIPPY assembles its context from: (1) core identity rules, (2) a searchable features knowledge base, (3) the author's personal design profile, and (4) live session context — active panel, block type, recent actions, and WCAG flags |
 | **Features Knowledge Base** | A comprehensive 15-section reference covering all Course Clip Studio features. TIPPY retrieves the most relevant sections for each query using keyword-scored retrieval |
 | **Context-Aware Chat** | TIPPY reads the current view, active course, module, lesson, selected block, open panels, AI provider, and accessibility settings — then responds with help specific to your situation |
-| **Quick Actions** | Four one-click prompts: "Give me a tour," "Help me get started," "TIPPY Assess," and "How do you use AI?" |
+| **Quick Actions** | Four one-click prompts: "Give me a tour" (20-step guided tour), "Help me get started," "TIPPY Assess," and "How do you use AI?" |
 | **Draggable Button** | Drag TIPPY's floating button anywhere on screen — position persists across sessions |
 | **Session Save / Restore** | Save your conversation, reload it later, or clear and start fresh |
 | **Markdown Responses** | TIPPY's responses render with bold, links, inline code, and bullet lists |
@@ -343,9 +343,36 @@ TIPPY conducts a warm, conversational onboarding flow across six sections:
 
 The profile is stored locally and injected into TIPPY's system prompt so every response is personally relevant. Export your profile as markdown, update any section anytime, or reset to start fresh. Manage in **Settings > TIPPY > Get to Know You**.
 
+#### Full App Tour — 20-Step Guided Tour
+
+Ask TIPPY "Give me a tour" or click the **Give me a tour** quick action to start a comprehensive 20-step guided tour of the entire application. The tour navigates you through the app automatically, highlighting each feature with a border overlay and narrating detailed descriptions directly in the TIPPY chat panel with **Next / Back / Stop** navigation buttons.
+
+| Step | Feature | What It Covers |
+|------|---------|----------------|
+| 1 | Sidebar Navigation | Switching between Dashboard, Editor, Preview, Settings, Publish |
+| 2 | Dashboard | Creating, opening, and managing courses |
+| 3 | Editor Toolbar | Overview of all toolbar tools |
+| 4 | Course Outline | Module/lesson tree with drag-drop reordering |
+| 5 | Content Canvas | Block editing workspace, Block vs Slide view |
+| 6 | Properties Panel | Block customization and accessibility options |
+| 7 | Block Palette | Adding content blocks to lessons |
+| 8 | Media Library | Uploading and managing media assets |
+| 9 | Theme Editor | Colors, fonts, player shell, brand kits |
+| 10 | Certificate Designer | Completion certificates with templates and dynamic fields |
+| 11 | Question Bank | Reusable quiz questions across lessons |
+| 12 | Branching Graph | Non-linear learning paths and decision trees |
+| 13 | Accessibility Audit | WCAG compliance scanning and guided fixes |
+| 14 | Analytics Dashboard | Learner engagement and quiz performance data |
+| 15 | AI Assistant | AI-powered content generation and analysis |
+| 16 | Version History | Browsing, comparing, and restoring previous versions |
+| 17 | Notes Panel | Personal annotations during development |
+| 18 | Save as Template | Saving courses as reusable templates |
+| 19 | Preview | Testing the learner experience across devices |
+| 20 | Publish | Exporting to SCORM, xAPI, or HTML5 |
+
 #### Full Help — 15 Guided Walkthroughs
 
-When you ask "how do I..." or mention a feature, TIPPY detects the topic and offers a step-by-step walkthrough. Click **Show Me** in the chat to launch it. Each walkthrough highlights UI elements with a dark red dotted border (`#8B0000`), shows a speech bubble with instructions, and narrates each step in the chat panel.
+When you ask "how do I..." or mention a feature, TIPPY detects the topic and offers a step-by-step walkthrough. Click **Show Me** in the chat to launch it. Each walkthrough highlights UI elements with a dark red dotted border (`#8B0000`) and narrates each step in the TIPPY chat panel.
 
 | Walkthrough | What It Covers |
 |---|---|
@@ -390,7 +417,7 @@ Trigger by typing "assess this course," "check accessibility," "run assessment,"
 
 1. **Click the TIPPY icon** — the floating character in the bottom-left corner of the app
 2. **Ask anything** — type a question about course authoring, accessibility, UDL, or how to use a feature
-3. **Use quick actions** — start a tour, get onboarded, run TIPPY Assess, or ask how TIPPY uses AI
+3. **Use quick actions** — start a 20-step guided tour of the full app, get onboarded, run TIPPY Assess, or ask how TIPPY uses AI
 4. **Ask "How do you use AI?"** — TIPPY displays a detailed, hardcoded explanation of its Knowledge Base, AI models, confidence system, and FERPA safeguards — with five interactive "Show Me" buttons that navigate to and highlight each AI-powered area (TIPPY Chat, AI Assistant Panel, AI Course Generation, TIPPY Assess, Content Block AI)
 5. **Say "Show me"** — TIPPY detects feature questions and offers guided walkthroughs with highlighted UI
 6. **Assess your course** — type "assess this course" or click "TIPPY Assess" — if multiple courses exist, TIPPY shows a course picker first
@@ -418,7 +445,7 @@ API keys are encrypted via Electron's `safeStorage` API. Provider settings are m
 | SCORM 1.2 | Legacy SCORM packaging with API script, manifest, lesson HTML, and bundled media assets |
 | SCORM 2004 | Modern SCORM 2004 (2nd, 3rd, 4th edition) with updated API and manifest |
 | xAPI (Experience API) | LRS-compatible statements with configurable endpoint and authentication |
-| HTML5 | Self-contained ZIP with localStorage-based progress tracking, per-lesson pages, and a combined all-lessons `course-complete.html` page with table of contents — no server required |
+| HTML5 | Self-contained ZIP with localStorage-based progress tracking, per-lesson pages, and a combined all-lessons page with table of contents — no server required |
 | PDF | Print-optimized export with optional quiz answers and UDL checklist inclusion |
 | cmi5 | LRS-backed Assignable Unit export with `cmi5.xml` course structure, per-lesson AU entry points, session lifecycle management (initialized/completed/passed/failed/terminated), and optional UDL context extensions |
 
@@ -545,6 +572,25 @@ A persistent floating action button (FAB) available on every screen with quick a
 
 All settings persist across sessions.
 
+#### Learner Accessibility Widget (Published Courses)
+
+Every published and exported course (SCORM 1.2, SCORM 2004, xAPI, HTML5, Preview) includes a self-contained floating accessibility widget for learners — no React, no bundler, zero dependencies. The widget appears as a draggable button (bottom-right) and opens a settings panel with the same 10 accessibility features available to course authors:
+
+| Feature | Description |
+|---------|-------------|
+| High Contrast | Toggle high-contrast mode (black text on white) |
+| Font Size | Range slider (100%–200%) for text scaling |
+| Reduced Motion | Disable all animations and transitions |
+| Color Blind Mode | Protanopia, Deuteranopia, Tritanopia, Achromatopsia filters |
+| Cursor Style | Default, Large, or Crosshair cursor |
+| Cursor Trail | Visual dots following the mouse pointer |
+| OpenDyslexic Font | Dyslexia-friendly typeface (CDN-loaded) |
+| Bionic Reading | Bold first half of each word for reading aids |
+| Enhanced Text Spacing | Increased letter, word, and line spacing |
+| Enhanced Focus Indicators | Thick purple focus outlines on interactive elements |
+
+Settings persist in `localStorage` per course. The widget uses the `la11y-` CSS prefix to avoid collisions with course content styles. Draggable button position persists across sessions.
+
 #### Accessibility Audit Engine
 
 - Real-time WCAG 2.1 AA compliance scanning across 19 audit categories
@@ -610,6 +656,7 @@ All settings persist across sessions.
 - Trigger on course completion
 - Live PDF preview and export
 - **Auto-populated learner name** — Captures name from enrollment page and populates certificate fields
+- **Certificate display in published courses** — When a learner clicks "Complete Course" in any published format (SCORM 1.2, SCORM 2004, xAPI, HTML5, Preview), the custom certificate is rendered as a fullscreen overlay with all fields auto-populated (learner name, course title, completion date, quiz score, instructor, signature, logo). Includes a **Print Certificate** button and a **Continue** button. If `passScoreRequired` is set, the certificate only appears when the learner's score meets the threshold. Works across all export formats and player scripts.
 
 ### Course Templates
 
