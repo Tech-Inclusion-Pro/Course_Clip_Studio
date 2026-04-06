@@ -210,7 +210,7 @@ export function TippyMessage({ message }: { message: TippyMessageType }): JSX.El
                   }}
                   type="button"
                 >
-                  {course.title || 'Untitled Course'}
+                  {course.meta?.title || 'Untitled Course'}
                 </button>
               ))
             })()}

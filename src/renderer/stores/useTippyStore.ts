@@ -627,7 +627,7 @@ export const useTippyStore = create<TippyState>((set, get) => ({
       const courseStore = require('@/stores/useCourseStore').useCourseStore
       const courses = courseStore.getState().courses
       const pendingScope = get().pendingAssessScope || 'course'
-      const matched = courses.find((c: any) => c.title.toLowerCase() === lowerText || c.title.toLowerCase().includes(lowerText))
+      const matched = courses.find((c: any) => (c.meta?.title || '').toLowerCase() === lowerText || (c.meta?.title || '').toLowerCase().includes(lowerText))
       if (matched) {
         set({ assessCourseSelection: false, pendingAssessScope: null })
         courseStore.getState().setActiveCourse(matched.id)
