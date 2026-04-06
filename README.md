@@ -10,6 +10,26 @@
 
 ---
 
+## Download
+
+Download the latest release for your platform:
+
+| Platform | Download |
+|----------|----------|
+| macOS (Apple Silicon) | [Course Clip Studio DMG (arm64)](https://github.com/Tech-Inclusion-Pro/Course_Clip_Studio/releases/latest/download/Course.Clip.Studio-0.1.0-arm64.dmg) |
+| macOS (Intel) | [Course Clip Studio DMG (x64)](https://github.com/Tech-Inclusion-Pro/Course_Clip_Studio/releases/latest/download/Course.Clip.Studio-0.1.0.dmg) |
+| Windows (x64) | [Course Clip Studio Setup (exe)](https://github.com/Tech-Inclusion-Pro/Course_Clip_Studio/releases/latest/download/Course.Clip.Studio.Setup.0.1.0.exe) |
+| Linux (x64) | [Course Clip Studio AppImage](https://github.com/Tech-Inclusion-Pro/Course_Clip_Studio/releases/latest/download/Course.Clip.Studio-0.1.0.AppImage) |
+| Documentation | [CourseClipStudio-Guide.docx](https://github.com/Tech-Inclusion-Pro/Course_Clip_Studio/releases/latest/download/CourseClipStudio-Guide.docx) |
+
+> **macOS:** The app is unsigned. On first launch, right-click the `.app` and select **Open** to bypass Gatekeeper.
+>
+> **Windows:** You may see a SmartScreen warning. Click **More info** → **Run anyway**.
+>
+> **Linux:** Make the AppImage executable before running: `chmod +x Course\ Clip\ Studio-0.1.0.AppImage`
+
+---
+
 ## What Is Course Clip Studio?
 
 Course Clip Studio is a professional-grade desktop application for creating accessible, interactive e-learning courses. It exports to industry-standard formats (SCORM 1.2, SCORM 2004, xAPI, HTML5, PDF) and is designed from the ground up with WCAG 2.1 AA accessibility compliance. Every feature — from the floating accessibility widget to the built-in audit engine — ensures that both course authors and learners have an inclusive experience.
