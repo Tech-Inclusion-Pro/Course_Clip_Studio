@@ -304,7 +304,7 @@ TIPPY is a pedagogically grounded AI co-pilot built into Course Clip Studio. Unl
 | **4-Layer System Prompt** | TIPPY assembles its context from: (1) core identity rules, (2) a searchable features knowledge base, (3) the author's personal design profile, and (4) live session context — active panel, block type, recent actions, and WCAG flags |
 | **Features Knowledge Base** | A comprehensive 15-section reference covering all Course Clip Studio features. TIPPY retrieves the most relevant sections for each query using keyword-scored retrieval |
 | **Context-Aware Chat** | TIPPY reads the current view, active course, module, lesson, selected block, open panels, AI provider, and accessibility settings — then responds with help specific to your situation |
-| **Quick Actions** | Six one-click prompts: "Give me a tour," "Help me get started," "What can I do here?", "TIPPY Assess," and "How do you use AI?" |
+| **Quick Actions** | Four one-click prompts: "Give me a tour," "Help me get started," "TIPPY Assess," and "How do you use AI?" |
 | **Draggable Button** | Drag TIPPY's floating button anywhere on screen — position persists across sessions |
 | **Session Save / Restore** | Save your conversation, reload it later, or clear and start fresh |
 | **Markdown Responses** | TIPPY's responses render with bold, links, inline code, and bullet lists |
@@ -384,18 +384,19 @@ TIPPY Assesses evaluates your course against three frameworks simultaneously:
 
 The report is displayed in a tabbed interface with: Summary Scorecard, WCAG Findings (with Fix It / Show Me actions), UDL Findings (strengths and gaps per principle), Inclusion Findings, Top 5 Recommendations (prioritized by combined impact with estimated time), and a Methodology Appendix (AI provider, tool versions, confidence notes, limitations, human review statement).
 
-Trigger by typing "assess this course," "check accessibility," "run assessment," or clicking the "TIPPY Assess" quick action. Enable **auto-run Assesses on export** in Settings > TIPPY.
+Trigger by typing "assess this course," "check accessibility," "run assessment," or clicking the "TIPPY Assess" quick action. When multiple courses exist, TIPPY shows a course picker so you can choose which course to assess; if only one course is open, it runs automatically. Enable **auto-run Assesses on export** in Settings > TIPPY.
 
 #### How to Use TIPPY
 
 1. **Click the TIPPY icon** — the floating character in the bottom-left corner of the app
 2. **Ask anything** — type a question about course authoring, accessibility, UDL, or how to use a feature
-3. **Use quick actions** — start a tour, get onboarded, learn what's available, run TIPPY Assess, or ask how TIPPY uses AI
-4. **Say "Show me"** — TIPPY detects feature questions and offers guided walkthroughs with highlighted UI
-5. **Assess your course** — type "assess this course" for a full WCAG + UDL + Inclusion report with actionable recommendations
-6. **Set up your profile** — go to Settings > TIPPY > Get to Know You for personalized suggestions
-7. **Drag to reposition** — grab and move TIPPY's button to any edge of the screen
-8. **Save conversations** — click the save icon to preserve your chat; reload saved sessions anytime
+3. **Use quick actions** — start a tour, get onboarded, run TIPPY Assess, or ask how TIPPY uses AI
+4. **Ask "How do you use AI?"** — TIPPY displays a detailed, hardcoded explanation of its Knowledge Base, AI models, confidence system, and FERPA safeguards — with five interactive "Show Me" buttons that navigate to and highlight each AI-powered area (TIPPY Chat, AI Assistant Panel, AI Course Generation, TIPPY Assess, Content Block AI)
+5. **Say "Show me"** — TIPPY detects feature questions and offers guided walkthroughs with highlighted UI
+6. **Assess your course** — type "assess this course" or click "TIPPY Assess" — if multiple courses exist, TIPPY shows a course picker first
+7. **Set up your profile** — go to Settings > TIPPY > Get to Know You for personalized suggestions
+8. **Drag to reposition** — grab and move TIPPY's button to any edge of the screen
+9. **Save conversations** — click the save icon to preserve your chat; reload saved sessions anytime
 
 ### Visual / Image API Integration
 

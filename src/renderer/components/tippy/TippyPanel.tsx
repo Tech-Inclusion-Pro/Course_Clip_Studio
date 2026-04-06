@@ -28,6 +28,7 @@ export function TippyPanel(): JSX.Element | null {
   const assessReport = useTippyStore((s) => s.assessReport)
   const isAssessing = useTippyStore((s) => s.isAssessing)
   const runAssesses = useTippyStore((s) => s.runAssesses)
+  const triggerAssessWithCoursePicker = useTippyStore((s) => s.triggerAssessWithCoursePicker)
 
   const panelRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -91,7 +92,7 @@ export function TippyPanel(): JSX.Element | null {
 
   const panelStyle: React.CSSProperties = {
     position: 'fixed',
-    zIndex: 9997,
+    zIndex: 10002,
     width: `${panelWidth}px`,
     height: `${panelHeight}px`,
     maxHeight: '70vh',
@@ -119,11 +120,8 @@ export function TippyPanel(): JSX.Element | null {
       case 'start':
         sendMessage("Help me get started creating my first course.")
         break
-      case 'context':
-        sendMessage("What can I do from where I am right now?")
-        break
       case 'assess':
-        runAssesses('course')
+        triggerAssessWithCoursePicker('course')
         break
       case 'ai-reasoning':
         sendMessage("How do you use AI to help me?")
@@ -254,10 +252,6 @@ export function TippyPanel(): JSX.Element | null {
               <QuickActionButton
                 label={t('tippy.quickStart', 'Help me get started')}
                 onClick={() => handleQuickAction('start')}
-              />
-              <QuickActionButton
-                label={t('tippy.quickContext', 'What can I do here?')}
-                onClick={() => handleQuickAction('context')}
               />
               <QuickActionButton
                 label={t('tippy.quickAssess', 'TIPPY Assess')}

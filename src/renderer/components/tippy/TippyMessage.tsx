@@ -2,7 +2,7 @@
 // Phase 3: includes reasoning transparency, "Show Me" walkthrough button.
 
 import type { TippyMessage as TippyMessageType } from '@/stores/useTippyStore'
-import { useTippyStore } from '@/stores/useTippyStore'
+import { useTippyStore, AI_FEATURE_AREAS } from '@/stores/useTippyStore'
 import { TippyReasoningPanel } from './TippyReasoningPanel'
 import TippyIcon from '@/assets/tippy/Tippy_Icon.png'
 
@@ -185,6 +185,72 @@ export function TippyMessage({ message }: { message: TippyMessageType }): JSX.El
             </svg>
             Show Me
           </button>
+        )}
+
+        {/* Assess course picker buttons */}
+        {!isUser && (message as any).assessCourseOptions && (
+          <div className="grid grid-cols-2 gap-1.5 mt-2">
+            {(() => {
+              const courseStore = require('@/stores/useCourseStore').useCourseStore
+              return courseStore.getState().courses.map((course: any) => (
+                <button
+                  key={course.id}
+                  onClick={() => {
+                    const scope = useTippyStore.getState().pendingAssessScope || 'course'
+                    useTippyStore.getState().setAssessCourseSelection(false)
+                    useTippyStore.getState().setPendingAssessScope(null)
+                    courseStore.getState().setActiveCourse(course.id)
+                    useTippyStore.getState().runAssesses(scope)
+                  }}
+                  className="px-2 py-1.5 rounded-lg text-xs text-left transition-colors cursor-pointer hover:opacity-80"
+                  style={{
+                    backgroundColor: 'var(--bg-muted)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border-default)'
+                  }}
+                  type="button"
+                >
+                  {course.title || 'Untitled Course'}
+                </button>
+              ))
+            })()}
+          </div>
+        )}
+
+        {/* AI feature "Show Me" buttons */}
+        {!isUser && (message as any).aiFeatureShowMe && (
+          <div className="flex flex-col gap-1.5 mt-2">
+            {AI_FEATURE_AREAS.map((area) => (
+              <button
+                key={area.id}
+                onClick={() => {
+                  useTippyStore.getState().addMessage({
+                    role: 'assistant',
+                    content: `**${area.label}**\n\n${area.description}`
+                  })
+                  setTimeout(() => {
+                    useTippyStore.setState({ helpHighlightSelector: area.dataTourSelector } as any)
+                  }, 400)
+                  setTimeout(() => {
+                    useTippyStore.setState({ helpHighlightSelector: null } as any)
+                  }, 8400)
+                }}
+                className="flex items-center gap-1.5 w-full px-3 py-2 rounded-lg text-xs text-left transition-colors cursor-pointer hover:opacity-80"
+                style={{
+                  backgroundColor: '#8B0000',
+                  color: '#fff',
+                  border: 'none'
+                }}
+                type="button"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" />
+                  <polygon points="10 8 16 12 10 16 10 8" fill="currentColor" />
+                </svg>
+                {area.label}
+              </button>
+            ))}
+          </div>
         )}
 
         {/* Reasoning transparency panel (assistant messages only) */}

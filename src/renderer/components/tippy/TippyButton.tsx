@@ -91,7 +91,7 @@ export function TippyButton(): JSX.Element {
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
-      className="fixed z-[9998] flex items-center justify-center rounded-full shadow-lg transition-transform cursor-pointer select-none"
+      className="fixed z-[10001] flex items-center justify-center rounded-full shadow-lg transition-transform cursor-pointer select-none"
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
