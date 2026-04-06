@@ -103,12 +103,40 @@ const BUILT_IN_THEMES: { value: ThemeMode; label: string }[] = [
   { value: 'ocean', label: 'Ocean' }
 ]
 
+/* ─── Position Persistence ─── */
+const A11Y_POSITION_KEY = 'a11y_widget_position'
+const DRAG_THRESHOLD = 5
+
+function loadA11yPosition(): { x: number; y: number } {
+  try {
+    const raw = localStorage.getItem(A11Y_POSITION_KEY)
+    if (raw) return JSON.parse(raw)
+  } catch {
+    // ignore
+  }
+  return { x: window.innerWidth - 76, y: window.innerHeight - 76 }
+}
+
+function persistA11yPosition(pos: { x: number; y: number }): void {
+  try {
+    localStorage.setItem(A11Y_POSITION_KEY, JSON.stringify(pos))
+  } catch {
+    // ignore
+  }
+}
+
 /* ─── Main Widget ─── */
 
 export function AccessibilityWidget(): JSX.Element {
   const [isOpen, setIsOpen] = useState(false)
+  const [position, setPosition] = useState(loadA11yPosition)
+  const [dragging, setDragging] = useState(false)
   const fabRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
+  const isDragging = useRef(false)
+  const hasMoved = useRef(false)
+  const dragStart = useRef({ x: 0, y: 0 })
+  const posStart = useRef({ x: 0, y: 0 })
 
   const a11y = useAppStore((s) => s.accessibility)
   const update = useAppStore((s) => s.updateAccessibilitySettings)
@@ -129,6 +157,48 @@ export function AccessibilityWidget(): JSX.Element {
     a11y.enhancedTextSpacing,
     a11y.enhancedFocusIndicators
   ].filter(Boolean).length
+
+  // Drag handlers
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      isDragging.current = true
+      hasMoved.current = false
+      dragStart.current = { x: e.clientX, y: e.clientY }
+      posStart.current = { ...position }
+      ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+    },
+    [position]
+  )
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!isDragging.current) return
+      const dx = e.clientX - dragStart.current.x
+      const dy = e.clientY - dragStart.current.y
+      if (!hasMoved.current && Math.abs(dx) + Math.abs(dy) < DRAG_THRESHOLD) return
+      hasMoved.current = true
+      if (!dragging) setDragging(true)
+      const newX = Math.max(0, Math.min(window.innerWidth - 52, posStart.current.x + dx))
+      const newY = Math.max(0, Math.min(window.innerHeight - 52, posStart.current.y + dy))
+      const newPos = { x: newX, y: newY }
+      setPosition(newPos)
+      persistA11yPosition(newPos)
+    },
+    [dragging]
+  )
+
+  const handlePointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      ;(e.target as HTMLElement).releasePointerCapture(e.pointerId)
+      if (!hasMoved.current) {
+        setIsOpen((prev) => !prev)
+      }
+      isDragging.current = false
+      hasMoved.current = false
+      setDragging(false)
+    },
+    []
+  )
 
   // Escape closes
   const handleKeyDown = useCallback(
@@ -159,6 +229,24 @@ export function AccessibilityWidget(): JSX.Element {
     return () => document.removeEventListener('mousedown', handle)
   }, [isOpen])
 
+  // Keep within viewport on resize
+  useEffect(() => {
+    const handleResize = (): void => {
+      setPosition((prev) => {
+        const clampedX = Math.max(0, Math.min(window.innerWidth - 52, prev.x))
+        const clampedY = Math.max(0, Math.min(window.innerHeight - 52, prev.y))
+        if (clampedX !== prev.x || clampedY !== prev.y) {
+          const newPos = { x: clampedX, y: clampedY }
+          persistA11yPosition(newPos)
+          return newPos
+        }
+        return prev
+      })
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   function handleReset(): void {
     update({
       highContrastMode: false,
@@ -175,20 +263,49 @@ export function AccessibilityWidget(): JSX.Element {
     setTheme('system')
   }
 
+  // Compute panel position relative to button
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 1280
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 800
+  const openRight = position.x < vw / 2
+  const openUp = position.y > vh / 2
+
+  const panelStyle: React.CSSProperties = {
+    position: 'fixed',
+    zIndex: 9998,
+    width: '20rem',
+    maxHeight: '70vh',
+    ...(openRight
+      ? { left: `${position.x}px` }
+      : { right: `${vw - position.x - 52}px` }),
+    ...(openUp
+      ? { bottom: `${vh - position.y + 12}px` }
+      : { top: `${position.y + 64}px` }),
+    backgroundColor: 'var(--bg-surface)',
+    border: '1px solid var(--border-default)',
+    boxShadow: 'var(--shadow-xl)',
+    borderRadius: '0.75rem',
+    animation: 'slideUp 200ms ease-out'
+  }
+
   return (
     <>
       {/* FAB */}
       <button
         ref={fabRef}
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed z-[9999] flex items-center justify-center rounded-full shadow-lg transition-transform hover:scale-105 cursor-pointer"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        className="fixed z-[9999] flex items-center justify-center rounded-full shadow-lg transition-transform cursor-pointer select-none"
         style={{
-          bottom: '1.5rem',
-          right: '1.5rem',
+          left: `${position.x}px`,
+          top: `${position.y}px`,
           width: '3.25rem',
           height: '3.25rem',
           backgroundColor: 'var(--brand-indigo)',
-          color: '#ffffff'
+          color: '#ffffff',
+          touchAction: 'none',
+          transform: dragging ? 'scale(1.1)' : 'scale(1)',
+          outline: 'none'
         }}
         aria-label={`Accessibility${activeCount > 0 ? ` (${activeCount} active)` : ''}`}
         aria-expanded={isOpen}
@@ -219,17 +336,8 @@ export function AccessibilityWidget(): JSX.Element {
           id="a11y-widget-panel"
           role="dialog"
           aria-label="Accessibility Settings"
-          className="fixed z-[9998] overflow-y-auto rounded-xl"
-          style={{
-            bottom: '5.5rem',
-            right: '1.5rem',
-            width: '20rem',
-            maxHeight: '70vh',
-            backgroundColor: 'var(--bg-surface)',
-            border: '1px solid var(--border-default)',
-            boxShadow: 'var(--shadow-xl)',
-            animation: 'slideUp 200ms ease-out'
-          }}
+          className="fixed overflow-y-auto"
+          style={panelStyle}
         >
           <div className="p-4 flex flex-col gap-4">
             {/* Header */}
