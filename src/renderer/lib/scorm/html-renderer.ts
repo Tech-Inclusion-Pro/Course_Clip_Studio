@@ -738,7 +738,8 @@ function getPlayerStyles(theme: CourseTheme): string {
     .nav-btn {
       background: ${theme.primaryColor}; color: #fff; border: none;
       padding: 8px 20px; border-radius: ${btnRadius}; cursor: pointer;
-      font-size: 13px; font-weight: 600;
+      font-size: 13px; font-weight: 600; display: inline-block;
+      text-decoration: none;
     }
     .nav-btn:hover { opacity: 0.9; }
     .nav-finish { background: ${theme.accentColor}; }

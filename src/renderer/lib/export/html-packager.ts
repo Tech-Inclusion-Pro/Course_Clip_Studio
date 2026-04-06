@@ -75,10 +75,30 @@ export async function buildHtmlPackage(
       `<body data-course-id="${course.id}" data-lesson-id="lesson-${moduleIdx}-${lessonIdx}" data-prev-lesson="${prevFile}" data-next-lesson="${nextFile}">`
     )
 
-    // Replace onclick handlers with data-driven navigation
-    html = html.replace('onclick="scormNav(-1)"', '')
-    html = html.replace('onclick="scormNav(1)"', '')
-    html = html.replace('onclick="scormFinish()"', '')
+    // Replace button elements with <a> links for reliable navigation
+    if (prevFile) {
+      html = html.replace(
+        '<button id="btn-prev" class="nav-btn" onclick="scormNav(-1)">← Previous</button>',
+        `<a id="btn-prev" class="nav-btn" href="${prevFile}" style="text-decoration:none;">← Previous</a>`
+      )
+    } else {
+      html = html.replace(
+        '<button id="btn-prev" class="nav-btn" onclick="scormNav(-1)">← Previous</button>',
+        '<span></span>'
+      )
+    }
+
+    if (nextFile) {
+      html = html.replace(
+        '<button id="btn-next" class="nav-btn" onclick="scormNav(1)">Next →</button>',
+        `<a id="btn-next" class="nav-btn" href="${nextFile}" style="text-decoration:none;">Next →</a>`
+      )
+    }
+
+    html = html.replace(
+      '<button id="btn-finish" class="nav-btn nav-finish" onclick="scormFinish()">Complete Course</button>',
+      '<a id="btn-finish" class="nav-btn nav-finish" href="index.html" style="text-decoration:none;">Complete Course</a>'
+    )
 
     zip.file(fileName, html)
   }
