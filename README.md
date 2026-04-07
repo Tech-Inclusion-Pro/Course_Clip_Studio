@@ -10,6 +10,14 @@
 
 ---
 
+## We Want Your Feedback
+
+Course Clip Studio is built for everyone, and we need your help to keep improving. Whether you're an instructor, instructional designer, learner, or accessibility advocate — your feedback helps us make this tool more usable, effective, and inclusive with every update.
+
+**[Share Your Feedback Here](https://docs.google.com/forms/d/1CbqoUOcwcdODo_2YBuZ37wig2bl2aaSgTyr_rQWbc-8/edit)**
+
+---
+
 ## Download
 
 Download the latest release for your platform:
