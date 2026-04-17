@@ -1,3 +1,5 @@
+import type { InteractivityConfig } from './trigger-model'
+
 // ─── Publish Status ───
 
 export type PublishStatus = 'draft' | 'review' | 'published' | 'archived'
@@ -16,6 +18,7 @@ export interface Course {
   questionBank?: QuizQuestion[]
   masterKeyContent?: string | null
   masterKeyFileName?: string | null
+  interactivity?: InteractivityConfig
   createdAt: string
   updatedAt: string
 }

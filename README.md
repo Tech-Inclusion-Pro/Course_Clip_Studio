@@ -129,6 +129,7 @@ Each step is optional and can be skipped. All settings can be changed later from
 - **Accessibility audit panel** — Real-time WCAG 2.1 AA compliance checking
 - **Certificate designer** — Design and preview completion certificates
 - **Version history panel** — Save named checkpoints and restore previous versions
+- **Triggers panel** — Block-scope trigger management with variable editor and event/action configuration
 - **Collaborator notes panel** — Threaded discussion notes attached to specific blocks
 - **Branching graph view** — Visualize branching scenario connections
 - **Media Library panel** — Centralized asset browser with built-in icons, shapes, uploads, and color palette tools (see Media Library below)
@@ -149,6 +150,53 @@ Each step is optional and can be skipped. All settings can be changed later from
 - **Destination selection** — Navigate to any lesson grouped by module
 - **Restart / wipe progress** — Branch action to restart the course and clear all learner progress
 - **Consequence feedback** — Display feedback text after each branch choice
+
+### Conditional Interactivity System
+
+A block-scope trigger engine with course-scope variables, providing Articulate Storyline 360 parity with UDL, WCAG 2.1 AA, and DisCrit as load-bearing constraints.
+
+#### Triggers & Variables
+
+| Feature | Description |
+|---|---|
+| **Triggers Panel** | Right-side editor panel (384px) with "This Block" tab showing triggers for the selected block, search/filter, and one-click trigger creation |
+| **Trigger Editor Modal** | Full modal (720px) with five sections: Name, Event (When), Actions (Do), Conditions (If), and Advanced settings |
+| **Variables Manager** | Modal with Project Variables (CRUD) and System Variables (read-only) tabs, search, and inline editing |
+| **6 Action Types** | Navigate to lesson, set variable, adjust variable (increment/decrement/append), show block, hide block, screen reader announce |
+| **10 Event Types** | Block load, block complete, click, answer submit, lesson start, lesson complete, course start, course complete, variable change, timer |
+| **Condition Evaluator** | 12 operators (eq, neq, gt, gte, lt, lte, contains, not_contains, starts_with, ends_with, is_empty, is_not_empty) with short-circuit AND/OR logic |
+| **Event Bus** | Pub/sub `TriggerEventBus` class for high-frequency synchronous event dispatch |
+| **Runtime Engine** | `TriggerRuntime` class with scope-ordered execution (block → lesson → module → course), re-entrancy protection (max depth 10), and never-throw error handling |
+| **9 System Variables** | `course.score_pct`, `course.completion_pct`, `course.time_spent_sec`, `course.lessons_completed`, `course.total_lessons`, `course.attempts`, plus learner accessibility variables |
+| **Schema Migration** | Automatic `migrateInteractivity()` on course load for backward compatibility |
+| **Validation Engine** | Validates unique variable names, valid references, and condition nesting depth |
+| **Cascading Delete** | Removing a variable automatically cleans up all trigger conditions and actions that reference it |
+
+#### Progression Policies
+
+| Policy | Description |
+|---|---|
+| **Linear Strict** | Learner must complete all criteria before advancing — no bypass |
+| **Fail Open** (default) | When criteria aren't met, the "What's Next?" modal appears with non-punitive options |
+| **Open Always** | Learner navigates freely with no restrictions |
+
+#### "What's Next?" Modal (Fail-Open Progression)
+
+A non-punitive dialog that appears when a learner attempts to advance without meeting completion criteria. All language follows DisCrit guidelines — no "failed," "wrong," or "bad."
+
+| Option | Description |
+|---|---|
+| Try this lesson again | Triggers lesson-attempt wipe confirmation, then restarts the lesson |
+| Choose another lesson | Unlocks the sidebar and moves focus to the course outline |
+| Review my progress | Opens progress summary in the course outline |
+| Start the course over | Resets all progress and variables, returns to lesson 1 |
+| Continue anyway | Author-opt-in only; includes a sub-confirmation before proceeding |
+
+#### Lesson-Attempt Wipe
+
+- `role="alertdialog"` confirmation dialog with clear, non-destructive language
+- Resets quiz scores and lesson-scoped variables for the current lesson only
+- Other lesson progress is preserved
 
 ### Syllabus Builder
 
@@ -718,7 +766,7 @@ Start new courses from pre-designed templates:
 - **Publish status tracking** — Draft, In Review, Published, Archived workflow
 - **Course metadata** — Title, description, author, language, estimated duration, tags, thumbnail, version
 - **Asset management** — All uploaded files (images, audio, video, SRT/VTT, theme logos, certificate backgrounds and logos) are automatically copied into the course's `assets/` folder, ensuring courses are fully self-contained for export and packaging
-- **Learner preview** — Full interactive preview with device modes (Desktop, Tablet, Mobile), with working flashcard 3D flip, drag & drop, matching, branching, quiz interactions, in-iframe navigation buttons, and responsive H5P iframe sizing (70–80vh)
+- **Learner preview** — Full interactive preview with device modes (Desktop, Tablet, Mobile), with working flashcard 3D flip, drag & drop, matching, branching, quiz interactions, in-iframe navigation buttons, responsive H5P iframe sizing (70–80vh), conditional interactivity runtime (triggers, variables, live regions), and progression policy enforcement (linear strict, fail-open with "What's Next?" modal, open always)
 - **Flashcard self-test & review** — After flipping a flashcard, learners can mark "Got It" or "Review Again"; after completing the deck, a "Review Missed" button filters to only the missed cards for targeted study
 - **Per-block feedback** — Optional collapsible feedback section on any content block, shown to learners as a `<details>` element; configured via the "Block Feedback" field in the Properties panel
 - **Student progress saving** — HTML exports track per-lesson completion, quiz scores, and interactive block state in localStorage; SCORM exports persist progress via `cmi.suspend_data` across sessions
@@ -806,14 +854,18 @@ lumina-udl/
 │       │   │   ├── steps/      # 6 wizard step components
 │       │   │   ├── cards/      # ObjectiveCard, AssignmentCard, RubricEditor
 │       │   │   └── library/    # SyllabusLibraryView, SyllabusCard
+│       │   ├── triggers/       # Conditional interactivity system
+│       │   │   ├── editor/     # EventPicker, ActionList, ActionRow, ActionParamsEditor, ConditionBuilder, ConditionRow
+│       │   │   └── variables/  # VariablesManagerModal, VariableForm, VariableRow
+│       │   ├── wipe/           # WipeProgressDialog (lesson-attempt wipe confirmation)
 │       │   ├── tippy/          # TIPPY AI assistant (chat panel, tour, highlights, reasoning panel, FERPA warning, Get to Know You, Assesses report)
 │       │   ├── publish/        # Export wizard, LMS upload
 │       │   ├── auth/           # PinInput component
 │       │   ├── onboarding/     # First-launch setup wizard
 │       │   └── ui/             # Button, ThemeToggle, SettingsCard, FieldRow, ToggleSwitch, ColorInput, AIGenerateButton, StockSearchDialog, FerpaWarningModal, ReauthPrompt
 │       ├── views/              # Dashboard, Editor, Preview, Settings, SignIn, Publish
-│       ├── stores/             # Zustand stores (app, auth, course, editor, media-library, analytics, tippy, author-profile)
-│       ├── hooks/              # useTheme, useAccessibility, useWorkspaceInit, useAssetUpload, useAssetInsert, useAIGenerate
+│       ├── stores/             # Zustand stores (app, auth, course, editor, media-library, analytics, tippy, author-profile, triggers, variables)
+│       ├── hooks/              # useTheme, useAccessibility, useWorkspaceInit, useAssetUpload, useAssetInsert, useAIGenerate, useInteractivityRuntime
 │       ├── lib/
 │       │   ├── analytics/      # Statement store, aggregators (course, assessment, UDL), LRS queue, identity map, activity log generator, educator report renderer, item analysis
 │       │   ├── cmi5/           # cmi5 verbs, course structure XML, AU player script, packager
@@ -823,6 +875,7 @@ lumina-udl/
 │       │   ├── xapi/           # xAPI packager
 │       │   ├── ai/             # LLM provider abstraction + syllabus AI prompts + inline generation prompts
 │       │   ├── stock-api.ts    # Unified stock media API client (Pexels, Unsplash, Pixabay)
+│       │   ├── triggers/       # Trigger engine (evaluator, event bus, runtime, actions, migration, validation, defaults)
 │       │   ├── tippy/          # TIPPY 4-layer prompt, features KB, profile generator, walkthrough engine/library, assesses engine/prompts, demo course
 │       │   ├── built-in-assets.ts # 420+ built-in SVG icon, shape, and text-shape definitions
 │       │   ├── media-manifest.ts  # Asset manifest read/write helpers

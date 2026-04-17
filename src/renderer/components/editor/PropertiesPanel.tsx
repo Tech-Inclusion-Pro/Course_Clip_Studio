@@ -1,13 +1,15 @@
 import { useMemo } from 'react'
-import { SlidersHorizontal, Clock, Target, UserPlus } from 'lucide-react'
+import { SlidersHorizontal, Clock, Target, UserPlus, Zap } from 'lucide-react'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useEditorStore } from '@/stores/useEditorStore'
+import { useTriggersStore } from '@/stores/triggers-store'
 import { findBlock, findLesson } from '@/lib/course-helpers'
 import { useAIGenerate } from '@/hooks/useAIGenerate'
 import { imageDescriptionPrompt } from '@/lib/ai/prompts'
 import { AIGenerateButton } from '@/components/ui/AIGenerateButton'
 import { BLOCK_TYPE_LABELS } from '@/types/course'
 import type { ContentBlock, LessonCompletionCriteria } from '@/types/course'
+import type { ProgressionPolicy } from '@/types/trigger-model'
 
 export function PropertiesPanel(): JSX.Element {
   const course = useCourseStore((s) => s.courses.find((c) => c.id === s.activeCourseId))
@@ -197,6 +199,11 @@ export function PropertiesPanel(): JSX.Element {
                 </div>
               </div>
             </div>
+
+            {/* Progression Policy */}
+            {activeCourseId && (
+              <ProgressionPolicySection courseId={activeCourseId} />
+            )}
 
             <p className="text-[9px] text-[var(--text-tertiary)] pt-2">
               Select a block to view block-level properties. These settings control when this lesson is considered complete.
@@ -844,5 +851,90 @@ function ToggleField({
       />
       <span className="text-xs text-[var(--text-secondary)]">{label}</span>
     </label>
+  )
+}
+
+// ─── Progression Policy Section ───
+
+const POLICY_OPTIONS: { value: ProgressionPolicy; label: string; description: string }[] = [
+  { value: 'linear_strict', label: 'Must complete in order', description: 'Learner must complete each lesson before advancing' },
+  { value: 'fail_open', label: 'Suggest next steps', description: 'Show encouraging options when criteria aren\'t met' },
+  { value: 'open_always', label: 'Free navigation', description: 'Learner can navigate freely to any lesson' }
+]
+
+function ProgressionPolicySection({ courseId }: { courseId: string }): JSX.Element {
+  const config = useTriggersStore.getState().getInteractivity(courseId)
+  const progression = config.progression
+
+  function handlePolicyChange(policy: ProgressionPolicy) {
+    useTriggersStore.getState().updateProgression(courseId, { policy })
+  }
+
+  function handleOptionChange(key: keyof typeof progression.whatsNextOptions, checked: boolean) {
+    useTriggersStore.getState().updateProgression(courseId, {
+      whatsNextOptions: { ...progression.whatsNextOptions, [key]: checked }
+    })
+  }
+
+  return (
+    <div className="border-t border-[var(--border-default)] pt-4">
+      <div className="flex items-center gap-1.5 mb-3">
+        <Zap size={14} className="text-[var(--brand-magenta)]" />
+        <h3 className="text-xs font-[var(--font-weight-semibold)] text-[var(--text-primary)]">
+          Progression Policy
+        </h3>
+      </div>
+
+      <div className="space-y-2">
+        {POLICY_OPTIONS.map((option) => (
+          <label
+            key={option.value}
+            className="flex items-start gap-2 p-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] cursor-pointer hover:border-[var(--brand-magenta)] transition-colors"
+          >
+            <input
+              type="radio"
+              name="progression-policy"
+              value={option.value}
+              checked={progression.policy === option.value}
+              onChange={() => handlePolicyChange(option.value)}
+              className="mt-0.5 text-[var(--brand-magenta)] focus:ring-[var(--ring-brand)]"
+            />
+            <div>
+              <span className="text-xs font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+                {option.label}
+              </span>
+              <p className="text-[9px] text-[var(--text-tertiary)]">{option.description}</p>
+            </div>
+          </label>
+        ))}
+      </div>
+
+      {progression.policy === 'fail_open' && (
+        <div className="mt-3 p-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)]">
+          <p className="text-[10px] font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-2">
+            "What's Next?" modal options:
+          </p>
+          <div className="space-y-1.5">
+            {([
+              { key: 'retry' as const, label: 'Try this lesson again' },
+              { key: 'pickAnother' as const, label: 'Choose another lesson' },
+              { key: 'reviewProgress' as const, label: 'Review my progress' },
+              { key: 'startOver' as const, label: 'Start course over' },
+              { key: 'continueAnyway' as const, label: 'Continue anyway' }
+            ]).map(({ key, label }) => (
+              <label key={key} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={progression.whatsNextOptions[key]}
+                  onChange={(e) => handleOptionChange(key, e.target.checked)}
+                  className="rounded border-[var(--border-default)] text-[var(--brand-magenta)] focus:ring-[var(--ring-brand)]"
+                />
+                <span className="text-[10px] text-[var(--text-secondary)]">{label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   )
 }

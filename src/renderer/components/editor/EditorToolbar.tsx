@@ -29,7 +29,8 @@ import {
   Grid3x3,
   Magnet,
   BookmarkPlus,
-  BarChart3
+  BarChart3,
+  Zap
 } from 'lucide-react'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useEditorStore, type PreviewDevice } from '@/stores/useEditorStore'
@@ -90,6 +91,8 @@ export function EditorToolbar(): JSX.Element {
   const toggleQuestionBank = useEditorStore((s) => s.toggleQuestionBank)
   const analyticsOpen = useEditorStore((s) => s.analyticsOpen)
   const toggleAnalytics = useEditorStore((s) => s.toggleAnalytics)
+  const triggersPanelOpen = useEditorStore((s) => s.triggersPanelOpen)
+  const toggleTriggersPanel = useEditorStore((s) => s.toggleTriggersPanel)
   const showGrid = useEditorStore((s) => s.showGrid)
   const toggleGrid = useEditorStore((s) => s.toggleGrid)
   const showSmartGuides = useEditorStore((s) => s.showSmartGuides)
@@ -313,6 +316,12 @@ export function EditorToolbar(): JSX.Element {
           label={t('toolbar.analytics', 'Analytics')}
           active={analyticsOpen}
           onClick={toggleAnalytics}
+        />
+        <ToolbarButton
+          icon={Zap}
+          label={t('toolbar.triggers', 'Triggers')}
+          active={triggersPanelOpen}
+          onClick={toggleTriggersPanel}
         />
 
         <div className="w-px h-5 bg-[var(--border-default)] mx-1" aria-hidden="true" />

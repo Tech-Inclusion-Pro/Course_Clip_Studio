@@ -20,6 +20,9 @@ import { SplitPreviewPane } from '@/components/editor/SplitPreviewPane'
 import { BranchingGraphView } from '@/components/editor/BranchingGraphView'
 import { MediaLibraryPanel } from '@/components/media-library/MediaLibraryPanel'
 import { AnalyticsPanel } from '@/components/editor/AnalyticsPanel'
+import { TriggersPanel } from '@/components/triggers/TriggersPanel'
+import { TriggerEditorModal } from '@/components/triggers/TriggerEditorModal'
+import { VariablesManagerModal } from '@/components/triggers/variables/VariablesManagerModal'
 import { useScrollSync } from '@/hooks/useScrollSync'
 
 export function EditorView(): JSX.Element {
@@ -45,6 +48,10 @@ export function EditorView(): JSX.Element {
   const toggleMediaLibrary = useEditorStore((s) => s.toggleMediaLibrary)
   const analyticsOpen = useEditorStore((s) => s.analyticsOpen)
   const toggleAnalytics = useEditorStore((s) => s.toggleAnalytics)
+  const triggersPanelOpen = useEditorStore((s) => s.triggersPanelOpen)
+  const toggleTriggersPanel = useEditorStore((s) => s.toggleTriggersPanel)
+  const triggerEditorOpen = useEditorStore((s) => s.triggerEditorOpen)
+  const variablesModalOpen = useEditorStore((s) => s.variablesModalOpen)
   const splitPreviewOpen = useEditorStore((s) => s.splitPreviewOpen)
   const activeLessonId = useEditorStore((s) => s.activeLessonId)
   const branchingGraphOpen = useEditorStore((s) => s.branchingGraphOpen)
@@ -256,6 +263,16 @@ export function EditorView(): JSX.Element {
             <MediaLibraryPanel onClose={toggleMediaLibrary} />
           </aside>
         )}
+
+        {/* Triggers Panel */}
+        {triggersPanelOpen && (
+          <aside
+            className="w-96 shrink-0 border-l border-[var(--border-default)] bg-[var(--bg-surface)] overflow-y-auto"
+            aria-label="Triggers"
+          >
+            <TriggersPanel onClose={toggleTriggersPanel} />
+          </aside>
+        )}
       </div>
 
       {/* Status bar */}
@@ -270,6 +287,12 @@ export function EditorView(): JSX.Element {
         </span>
         <span>v{course.meta.version}</span>
       </div>
+
+      {/* Trigger Editor Modal */}
+      {triggerEditorOpen && <TriggerEditorModal />}
+
+      {/* Variables Manager Modal */}
+      {variablesModalOpen && <VariablesManagerModal />}
     </div>
   )
 }

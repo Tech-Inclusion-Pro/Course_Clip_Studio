@@ -5,6 +5,7 @@ import type {
   ContentBlock,
   UDLChecklist
 } from '@/types/course'
+import { migrateInteractivity } from '@/lib/triggers/migration'
 
 // ─── Tree Traversal ───
 
@@ -169,9 +170,10 @@ export function serializeCourse(course: Course): string {
   return JSON.stringify(course)
 }
 
-/** Deserialize a JSON string back to a Course object. */
+/** Deserialize a JSON string back to a Course object (with interactivity migration). */
 export function deserializeCourse(json: string): Course {
-  return JSON.parse(json) as Course
+  const course = JSON.parse(json) as Course
+  return migrateInteractivity(course)
 }
 
 /** Compute estimated course duration from module/lesson counts (rough heuristic). */

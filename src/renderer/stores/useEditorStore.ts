@@ -36,6 +36,12 @@ interface EditorState {
   questionBankOpen: boolean
   mediaLibraryOpen: boolean
   analyticsOpen: boolean
+  triggersPanelOpen: boolean
+
+  // Trigger modals
+  variablesModalOpen: boolean
+  triggerEditorOpen: boolean
+  editingTriggerId: string | null
 
   // Dirty state
   isDirty: boolean
@@ -80,6 +86,13 @@ interface EditorState {
   toggleQuestionBank: () => void
   toggleMediaLibrary: () => void
   toggleAnalytics: () => void
+  toggleTriggersPanel: () => void
+
+  // Trigger modals
+  openVariablesModal: () => void
+  closeVariablesModal: () => void
+  openTriggerEditor: (id: string | null) => void
+  closeTriggerEditor: () => void
 
   // Dirty
   markDirty: () => void
@@ -118,6 +131,10 @@ const initialState = {
   questionBankOpen: false,
   mediaLibraryOpen: false,
   analyticsOpen: false,
+  triggersPanelOpen: false,
+  variablesModalOpen: false,
+  triggerEditorOpen: false,
+  editingTriggerId: null as string | null,
   isDirty: false,
   clipboardBlockIds: [] as string[],
   clipboardOperation: null as 'copy' | 'cut' | null
@@ -178,6 +195,13 @@ export const useEditorStore = create<EditorState>((set) => ({
   toggleQuestionBank: () => set((s) => ({ questionBankOpen: !s.questionBankOpen })),
   toggleMediaLibrary: () => set((s) => ({ mediaLibraryOpen: !s.mediaLibraryOpen })),
   toggleAnalytics: () => set((s) => ({ analyticsOpen: !s.analyticsOpen })),
+  toggleTriggersPanel: () => set((s) => ({ triggersPanelOpen: !s.triggersPanelOpen })),
+
+  // Trigger modals
+  openVariablesModal: () => set({ variablesModalOpen: true }),
+  closeVariablesModal: () => set({ variablesModalOpen: false }),
+  openTriggerEditor: (id) => set({ triggerEditorOpen: true, editingTriggerId: id }),
+  closeTriggerEditor: () => set({ triggerEditorOpen: false, editingTriggerId: null }),
 
   // Dirty
   markDirty: () => set({ isDirty: true }),

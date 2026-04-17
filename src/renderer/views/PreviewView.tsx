@@ -17,8 +17,13 @@ import {
 import { useNavigate } from 'react-router-dom'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { usePreviewStore } from '@/stores/usePreviewStore'
+import { useVariablesStore } from '@/stores/variables-store'
 import { renderPreviewHtml } from '@/lib/preview/render-preview-html'
 import { LearnerNotesSidebar } from '@/components/preview/LearnerNotesSidebar'
+import { WhatsNextModal } from '@/components/triggers/WhatsNextModal'
+import { WipeProgressDialog } from '@/components/wipe/WipeProgressDialog'
+import { useInteractivityRuntime } from '@/hooks/useInteractivityRuntime'
+import { DEFAULT_PROGRESSION_SETTINGS } from '@/lib/triggers/defaults'
 import { uid } from '@/lib/uid'
 import { ROUTES } from '@/lib/constants'
 import type { Course, Lesson } from '@/types/course'
@@ -75,7 +80,13 @@ export function PreviewView(): JSX.Element {
   const [device, setDevice] = useState<DeviceMode>('desktop')
   const [a11yMode, setA11yMode] = useState(false)
   const [enrollmentCompleted, setEnrollmentCompleted] = useState(false)
+  const [showWhatsNext, setShowWhatsNext] = useState(false)
+  const [showWipeDialog, setShowWipeDialog] = useState(false)
   const iframeRef = useRef<HTMLIFrameElement>(null)
+
+  // Interactivity runtime
+  const { emit, politeRegionRef, assertiveRegionRef } = useInteractivityRuntime(course)
+  const progression = course?.interactivity?.progression ?? DEFAULT_PROGRESSION_SETTINGS
 
   const addNote = usePreviewStore((s) => s.addNote)
   const addBookmark = usePreviewStore((s) => s.addBookmark)
@@ -85,17 +96,19 @@ export function PreviewView(): JSX.Element {
   const current = flatLessons[currentIdx]
   const needsEnrollment = course?.settings?.enrollmentPage ?? false
 
-  // Mark lesson as visited
+  // Mark lesson as visited + emit lesson_start event
   useEffect(() => {
-    if (current) {
+    if (current && course) {
       setVisitedLessons((prev) => {
         if (prev.has(current.lesson.id)) return prev
         const next = new Set(prev)
         next.add(current.lesson.id)
         return next
       })
+      // Emit lesson start event for interactivity runtime
+      emit('on_lesson_start', {}, { lessonId: current.lesson.id, courseId: course.id })
     }
-  }, [current])
+  }, [current, course, emit])
 
   // Listen for postMessage from iframe
   const handleMessage = useCallback(
@@ -423,7 +436,31 @@ export function PreviewView(): JSX.Element {
 
         {currentIdx < totalLessons - 1 ? (
           <button
-            onClick={() => setCurrentIdx((i) => Math.min(i + 1, totalLessons - 1))}
+            onClick={() => {
+              // Check progression policy
+              if (progression.policy === 'fail_open') {
+                // Check if lesson has completion criteria that aren't met
+                const criteria = current.lesson.completionCriteria
+                const quizScore = quizScores[current.lesson.id]
+                const needsQuiz = criteria?.quizPassRequired && (!quizScore || !quizScore.passed)
+
+                if (needsQuiz) {
+                  setShowWhatsNext(true)
+                  return
+                }
+              } else if (progression.policy === 'linear_strict') {
+                const criteria = current.lesson.completionCriteria
+                const quizScore = quizScores[current.lesson.id]
+                const needsQuiz = criteria?.quizPassRequired && (!quizScore || !quizScore.passed)
+
+                if (needsQuiz) {
+                  // Strict: cannot proceed
+                  return
+                }
+              }
+              // open_always or criteria met: navigate freely
+              setCurrentIdx((i) => Math.min(i + 1, totalLessons - 1))
+            }}
             disabled={needsEnrollment && !enrollmentCompleted && currentIdx === 0}
             className={`flex items-center gap-1 px-3 py-1.5 text-xs font-[var(--font-weight-medium)] rounded-md bg-[var(--brand-magenta)] text-white hover:opacity-90 cursor-pointer ${
               needsEnrollment && !enrollmentCompleted && currentIdx === 0 ? 'opacity-40 cursor-not-allowed' : ''
@@ -439,6 +476,63 @@ export function PreviewView(): JSX.Element {
           </span>
         )}
       </div>
+
+      {/* Live regions for screen reader announcements */}
+      <div ref={politeRegionRef as React.RefObject<HTMLDivElement>} aria-live="polite" className="sr-only" />
+      <div ref={assertiveRegionRef as React.RefObject<HTMLDivElement>} aria-live="assertive" className="sr-only" />
+
+      {/* What's Next modal */}
+      {showWhatsNext && (
+        <WhatsNextModal
+          completedCount={visitedLessons.size}
+          totalCount={totalLessons}
+          settings={progression}
+          onRetry={() => {
+            setShowWhatsNext(false)
+            setShowWipeDialog(true)
+          }}
+          onPickAnother={() => {
+            setShowWhatsNext(false)
+            setOutlineOpen(true)
+          }}
+          onReviewProgress={() => {
+            setShowWhatsNext(false)
+            // Focus on progress summary in outline
+            setOutlineOpen(true)
+          }}
+          onStartOver={() => {
+            setShowWhatsNext(false)
+            setCurrentIdx(0)
+            setVisitedLessons(new Set())
+            setQuizScores({})
+            useVariablesStore.getState().resetAll()
+          }}
+          onContinueAnyway={() => {
+            setShowWhatsNext(false)
+            setCurrentIdx((i) => Math.min(i + 1, totalLessons - 1))
+          }}
+          onClose={() => setShowWhatsNext(false)}
+        />
+      )}
+
+      {/* Wipe progress dialog */}
+      {showWipeDialog && (
+        <WipeProgressDialog
+          onConfirm={() => {
+            setShowWipeDialog(false)
+            // Reset quiz scores for this lesson
+            if (current) {
+              setQuizScores((prev) => {
+                const next = { ...prev }
+                delete next[current.lesson.id]
+                return next
+              })
+              useVariablesStore.getState().resetForLesson(current.lesson.id)
+            }
+          }}
+          onCancel={() => setShowWipeDialog(false)}
+        />
+      )}
     </div>
   )
 }
