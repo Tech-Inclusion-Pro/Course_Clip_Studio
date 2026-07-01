@@ -220,6 +220,47 @@ A dedicated dashboard tab with a 6-step wizard for creating WCAG-compliant cours
 | Send to AI Assistant | Load a saved syllabus as context into the main AI panel for further content generation |
 | 14 Audience Levels | PreK through Graduate/Doctoral, plus Corporate, Healthcare, Parent/Caregiver, Community, and custom |
 
+### Presentation Builder
+
+A 4-step wizard for creating AI-powered, professional slide decks from a topic prompt or pasted notes. Accessible from the **Dashboard** sidebar.
+
+| Feature | Description |
+|---|---|
+| 4-Step Wizard | Entry (topic/notes) → Outline (edit slides) → Render (assign images) → Preview & Export |
+| AI-Generated Outlines | Enter a topic or paste notes; the AI produces a complete slide deck with titles, body text, speaker notes, image search terms, and layout assignments |
+| 11 Slide Layouts | Title, Section Header, Content (bullets), Image + Content, Content + Image, Two Columns, Full Image, Big Number, Quote, Comparison, and Blank |
+| Visual Layout Picker | PowerPoint-style popover gallery with SVG wireframe thumbnails — replaces plain dropdown selectors |
+| Drag-and-Drop Reordering | Reorder slides via drag handle in the outline editor |
+| Split & Merge | Split a slide at line breaks or merge consecutive slides with one click |
+| 3 Brand Themes | Lumina Light, Lumina Dark, and Brand Gradient — each WCAG AA verified |
+| WCAG Contrast Verification | Built-in contrast report checks all theme color pairs against WCAG 2.1 AA |
+| 4 Image Styles | Flat vector, photographic, diagram, and abstract gradient — applied to AI image search |
+| Content Density | Light (2–3 bullets), Medium (3–5), or Dense (5–8) per slide |
+| Bilingual Support | Optional English/Spanish bilingual slide generation |
+| Content Flags | AI flags invented, condensed, or citation content when converting notes |
+| Speaker Notes | Per-slide presenter notes, included in all exports |
+| PPTX Export | Professional PowerPoint files with accent bars, proper font hierarchy, and data-driven layout rendering on a 13.33 × 7.5" widescreen canvas |
+| PDF Export | Landscape PDF with layout-aware rendering and accent bars |
+| Slide Preview | 16:9 preview cards with layout name labels and theme-accurate rendering |
+| Attach to Course | Link a finished deck to any course in the library |
+| Presentation Library | View, open, duplicate, and delete saved presentations |
+
+#### Slide Layouts
+
+| Layout | Description |
+|--------|-------------|
+| Title Slide | Large centered title + subtitle on accent background |
+| Section Header | Centered transition text on accent background |
+| Content | Title + body text with accent bar |
+| Image + Content | Image left (40%), text right (60%) |
+| Content + Image | Text left (60%), image right (40%) |
+| Two Columns | Side-by-side text columns (split body at `---`) |
+| Full Image | Background image with overlay text at bottom |
+| Big Number | 72pt centered statistic + caption (title = number) |
+| Quote | Decorative `"`, italic text, and `-- Attribution` |
+| Comparison | Two labeled columns for pros/cons (split body at `---`) |
+| Blank | Title + accent bar only |
+
 ### Media Library
 
 A centralized Media Library panel for browsing, uploading, and managing all course assets. Accessible from the **Dashboard** (sidebar section) and the **Editor** (right-side panel via toolbar button).
