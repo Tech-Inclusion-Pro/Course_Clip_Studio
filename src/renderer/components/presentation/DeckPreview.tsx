@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Download, FileText, Link2 } from 'lucide-react'
+import { Download, FileText, Link2, Maximize2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { usePresentationStore } from '@/stores/usePresentationStore'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { SlidePreviewCard } from './SlidePreviewCard'
 import { AttachToCourseDialog } from './AttachToCourseDialog'
+import { PresentModal } from './PresentModal'
 
 export function DeckPreview(): JSX.Element {
   const deck = usePresentationStore((s) => s.activeDeck)
@@ -12,6 +13,7 @@ export function DeckPreview(): JSX.Element {
   const courses = useCourseStore((s) => s.courses)
 
   const [attachOpen, setAttachOpen] = useState(false)
+  const [presenting, setPresenting] = useState(false)
 
   if (!deck) {
     return (
@@ -39,6 +41,10 @@ export function DeckPreview(): JSX.Element {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => setPresenting(true)}>
+            <Maximize2 size={14} />
+            Full screen
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => setAttachOpen(true)}>
             <Link2 size={14} />
             {deck.courseId ? 'Change Course' : 'Attach to Course'}
@@ -94,6 +100,9 @@ export function DeckPreview(): JSX.Element {
         deckId={deck.id}
         currentCourseId={deck.courseId}
       />
+
+      {/* Full-screen viewer */}
+      {presenting && <PresentModal onClose={() => setPresenting(false)} />}
     </div>
   )
 }
