@@ -38,14 +38,22 @@ export function RenderingView(): JSX.Element {
   const theme = resolveTheme(draft?.themeId ?? 'lumina-light', customThemes)
   const renderedSlides = activeDeck?.slides ?? []
 
-  // Initialize rendered slides from draft
+  // Sync rendered slides from the draft whenever it changes, preserving any image
+  // assignments (imagePath/imageAltText) by slide id. This ensures outline edits —
+  // including layout changes — are always reflected here and in the export.
   useEffect(() => {
-    if (!draft || renderedSlides.length > 0) return
-    const slides: RenderedSlide[] = draft.slides.map((s) => ({
-      ...s,
-      imagePath: null,
-      imageAltText: ''
-    }))
+    if (!draft) return
+    const prev = new Map(
+      (usePresentationStore.getState().activeDeck?.slides ?? []).map((s) => [s.id, s])
+    )
+    const slides: RenderedSlide[] = draft.slides.map((s) => {
+      const existing = prev.get(s.id)
+      return {
+        ...s,
+        imagePath: existing?.imagePath ?? null,
+        imageAltText: existing?.imageAltText ?? ''
+      }
+    })
     setRenderedSlides(slides)
   }, [draft])
 

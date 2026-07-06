@@ -3,12 +3,15 @@ import { GripVertical, Trash2, Scissors, ChevronsDown, ChevronDown, ChevronUp, F
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { usePresentationStore } from '@/stores/usePresentationStore'
+import { useAppStore } from '@/stores/useAppStore'
 import { useAIGenerate } from '@/hooks/useAIGenerate'
 import { emptyChart, emptyTable } from '@/lib/presentation/chart-data'
+import { resolveTheme } from '@/lib/presentation/themes'
 import { refineSlidePrompt, type RefineAction } from '@/lib/presentation/outline-prompts'
 import type { SlideDraft } from '@/types/presentation'
 import { LayoutPicker } from './LayoutPicker'
 import { ChartTableEditor } from './ChartTableEditor'
+import { SlidePreviewCard } from './SlidePreviewCard'
 
 interface SlideDraftCardProps {
   slide: SlideDraft
@@ -30,12 +33,17 @@ export function SlideDraftCard({ slide, index, isLast }: SlideDraftCardProps): J
   const splitSlide = usePresentationStore((s) => s.splitSlide)
   const mergeSlides = usePresentationStore((s) => s.mergeSlides)
   const duplicateSlide = usePresentationStore((s) => s.duplicateSlide)
+  const themeId = usePresentationStore((s) => s.activeDraft?.themeId ?? 'lumina-light')
+  const customThemes = useAppStore((s) => s.customPresentationThemes)
   const { generate } = useAIGenerate()
 
   const [notesOpen, setNotesOpen] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(true)
   const [refining, setRefining] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const bodyRef = useRef<HTMLTextAreaElement>(null)
+
+  const theme = resolveTheme(themeId, customThemes)
 
   // Wrap the current textarea selection with Markdown markers (bold/italic) or
   // prefix the line with a bullet.
@@ -281,6 +289,24 @@ export function SlideDraftCard({ slide, index, isLast }: SlideDraftCardProps): J
           placeholder="Notes for the presenter..."
           className="w-full mt-1 px-2 py-1.5 text-xs rounded border border-[var(--border-default)] bg-[var(--bg-muted)] text-[var(--text-secondary)] focus:outline-none focus:ring-1 focus:ring-[var(--ring-brand)] resize-y"
         />
+      )}
+
+      {/* Live layout preview — reflects the selected layout immediately */}
+      <button
+        onClick={() => setPreviewOpen((o) => !o)}
+        className="flex items-center gap-1 mt-2 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] cursor-pointer"
+      >
+        {previewOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        Layout preview
+      </button>
+      {previewOpen && (
+        <div className="mt-1 max-w-[280px]">
+          <SlidePreviewCard
+            slide={{ ...slide, imagePath: null, imageAltText: '' }}
+            theme={theme}
+            index={index}
+          />
+        </div>
       )}
     </div>
   )
