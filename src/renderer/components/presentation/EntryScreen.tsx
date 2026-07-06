@@ -1,11 +1,27 @@
 import { useState } from 'react'
-import { Sparkles, FileText, MessageSquare, Loader2, AlertCircle } from 'lucide-react'
+import { Sparkles, FileText, MessageSquare, Loader2, AlertCircle, Upload, BookOpen, Table } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useAIGenerate } from '@/hooks/useAIGenerate'
 import { usePresentationStore } from '@/stores/usePresentationStore'
-import { promptModeOutlinePrompt, notesModeOutlinePrompt } from '@/lib/presentation/outline-prompts'
+import { useAppStore } from '@/stores/useAppStore'
+import {
+  promptModeOutlinePrompt,
+  notesModeOutlinePrompt,
+  documentModeOutlinePrompt,
+  dataModeOutlinePrompt
+} from '@/lib/presentation/outline-prompts'
+import { buildContentAreaOutlinePrompt } from '@/lib/presentation/grounding'
+import { extractTextFromFile, DOC_EXTENSIONS } from '@/lib/presentation/doc-extract'
 import { uid } from '@/lib/uid'
 import type { SlideDraft, EntryMode, SlideFlag } from '@/types/presentation'
+
+const INPUT_MODES: { value: EntryMode; label: string; icon: typeof MessageSquare }[] = [
+  { value: 'prompt', label: 'Prompt', icon: MessageSquare },
+  { value: 'notes', label: 'Notes', icon: FileText },
+  { value: 'document', label: 'Document', icon: Upload },
+  { value: 'contentArea', label: 'Content Area', icon: BookOpen },
+  { value: 'data', label: 'Data', icon: Table }
+]
 
 const DENSITY_OPTIONS = [
   { value: 'light' as const, label: 'Light', desc: '2-3 bullets per slide' },
@@ -26,19 +42,71 @@ export function EntryScreen(): JSX.Element {
   const finishGeneration = usePresentationStore((s) => s.finishGeneration)
   const failGeneration = usePresentationStore((s) => s.failGeneration)
   const generationError = usePresentationStore((s) => s.generationError)
+  const setSourceContentAreaId = usePresentationStore((s) => s.setSourceContentAreaId)
+  const setSourceDocName = usePresentationStore((s) => s.setSourceDocName)
+  const contentAreas = useAppStore((s) => s.contentAreas)
 
   const [parseError, setParseError] = useState<string | null>(null)
+  const [extracting, setExtracting] = useState(false)
+
+  async function handlePickDocument() {
+    setParseError(null)
+    try {
+      const res = await window.electronAPI.dialog.openFile({
+        filters: [{ name: 'Documents', extensions: DOC_EXTENSIONS }]
+      })
+      const path = res.filePaths?.[0]
+      if (!path) return
+      setExtracting(true)
+      const text = await extractTextFromFile(path)
+      setPrompt(text)
+      setSourceDocName(path.split(/[\\/]/).pop())
+    } catch (err) {
+      setParseError(err instanceof Error ? err.message : 'Could not read that document.')
+    } finally {
+      setExtracting(false)
+    }
+  }
 
   if (!draft) return <></>
+
+  const canGenerate =
+    isConfigured &&
+    !isGenerating &&
+    !extracting &&
+    (draft.entryMode === 'contentArea' ? !!draft.sourceContentAreaId : !!draft.prompt.trim())
+
+  async function buildPrompt(): Promise<string> {
+    if (!draft) return ''
+    switch (draft.entryMode) {
+      case 'notes':
+        return notesModeOutlinePrompt(draft.prompt, draft.intake)
+      case 'document':
+        return documentModeOutlinePrompt(draft.prompt, draft.intake, draft.sourceDocName)
+      case 'data':
+        return dataModeOutlinePrompt(draft.prompt, draft.intake)
+      case 'contentArea': {
+        const area = contentAreas.find((c) => c.id === draft.sourceContentAreaId)
+        if (!area) throw new Error('Choose a content area to ground the presentation.')
+        return buildContentAreaOutlinePrompt(area, draft.intake, draft.prompt || undefined)
+      }
+      default:
+        return promptModeOutlinePrompt(draft.prompt, draft.intake)
+    }
+  }
 
   async function handleGenerate() {
     if (!draft) return
     setParseError(null)
     startGeneration()
 
-    const prompt = draft.entryMode === 'prompt'
-      ? promptModeOutlinePrompt(draft.prompt, draft.intake)
-      : notesModeOutlinePrompt(draft.prompt, draft.intake)
+    let prompt: string
+    try {
+      prompt = await buildPrompt()
+    } catch (err) {
+      failGeneration(err instanceof Error ? err.message : 'Could not build the prompt.')
+      return
+    }
 
     const systemPrompt = 'You are an expert presentation designer. You create clear, professional slide outlines. Always respond with valid JSON only.'
 
@@ -64,7 +132,7 @@ export function EntryScreen(): JSX.Element {
         body: String(item.body ?? ''),
         speakerNotes: String(item.speakerNotes ?? ''),
         imagePrompt: String(item.imagePrompt ?? ''),
-        layoutHint: item.layoutHint ?? 'bullets',
+        layoutHint: (item.layoutHint as SlideDraft['layoutHint']) ?? 'bullets',
         flags: Array.isArray(item.flags) ? item.flags as SlideFlag[] : []
       }))
 
@@ -104,31 +172,73 @@ export function EntryScreen(): JSX.Element {
         <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-2">
           Input Mode
         </label>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setEntryMode('prompt')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-[var(--font-weight-medium)] cursor-pointer transition-colors ${
-              draft.entryMode === 'prompt'
-                ? 'border-[var(--brand-magenta)] bg-[var(--bg-active)] text-[var(--text-brand)]'
-                : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'
-            }`}
-          >
-            <MessageSquare size={16} />
-            Prompt
-          </button>
-          <button
-            onClick={() => setEntryMode('notes')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-[var(--font-weight-medium)] cursor-pointer transition-colors ${
-              draft.entryMode === 'notes'
-                ? 'border-[var(--brand-magenta)] bg-[var(--bg-active)] text-[var(--text-brand)]'
-                : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'
-            }`}
-          >
-            <FileText size={16} />
-            Paste Notes
-          </button>
+        <div className="flex flex-wrap gap-2">
+          {INPUT_MODES.map(({ value, label, icon: Icon }) => (
+            <button
+              key={value}
+              onClick={() => setEntryMode(value)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-[var(--font-weight-medium)] cursor-pointer transition-colors ${
+                draft.entryMode === value
+                  ? 'border-[var(--brand-magenta)] bg-[var(--bg-active)] text-[var(--text-brand)]'
+                  : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'
+              }`}
+            >
+              <Icon size={16} />
+              {label}
+            </button>
+          ))}
         </div>
       </div>
+
+      {/* Content Area picker */}
+      {draft.entryMode === 'contentArea' && (
+        <div>
+          <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+            Ground in Content Area
+          </label>
+          {contentAreas.length === 0 ? (
+            <p className="text-xs text-[var(--text-tertiary)]">
+              No content areas yet. Create one in the Dashboard → Content Areas to ground a
+              presentation in its files and citations.
+            </p>
+          ) : (
+            <select
+              value={draft.sourceContentAreaId ?? ''}
+              onChange={(e) => setSourceContentAreaId(e.target.value || undefined)}
+              className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+            >
+              <option value="">Select a content area…</option>
+              {contentAreas.map((ca) => (
+                <option key={ca.id} value={ca.id}>
+                  {ca.name} {ca.files?.length ? `(${ca.files.length} files)` : ''}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
+
+      {/* Document picker */}
+      {draft.entryMode === 'document' && (
+        <div>
+          <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+            Source Document (PDF, Word, text, or Markdown)
+          </label>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handlePickDocument}
+              disabled={extracting}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-[var(--font-weight-medium)] rounded-md border border-[var(--border-default)] bg-[var(--bg-muted)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] cursor-pointer disabled:opacity-50"
+            >
+              {extracting ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+              {draft.sourceDocName ? 'Choose a different file' : 'Choose Document'}
+            </button>
+            <span className="text-xs text-[var(--text-tertiary)] truncate flex-1">
+              {draft.sourceDocName ?? 'No file selected'}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Intake bar */}
       <div className="grid grid-cols-3 gap-4">
@@ -191,7 +301,11 @@ export function EntryScreen(): JSX.Element {
       {/* Text input */}
       <div>
         <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
-          {draft.entryMode === 'prompt' ? 'Describe your presentation topic' : 'Paste your notes'}
+          {draft.entryMode === 'prompt' && 'Describe your presentation topic'}
+          {draft.entryMode === 'notes' && 'Paste your notes'}
+          {draft.entryMode === 'document' && 'Extracted text (review & edit before generating)'}
+          {draft.entryMode === 'data' && 'Paste CSV or Markdown data'}
+          {draft.entryMode === 'contentArea' && 'Optional focus or extra instructions'}
         </label>
         <textarea
           value={draft.prompt}
@@ -200,10 +314,22 @@ export function EntryScreen(): JSX.Element {
           placeholder={
             draft.entryMode === 'prompt'
               ? 'e.g. A presentation about differentiated instruction strategies for elementary math classrooms...'
-              : 'Paste your lecture notes, meeting notes, or any content you want to turn into slides...'
+              : draft.entryMode === 'notes'
+                ? 'Paste your lecture notes, meeting notes, or any content you want to turn into slides...'
+                : draft.entryMode === 'document'
+                  ? 'Choose a document above — its text appears here for review.'
+                  : draft.entryMode === 'data'
+                    ? 'Paste CSV rows or a Markdown table…'
+                    : 'e.g. Focus on the first two objectives; keep it to 8 slides.'
           }
           className="w-full px-3 py-2 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)] resize-y"
         />
+        {draft.entryMode === 'contentArea' && (
+          <p className="mt-1 text-xs text-[var(--text-tertiary)]">
+            The presentation will be grounded in the selected content area's profile, files, and any
+            bound citations.
+          </p>
+        )}
       </div>
 
       {/* Error display */}
@@ -220,7 +346,7 @@ export function EntryScreen(): JSX.Element {
           variant="primary"
           size="lg"
           onClick={handleGenerate}
-          disabled={isGenerating || !draft.prompt.trim() || !isConfigured}
+          disabled={!canGenerate}
         >
           {isGenerating ? (
             <>

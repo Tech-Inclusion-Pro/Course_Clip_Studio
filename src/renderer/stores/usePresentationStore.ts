@@ -26,6 +26,8 @@ interface PresentationState {
   setDraftTitle: (title: string) => void
   setEntryMode: (mode: EntryMode) => void
   setPrompt: (prompt: string) => void
+  setSourceContentAreaId: (id: string | undefined) => void
+  setSourceDocName: (name: string | undefined) => void
   setIntake: (intake: Partial<IntakeConfig>) => void
   setThemeId: (themeId: string) => void
   setImageStyle: (style: ImageStyle) => void
@@ -123,6 +125,8 @@ export const usePresentationStore = create<PresentationState>((set, get) => ({
   setDraftTitle: (title) => set((s) => mapDraft(s, (d) => ({ ...d, title }))),
   setEntryMode: (mode) => set((s) => mapDraft(s, (d) => ({ ...d, entryMode: mode }))),
   setPrompt: (prompt) => set((s) => mapDraft(s, (d) => ({ ...d, prompt }))),
+  setSourceContentAreaId: (id) => set((s) => mapDraft(s, (d) => ({ ...d, sourceContentAreaId: id }))),
+  setSourceDocName: (name) => set((s) => mapDraft(s, (d) => ({ ...d, sourceDocName: name }))),
   setIntake: (intake) => set((s) => mapDraft(s, (d) => ({ ...d, intake: { ...d.intake, ...intake } }))),
   setThemeId: (themeId) => set((s) => mapDraft(s, (d) => ({ ...d, themeId }))),
   setImageStyle: (style) => set((s) => mapDraft(s, (d) => ({ ...d, imageStyle: style }))),

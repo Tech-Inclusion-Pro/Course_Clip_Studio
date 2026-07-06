@@ -2,7 +2,7 @@
 
 export type PresentationWizardStep = 'entry' | 'outline' | 'render' | 'preview'
 
-export type EntryMode = 'prompt' | 'notes'
+export type EntryMode = 'prompt' | 'notes' | 'document' | 'contentArea' | 'data'
 
 export type LayoutHint =
   | 'title' | 'bullets' | 'two-column' | 'image-left' | 'image-right'
@@ -72,6 +72,8 @@ export interface DeckDraft {
   entryMode: EntryMode
   intake: IntakeConfig
   prompt: string
+  sourceContentAreaId?: string // when entryMode === 'contentArea'
+  sourceDocName?: string // when entryMode === 'document'
   slides: SlideDraft[]
   themeId: string
   imageStyle: ImageStyle

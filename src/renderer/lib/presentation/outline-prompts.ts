@@ -65,6 +65,45 @@ ${jsonSchema()}
 Generate a clear, well-structured presentation with an engaging title slide, logical flow of content, and a concluding slide. Each slide should have a concise title and substantive body content appropriate for the density level. Use a variety of layouts for visual interest — include at least one special layout (big-number, quote, or comparison) where appropriate.`
 }
 
+export function documentModeOutlinePrompt(
+  documentText: string,
+  intake: IntakeConfig,
+  sourceName?: string
+): string {
+  return `Turn the following source document into a structured presentation outline. Summarize faithfully — do not invent facts. Preserve key terminology and any citations found in the source.
+
+SOURCE${sourceName ? ` (${sourceName})` : ''}:
+${documentText}
+
+${baseInstructions(intake)}
+
+Return a JSON array of slide objects. Each object has these fields:
+- "title": string
+- "body": string (use \\n for line breaks between bullets)
+- "speakerNotes": string
+- "imagePrompt": string (a search term for a relevant stock image)
+- "layoutHint": one of ${JSON.stringify(ALL_LAYOUT_HINTS)}
+- "flags": array of objects with { "kind": "invented" | "condensed" | "citation", "detail": string }
+  - "condensed" when you shortened source text; "invented" for structure not in the source; "citation" to preserve a reference.
+
+${layoutGuidance()}
+
+Output ONLY valid JSON with no markdown fencing, no explanation text. Faithfully summarize the source; flag condensed or invented content.`
+}
+
+export function dataModeOutlinePrompt(data: string, intake: IntakeConfig): string {
+  return `Turn the following data (CSV or Markdown) into a structured presentation outline. Where the data is tabular or numeric, prefer "big-number" slides for headline figures and describe trends in the body. Do not invent numbers not present in the data.
+
+DATA:
+${data}
+
+${baseInstructions(intake)}
+
+${jsonSchema()}
+
+Ground every figure in the provided data. Flag anything you inferred.`
+}
+
 export function notesModeOutlinePrompt(notes: string, intake: IntakeConfig): string {
   return `Convert the following notes into a structured presentation outline. Preserve the user's original wording as much as possible. Do not invent facts — only restructure and organize.
 
