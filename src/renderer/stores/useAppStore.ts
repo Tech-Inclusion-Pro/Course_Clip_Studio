@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { AISettings, AccessibilitySettings, BrandKit, VisualApiProvider, VideoApiProvider, ChartApiProvider, AudioApiProvider, DiagramApiProvider, InteractiveVideoApiProvider, MathApiProvider, ContentImportProvider, AssetManagementProvider, BaseBrainSettings, BaseBrainFile, ContentArea, ContentAreaFile, UserTemplate } from '@/types/course'
+import type { CitationSourceProvider } from '@/types/citations'
 import { uid } from '@/lib/uid'
 import wcagScreener from '@/assets/base-brain/01_WCAG_Accessibility_Screener.md?raw'
 import udlScreener from '@/assets/base-brain/02_UDL_Screener.md?raw'
@@ -42,6 +43,7 @@ interface AppState {
 
   // Visual API settings
   visualApis: { providers: VisualApiProvider[] }
+  citationApis: { providers: CitationSourceProvider[] }
 
   // Video API settings
   videoApis: { providers: VideoApiProvider[] }
@@ -137,6 +139,11 @@ interface AppState {
   updateVisualApiProvider: (id: string, updates: Partial<VisualApiProvider>) => void
   addCustomVisualApi: () => void
   removeVisualApi: (id: string) => void
+  // Citation source settings (Knowledge Web)
+  loadCitationApiSettings: () => Promise<void>
+  updateCitationApiProvider: (id: string, updates: Partial<CitationSourceProvider>) => void
+  addCustomCitationApi: () => void
+  removeCitationApi: (id: string) => void
 
   // Video API actions
   loadVideoApiSettings: () => Promise<void>
@@ -255,6 +262,15 @@ export const useAppStore = create<AppState>((set, get) => ({
       { id: 'pexels', name: 'Pexels', type: 'pexels' as const, enabled: false, apiKey: null },
       { id: 'unsplash', name: 'Unsplash', type: 'unsplash' as const, enabled: false, apiKey: null },
       { id: 'pixabay', name: 'Pixabay', type: 'pixabay' as const, enabled: false, apiKey: null }
+    ]
+  },
+
+  // Citation source defaults (Knowledge Web). Most sources are keyless.
+  citationApis: {
+    providers: [
+      { id: 'crossref', name: 'Crossref', type: 'crossref' as const, enabled: true, apiKey: null },
+      { id: 'openalex', name: 'OpenAlex', type: 'openalex' as const, enabled: false, apiKey: null },
+      { id: 'datacite', name: 'DataCite', type: 'datacite' as const, enabled: false, apiKey: null }
     ]
   },
 
@@ -719,6 +735,78 @@ export const useAppStore = create<AppState>((set, get) => ({
       const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
       window.electronAPI.settings.set('visualApis', { providers: nonSensitive })
       return { visualApis: { providers } }
+    })
+  },
+
+  // Citation source actions (Knowledge Web) — mirrors the Visual API slice:
+  // non-sensitive config in settings, API keys in the OS keychain via secrets.
+  loadCitationApiSettings: async () => {
+    try {
+      const saved = (await window.electronAPI.settings.get('citationApis')) as {
+        providers: Omit<CitationSourceProvider, 'apiKey'>[]
+      } | null
+      if (saved?.providers) {
+        const providers = await Promise.all(
+          saved.providers.map(async (p) => {
+            const apiKey = await window.electronAPI.secrets.get(`citationApi_${p.id}`)
+            return { ...p, apiKey } as CitationSourceProvider
+          })
+        )
+        set({ citationApis: { providers } })
+      }
+    } catch (err) {
+      console.error('Failed to load citation source settings:', err)
+    }
+  },
+
+  updateCitationApiProvider: (id, updates) => {
+    set((state) => {
+      const providers = state.citationApis.providers.map((p) =>
+        p.id === id ? { ...p, ...updates } : p
+      )
+
+      // Persist API key to secrets (custom sources only need this)
+      if ('apiKey' in updates) {
+        if (updates.apiKey) {
+          window.electronAPI.secrets.set(`citationApi_${id}`, updates.apiKey)
+        } else {
+          window.electronAPI.secrets.delete(`citationApi_${id}`)
+        }
+      }
+
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('citationApis', { providers: nonSensitive })
+
+      return { citationApis: { providers } }
+    })
+  },
+
+  addCustomCitationApi: () => {
+    set((state) => {
+      const newProvider: CitationSourceProvider = {
+        id: uid('capi'),
+        name: 'Custom Source',
+        type: 'custom',
+        enabled: false,
+        apiKey: null,
+        endpoint: '',
+        headerName: 'Authorization',
+        headerValuePrefix: 'Bearer '
+      }
+      const providers = [...state.citationApis.providers, newProvider]
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('citationApis', { providers: nonSensitive })
+      return { citationApis: { providers } }
+    })
+  },
+
+  removeCitationApi: (id) => {
+    set((state) => {
+      const providers = state.citationApis.providers.filter((p) => p.id !== id)
+      window.electronAPI.secrets.delete(`citationApi_${id}`)
+      const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
+      window.electronAPI.settings.set('citationApis', { providers: nonSensitive })
+      return { citationApis: { providers } }
     })
   },
 

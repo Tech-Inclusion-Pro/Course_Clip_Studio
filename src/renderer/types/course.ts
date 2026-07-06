@@ -852,6 +852,9 @@ export interface ContentAreaFile {
   path: string
   priority: 1 | 2 | 3
   context?: string
+  // Knowledge Web binding (optional, backward-compatible — survives export/import):
+  sourceNoteId?: string // the citation note this file was generated from
+  live?: boolean // re-verify/reformat from source when the note is opened (pull, not push)
 }
 
 export interface ContentArea {
