@@ -139,6 +139,7 @@
     "@types/katex": "^0.16.8",
     "@xyflow/react": "^12.10.2",
     "chart.js": "^4.5.1",
+    "citeproc": "^2.4.63",
     "dagre": "^0.8.5",
     "docx": "^9.6.1",
     "electron-updater": "^6.8.3",
