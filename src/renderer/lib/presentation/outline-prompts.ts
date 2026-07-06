@@ -1,5 +1,50 @@
-import type { IntakeConfig, LayoutHint } from '@/types/presentation'
+import type { IntakeConfig, LayoutHint, SlideDraft } from '@/types/presentation'
 import { SLIDE_LAYOUTS } from './slide-layouts'
+
+export type RefineAction = 'rewrite' | 'expand' | 'shorten' | 'formal' | 'simplify'
+
+const REFINE_INSTRUCTION: Record<RefineAction, string> = {
+  rewrite: 'Rewrite this slide to be clearer and more engaging, keeping the same meaning.',
+  expand: 'Expand this slide with more supporting detail and an extra bullet or two.',
+  shorten: 'Tighten this slide — fewer words, only the essential points.',
+  formal: 'Rewrite this slide in a more formal, professional register.',
+  simplify: 'Simplify the language to be accessible to a broader audience (plain language).'
+}
+
+/**
+ * Build a prompt to refine a single slide, with the surrounding slide titles as
+ * "presentation memory" so the rewrite stays consistent with the deck. Returns a
+ * single JSON slide object (not an array).
+ */
+export function refineSlidePrompt(
+  slide: SlideDraft,
+  action: RefineAction,
+  neighborTitles: string[] = []
+): string {
+  const context = neighborTitles.length
+    ? `\n\nFor context, the surrounding slides are titled: ${neighborTitles
+        .map((t) => `"${t}"`)
+        .join(', ')}.`
+    : ''
+  return `${REFINE_INSTRUCTION[action]}${context}
+
+CURRENT SLIDE (JSON):
+${JSON.stringify(
+  {
+    title: slide.title,
+    body: slide.body,
+    speakerNotes: slide.speakerNotes,
+    imagePrompt: slide.imagePrompt,
+    layoutHint: slide.layoutHint
+  },
+  null,
+  2
+)}
+
+Return ONE JSON object (not an array) with the same fields: "title", "body" (use \\n between bullets), "speakerNotes", "imagePrompt", "layoutHint" (one of ${JSON.stringify(
+    SLIDE_LAYOUTS.map((l) => l.id)
+  )}). Keep the layout unless a different one clearly fits better. Output ONLY valid JSON, no fencing, no explanation.`
+}
 
 const DENSITY_MAP: Record<string, string> = {
   light: '2-3 bullet points per slide, concise text',

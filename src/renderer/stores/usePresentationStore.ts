@@ -37,6 +37,7 @@ interface PresentationState {
   setSlides: (slides: SlideDraft[]) => void
   updateSlide: (id: string, updates: Partial<SlideDraft>) => void
   addSlide: (afterId?: string) => void
+  duplicateSlide: (id: string) => void
   removeSlide: (id: string) => void
   reorderSlides: (fromIndex: number, toIndex: number) => void
   splitSlide: (id: string) => void
@@ -155,6 +156,20 @@ export const usePresentationStore = create<PresentationState>((set, get) => ({
     const idx = d.slides.findIndex((sl) => sl.id === afterId)
     const slides = [...d.slides]
     slides.splice(idx + 1, 0, newSlide)
+    return { ...d, slides }
+  })),
+
+  duplicateSlide: (id) => set((s) => mapDraft(s, (d) => {
+    const idx = d.slides.findIndex((sl) => sl.id === id)
+    if (idx < 0) return d
+    const copy: SlideDraft = {
+      ...d.slides[idx],
+      id: uid('slide'),
+      chart: d.slides[idx].chart ? { ...d.slides[idx].chart! } : undefined,
+      table: d.slides[idx].table ? { ...d.slides[idx].table! } : undefined
+    }
+    const slides = [...d.slides]
+    slides.splice(idx + 1, 0, copy)
     return { ...d, slides }
   })),
 

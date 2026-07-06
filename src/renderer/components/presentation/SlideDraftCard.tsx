@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { GripVertical, Trash2, Scissors, ChevronsDown, ChevronDown, ChevronUp, Flag } from 'lucide-react'
+import { GripVertical, Trash2, Scissors, ChevronsDown, ChevronDown, ChevronUp, Flag, Wand2, Loader2, Copy } from 'lucide-react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { usePresentationStore } from '@/stores/usePresentationStore'
+import { useAIGenerate } from '@/hooks/useAIGenerate'
 import { emptyChart, emptyTable } from '@/lib/presentation/chart-data'
-import type { SlideDraft, LayoutHint } from '@/types/presentation'
+import { refineSlidePrompt, type RefineAction } from '@/lib/presentation/outline-prompts'
+import type { SlideDraft } from '@/types/presentation'
 import { LayoutPicker } from './LayoutPicker'
 import { ChartTableEditor } from './ChartTableEditor'
 
@@ -14,13 +16,56 @@ interface SlideDraftCardProps {
   isLast: boolean
 }
 
+const REFINE_ACTIONS: { value: RefineAction; label: string }[] = [
+  { value: 'rewrite', label: 'Rewrite' },
+  { value: 'expand', label: 'Expand' },
+  { value: 'shorten', label: 'Shorten' },
+  { value: 'formal', label: 'More formal' },
+  { value: 'simplify', label: 'Simplify language' }
+]
+
 export function SlideDraftCard({ slide, index, isLast }: SlideDraftCardProps): JSX.Element {
   const updateSlide = usePresentationStore((s) => s.updateSlide)
   const removeSlide = usePresentationStore((s) => s.removeSlide)
   const splitSlide = usePresentationStore((s) => s.splitSlide)
   const mergeSlides = usePresentationStore((s) => s.mergeSlides)
+  const duplicateSlide = usePresentationStore((s) => s.duplicateSlide)
+  const { generate } = useAIGenerate()
 
   const [notesOpen, setNotesOpen] = useState(false)
+  const [refining, setRefining] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  async function handleRefine(action: RefineAction) {
+    setMenuOpen(false)
+    setRefining(true)
+    try {
+      const slides = usePresentationStore.getState().activeDraft?.slides ?? []
+      const i = slides.findIndex((s) => s.id === slide.id)
+      const neighbors = [slides[i - 1]?.title, slides[i + 1]?.title].filter(Boolean) as string[]
+      const prompt = refineSlidePrompt(slide, action, neighbors)
+      const result = await generate(
+        prompt,
+        'You are an expert presentation designer. Respond with a single valid JSON object only.'
+      )
+      if (!result) return
+      let jsonStr = result.trim()
+      const fence = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/)
+      if (fence) jsonStr = fence[1].trim()
+      const obj = JSON.parse(jsonStr) as Record<string, unknown>
+      updateSlide(slide.id, {
+        title: String(obj.title ?? slide.title),
+        body: String(obj.body ?? slide.body),
+        speakerNotes: String(obj.speakerNotes ?? slide.speakerNotes),
+        imagePrompt: String(obj.imagePrompt ?? slide.imagePrompt),
+        layoutHint: (obj.layoutHint as SlideDraft['layoutHint']) ?? slide.layoutHint
+      })
+    } catch {
+      // Ignore parse failures — leave the slide unchanged.
+    } finally {
+      setRefining(false)
+    }
+  }
 
   const {
     attributes,
@@ -91,6 +136,43 @@ export function SlideDraftCard({ slide, index, isLast }: SlideDraftCardProps): J
 
         {/* Actions */}
         <div className="flex items-center gap-0.5">
+          {/* Refine with AI */}
+          <div className="relative">
+            <button
+              onClick={() => setMenuOpen((o) => !o)}
+              disabled={refining}
+              className="p-1 rounded text-[var(--text-tertiary)] hover:text-[var(--brand-magenta)] hover:bg-[var(--bg-hover)] cursor-pointer disabled:opacity-50"
+              title="Refine this slide with AI"
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+            >
+              {refining ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />}
+            </button>
+            {menuOpen && (
+              <div
+                role="menu"
+                className="absolute right-0 top-full mt-1 z-20 min-w-[140px] py-1 rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] shadow-[var(--shadow-lg)]"
+              >
+                {REFINE_ACTIONS.map((a) => (
+                  <button
+                    key={a.value}
+                    role="menuitem"
+                    onClick={() => handleRefine(a.value)}
+                    className="block w-full text-left px-3 py-1.5 text-xs text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] cursor-pointer"
+                  >
+                    {a.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <button
+            onClick={() => duplicateSlide(slide.id)}
+            className="p-1 rounded text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] cursor-pointer"
+            title="Duplicate slide"
+          >
+            <Copy size={14} />
+          </button>
           <button
             onClick={() => splitSlide(slide.id)}
             className="p-1 rounded text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] cursor-pointer"
