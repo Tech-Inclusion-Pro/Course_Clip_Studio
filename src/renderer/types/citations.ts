@@ -36,6 +36,22 @@ export interface CslName {
   family?: string
   given?: string
   literal?: string
+  /** ORCID iD when the source vouches for it (non-CSL; used for identity badges). */
+  ORCID?: string
+}
+
+/** ORCID identity settings (spec §4). Pass-through is keyless and always available;
+ *  native own-record is an opt-in read-public OAuth (client-credentials) integration.
+ *  Secrets (client secret, cached token) live in the OS keychain, not here. */
+export interface OrcidSettings {
+  passThroughDisambiguation: boolean // default true; no credentials
+  nativeOwnRecord: {
+    enabled: boolean // default false
+    clientId?: string
+    clientSecret?: string | null // runtime only; persisted in the OS keychain, not settings
+    userOrcidId?: string
+    environment: 'production' | 'sandbox'
+  }
 }
 
 export interface CslDate {

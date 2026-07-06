@@ -1134,6 +1134,121 @@ function GrobidRow({
   )
 }
 
+// ORCID identity group (spec §10): pass-through always available; native own-record
+// reveals credentials only when opted in.
+function OrcidFieldset(): JSX.Element {
+  const t = useT()
+  const orcid = useAppStore((s) => s.orcid)
+  const updateOrcid = useAppStore((s) => s.updateOrcidSettings)
+  const updateNative = useAppStore((s) => s.updateOrcidNativeRecord)
+  const native = orcid.nativeOwnRecord
+
+  const inputClass =
+    'w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]'
+
+  return (
+    <fieldset className="mt-4 p-3 rounded-lg border border-[var(--border-default)]">
+      <legend className="px-1 text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)]">
+        {t('settings.citations.orcidTitle', 'ORCID author identity')}
+      </legend>
+
+      <div className="flex items-center justify-between py-1">
+        <div className="pr-3">
+          <p className="text-sm text-[var(--text-primary)]">
+            {t('settings.citations.orcidPassThrough', 'Author disambiguation (pass-through)')}
+          </p>
+          <p className="text-xs text-[var(--text-tertiary)]">
+            {t(
+              'settings.citations.orcidPassThroughDesc',
+              'Adds a keyless ORCID search link to confirm authors. No credentials required.'
+            )}
+          </p>
+        </div>
+        <ToggleSwitch
+          checked={orcid.passThroughDisambiguation}
+          onChange={(v) => updateOrcid({ passThroughDisambiguation: v })}
+          label={t('settings.citations.orcidPassThrough', 'Author disambiguation')}
+        />
+      </div>
+
+      <div className="flex items-center justify-between py-1 border-t border-[var(--border-default)] mt-2 pt-2">
+        <div className="pr-3">
+          <p className="text-sm text-[var(--text-primary)]">
+            {t('settings.citations.orcidNative', 'Connect my ORCID record')}
+          </p>
+          <p className="text-xs text-[var(--text-tertiary)]">
+            {t(
+              'settings.citations.orcidNativeDesc',
+              'Optional. Read-public only — lists your own works. Credentials stay in your keychain.'
+            )}
+          </p>
+        </div>
+        <ToggleSwitch
+          checked={native.enabled}
+          onChange={(v) => updateNative({ enabled: v })}
+          label={t('settings.citations.orcidNative', 'Connect my ORCID record')}
+        />
+      </div>
+
+      {native.enabled && (
+        <div className="space-y-2 mt-2">
+          <div>
+            <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+              {t('settings.citations.orcidClientId', 'Client ID')}
+            </label>
+            <input
+              type="text"
+              value={native.clientId ?? ''}
+              onChange={(e) => updateNative({ clientId: e.target.value })}
+              className={inputClass}
+              placeholder="APP-XXXXXXXXXXXXXXXX"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+              {t('settings.citations.orcidClientSecret', 'Client secret')}
+            </label>
+            <input
+              type="password"
+              value={native.clientSecret ?? ''}
+              onChange={(e) => updateNative({ clientSecret: e.target.value || null })}
+              className={inputClass}
+              placeholder={t('settings.citations.apiKeyPlaceholder', 'Enter API key...')}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+              {t('settings.citations.orcidId', 'Your ORCID iD')}
+            </label>
+            <input
+              type="text"
+              value={native.userOrcidId ?? ''}
+              onChange={(e) => updateNative({ userOrcidId: e.target.value })}
+              className={inputClass}
+              placeholder="0000-0002-1825-0097"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+              {t('settings.citations.orcidEnv', 'Environment')}
+            </label>
+            <select
+              value={native.environment}
+              onChange={(e) =>
+                updateNative({ environment: e.target.value as 'production' | 'sandbox' })
+              }
+              className={inputClass}
+            >
+              <option value="production">Production</option>
+              <option value="sandbox">Sandbox</option>
+            </select>
+          </div>
+        </div>
+      )}
+    </fieldset>
+  )
+}
+
 function CitationApisSection(): JSX.Element {
   const t = useT()
   const providers = useAppStore((s) => s.citationApis.providers)
@@ -1327,6 +1442,8 @@ function CitationApisSection(): JSX.Element {
           {t('settings.citations.addCustom', 'Add Custom Source')}
         </button>
       </div>
+
+      <OrcidFieldset />
     </SettingsCard>
   )
 }

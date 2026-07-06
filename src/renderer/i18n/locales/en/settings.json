@@ -120,6 +120,15 @@
     "grobidCheck": "Check status",
     "grobidChecking": "Checking…",
     "grobidRunning": "Grobid is running.",
-    "grobidDown": "Not reachable. Start Grobid locally (e.g. its Docker image) to parse PDFs."
+    "grobidDown": "Not reachable. Start Grobid locally (e.g. its Docker image) to parse PDFs.",
+    "orcidTitle": "ORCID author identity",
+    "orcidPassThrough": "Author disambiguation (pass-through)",
+    "orcidPassThroughDesc": "Adds a keyless ORCID search link to confirm authors. No credentials required.",
+    "orcidNative": "Connect my ORCID record",
+    "orcidNativeDesc": "Optional. Read-public only — lists your own works. Credentials stay in your keychain.",
+    "orcidClientId": "Client ID",
+    "orcidClientSecret": "Client secret",
+    "orcidId": "Your ORCID iD",
+    "orcidEnv": "Environment"
   }
 }

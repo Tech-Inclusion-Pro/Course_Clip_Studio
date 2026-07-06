@@ -11,9 +11,10 @@ import * as unpaywall from './unpaywall'
 import * as arxiv from './arxiv'
 import * as core from './core'
 import * as grobid from './grobid'
+import * as orcid from './orcid'
 
 export * from './http'
-export { crossref, custom, semanticScholar, europepmc, unpaywall, arxiv, core, grobid }
+export { crossref, custom, semanticScholar, europepmc, unpaywall, arxiv, core, grobid, orcid }
 
 // Sources that cannot be used without an API key (spec §4.1 / §11).
 const KEY_REQUIRED: ReadonlySet<CitationSourceProvider['type']> = new Set(['openalex', 'core'])

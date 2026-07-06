@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { AISettings, AccessibilitySettings, BrandKit, VisualApiProvider, VideoApiProvider, ChartApiProvider, AudioApiProvider, DiagramApiProvider, InteractiveVideoApiProvider, MathApiProvider, ContentImportProvider, AssetManagementProvider, BaseBrainSettings, BaseBrainFile, ContentArea, ContentAreaFile, UserTemplate } from '@/types/course'
-import type { CitationSourceProvider } from '@/types/citations'
+import type { CitationSourceProvider, OrcidSettings } from '@/types/citations'
 import { uid } from '@/lib/uid'
 import wcagScreener from '@/assets/base-brain/01_WCAG_Accessibility_Screener.md?raw'
 import udlScreener from '@/assets/base-brain/02_UDL_Screener.md?raw'
@@ -44,6 +44,7 @@ interface AppState {
   // Visual API settings
   visualApis: { providers: VisualApiProvider[] }
   citationApis: { providers: CitationSourceProvider[] }
+  orcid: OrcidSettings
 
   // Video API settings
   videoApis: { providers: VideoApiProvider[] }
@@ -144,6 +145,10 @@ interface AppState {
   updateCitationApiProvider: (id: string, updates: Partial<CitationSourceProvider>) => void
   addCustomCitationApi: () => void
   removeCitationApi: (id: string) => void
+  // ORCID identity settings (Knowledge Web)
+  loadOrcidSettings: () => Promise<void>
+  updateOrcidSettings: (updates: Partial<OrcidSettings>) => void
+  updateOrcidNativeRecord: (updates: Partial<OrcidSettings['nativeOwnRecord']>) => void
 
   // Video API actions
   loadVideoApiSettings: () => Promise<void>
@@ -192,6 +197,15 @@ interface AppState {
   updateAssetManagementProvider: (id: string, updates: Partial<AssetManagementProvider>) => void
   addCustomAssetManagementApi: () => void
   removeAssetManagementApi: (id: string) => void
+}
+
+/** Persist ORCID settings to disk, stripping the client secret (kept in keychain). */
+function persistOrcid(orcid: OrcidSettings): void {
+  const { clientSecret: _drop, ...nativeSafe } = orcid.nativeOwnRecord
+  window.electronAPI.settings.set('orcid', {
+    passThroughDisambiguation: orcid.passThroughDisambiguation,
+    nativeOwnRecord: nativeSafe
+  })
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -278,6 +292,18 @@ export const useAppStore = create<AppState>((set, get) => ({
       { id: 'core', name: 'CORE', type: 'core' as const, enabled: false, apiKey: null },
       { id: 'grobid', name: 'Grobid (local PDF parsing)', type: 'grobid' as const, enabled: false, apiKey: null, local: true, localEndpoint: 'http://localhost:8070' }
     ]
+  },
+
+  // ORCID identity defaults: pass-through on; native own-record opt-in.
+  orcid: {
+    passThroughDisambiguation: true,
+    nativeOwnRecord: {
+      enabled: false,
+      clientId: '',
+      clientSecret: null,
+      userOrcidId: '',
+      environment: 'production'
+    }
   },
 
   // Video API defaults
@@ -813,6 +839,49 @@ export const useAppStore = create<AppState>((set, get) => ({
       const nonSensitive = providers.map(({ apiKey: _, ...rest }) => rest)
       window.electronAPI.settings.set('citationApis', { providers: nonSensitive })
       return { citationApis: { providers } }
+    })
+  },
+
+  // ORCID identity actions. Non-secret config → settings; client secret → keychain.
+  loadOrcidSettings: async () => {
+    try {
+      const saved = (await window.electronAPI.settings.get('orcid')) as OrcidSettings | null
+      if (saved) {
+        const clientSecret = await window.electronAPI.secrets.get('orcid_clientSecret')
+        set({
+          orcid: {
+            ...saved,
+            nativeOwnRecord: { ...saved.nativeOwnRecord, clientSecret }
+          }
+        })
+      }
+    } catch (err) {
+      console.error('Failed to load ORCID settings:', err)
+    }
+  },
+
+  updateOrcidSettings: (updates) => {
+    set((state) => {
+      const orcid = { ...state.orcid, ...updates }
+      persistOrcid(orcid)
+      return { orcid }
+    })
+  },
+
+  updateOrcidNativeRecord: (updates) => {
+    set((state) => {
+      const nativeOwnRecord = { ...state.orcid.nativeOwnRecord, ...updates }
+      // Persist the client secret to the keychain, never to settings.
+      if ('clientSecret' in updates) {
+        if (updates.clientSecret) {
+          window.electronAPI.secrets.set('orcid_clientSecret', updates.clientSecret)
+        } else {
+          window.electronAPI.secrets.delete('orcid_clientSecret')
+        }
+      }
+      const orcid = { ...state.orcid, nativeOwnRecord }
+      persistOrcid(orcid)
+      return { orcid }
     })
   },
 

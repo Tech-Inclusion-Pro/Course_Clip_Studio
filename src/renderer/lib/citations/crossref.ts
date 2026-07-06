@@ -23,9 +23,16 @@ function politeHeaders(contactEmail?: string): Record<string, string> {
 /** Map a Crossref `message` object to our minimal CSL-JSON record. */
 export function crossrefToCsl(msg: Record<string, unknown>): CitationSourceRecord {
   const authors = Array.isArray(msg.author)
-    ? (msg.author as Record<string, string>[]).map(
-        (a): CslName => ({ family: a.family, given: a.given, literal: a.name })
-      )
+    ? (msg.author as Record<string, string>[]).map((a): CslName => {
+        // Crossref exposes ORCID + an authenticated-orcid flag on each author.
+        const orcid = a.ORCID || (a as Record<string, unknown>)['authenticated-orcid']
+        return {
+          family: a.family,
+          given: a.given,
+          literal: a.name,
+          ORCID: typeof orcid === 'string' ? orcid : undefined
+        }
+      })
     : undefined
   const issued = (msg.issued as { 'date-parts'?: number[][] } | undefined)?.['date-parts']
   const title = Array.isArray(msg.title) ? (msg.title as string[])[0] : (msg.title as string)

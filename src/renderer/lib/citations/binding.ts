@@ -15,6 +15,7 @@ import type {
 } from '@/types/citations'
 import { uid } from '@/lib/uid'
 import { formatApa } from './apa'
+import { authorIdentityFor } from './orcid'
 
 const DOI_STATUS_LABEL: Record<Tier1Result['state'], string> = {
   verified: 'DOI-verified',
@@ -117,7 +118,7 @@ export function buildBinding(opts: {
   const provenance: CitationProvenance = {
     sourceClass,
     doiVerification: tier1.state,
-    authorIdentity: 'unverified',
+    authorIdentity: authorIdentityFor(record),
     retrievedFrom: record.retrievedFrom ? [record.retrievedFrom] : []
   }
   const context = buildProvenanceContext(provenance, {

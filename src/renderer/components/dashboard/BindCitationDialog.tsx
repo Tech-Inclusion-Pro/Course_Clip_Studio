@@ -9,10 +9,11 @@
  */
 
 import { useState, useEffect } from 'react'
-import { X, BookMarked, CheckCircle2, AlertTriangle, HelpCircle, Loader2 } from 'lucide-react'
+import { X, BookMarked, CheckCircle2, AlertTriangle, HelpCircle, Loader2, BadgeCheck } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useAppStore } from '@/stores/useAppStore'
 import { getFirstEnabledCitationProvider, lookupByDoi } from '@/lib/citations'
+import { authorIdentityFor } from '@/lib/citations/orcid'
 import { verifyDoi } from '@/lib/citations/verify'
 import { formatApa } from '@/lib/citations/apa'
 import { buildBinding } from '@/lib/citations/binding'
@@ -189,7 +190,7 @@ export function BindCitationDialog({ contentArea, onClose }: Props): JSX.Element
         {status !== 'idle' && record && tier1 && (
           <div className="mt-4 space-y-3">
             <div className="p-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)]">
-              <div aria-live="polite" className="mb-2">
+              <div aria-live="polite" className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
                 {badge && (
                   <span
                     className="inline-flex items-center gap-1.5 text-xs font-[var(--font-weight-medium)]"
@@ -197,6 +198,15 @@ export function BindCitationDialog({ contentArea, onClose }: Props): JSX.Element
                   >
                     <badge.icon size={14} aria-hidden="true" />
                     {badge.label}
+                  </span>
+                )}
+                {authorIdentityFor(record) === 'orcid_verified' && (
+                  <span
+                    className="inline-flex items-center gap-1.5 text-xs font-[var(--font-weight-medium)]"
+                    style={{ color: '#2e7d32' }}
+                  >
+                    <BadgeCheck size={14} aria-hidden="true" />
+                    Author verified (ORCID)
                   </span>
                 )}
               </div>
