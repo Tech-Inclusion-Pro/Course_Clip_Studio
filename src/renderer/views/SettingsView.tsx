@@ -1041,7 +1041,12 @@ function VisualApisSection(): JSX.Element {
 const CITATION_KEY_POSTURE: Record<string, 'keyless' | 'keyOptional' | 'keyRequired'> = {
   crossref: 'keyless',
   datacite: 'keyless',
-  openalex: 'keyOptional'
+  arxiv: 'keyless',
+  unpaywall: 'keyless', // needs a contact email, not a key
+  semanticScholar: 'keyOptional',
+  pubmed: 'keyOptional',
+  openalex: 'keyRequired',
+  core: 'keyRequired'
 }
 
 function CitationApisSection(): JSX.Element {
@@ -1062,6 +1067,7 @@ function CitationApisSection(): JSX.Element {
       <div className="space-y-3">
         {providers.map((provider) => {
           const posture = CITATION_KEY_POSTURE[provider.type] ?? 'keyOptional'
+          const needsKey = posture === 'keyRequired' && !provider.apiKey
           return (
             <div
               key={provider.id}
@@ -1082,6 +1088,11 @@ function CitationApisSection(): JSX.Element {
                       {t('settings.citations.keyOptional', 'Key optional')}
                     </span>
                   )}
+                  {provider.type !== 'custom' && posture === 'keyRequired' && (
+                    <span className="px-1.5 py-0.5 text-[10px] font-[var(--font-weight-medium)] text-amber-800 bg-amber-100 rounded">
+                      {t('settings.citations.keyRequired', 'Key required')}
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   {provider.type === 'custom' && (
@@ -1093,13 +1104,44 @@ function CitationApisSection(): JSX.Element {
                       <Trash2 size={14} />
                     </button>
                   )}
-                  <ToggleSwitch
-                    checked={provider.enabled}
-                    onChange={(v) => updateProvider(provider.id, { enabled: v })}
-                    label={`${t('settings.citations.enable', 'Enable')} ${provider.name}`}
-                  />
+                  <div
+                    className={needsKey ? 'opacity-50 pointer-events-none' : ''}
+                    aria-disabled={needsKey}
+                    title={
+                      needsKey
+                        ? t('settings.citations.needsKeyHint', 'Add a key below to enable this source')
+                        : undefined
+                    }
+                  >
+                    <ToggleSwitch
+                      checked={provider.enabled && !needsKey}
+                      onChange={(v) => updateProvider(provider.id, { enabled: needsKey ? false : v })}
+                      label={`${t('settings.citations.enable', 'Enable')} ${provider.name}`}
+                    />
+                  </div>
                 </div>
               </div>
+
+              {/* Key-required sources: show the key field + hint even when disabled (§11). */}
+              {provider.type !== 'custom' && posture === 'keyRequired' && !provider.enabled && (
+                <div className="space-y-1">
+                  <input
+                    type="password"
+                    value={provider.apiKey ?? ''}
+                    onChange={(e) => updateProvider(provider.id, { apiKey: e.target.value || null })}
+                    className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                    placeholder={t('settings.citations.apiKeyPlaceholder', 'Enter API key...')}
+                  />
+                  {needsKey && (
+                    <p className="text-xs text-[var(--text-tertiary)]">
+                      {t(
+                        'settings.citations.addKeyToEnable',
+                        'Add a free key to enable this source.'
+                      )}
+                    </p>
+                  )}
+                </div>
+              )}
 
               {provider.enabled && (
                 <div className="space-y-2">

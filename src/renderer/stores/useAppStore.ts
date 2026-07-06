@@ -270,7 +270,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     providers: [
       { id: 'crossref', name: 'Crossref', type: 'crossref' as const, enabled: true, apiKey: null },
       { id: 'openalex', name: 'OpenAlex', type: 'openalex' as const, enabled: false, apiKey: null },
-      { id: 'datacite', name: 'DataCite', type: 'datacite' as const, enabled: false, apiKey: null }
+      { id: 'semanticScholar', name: 'Semantic Scholar', type: 'semanticScholar' as const, enabled: true, apiKey: null },
+      { id: 'pubmed', name: 'PubMed / Europe PMC', type: 'pubmed' as const, enabled: true, apiKey: null },
+      { id: 'unpaywall', name: 'Unpaywall', type: 'unpaywall' as const, enabled: true, apiKey: null },
+      { id: 'arxiv', name: 'arXiv', type: 'arxiv' as const, enabled: true, apiKey: null },
+      { id: 'datacite', name: 'DataCite', type: 'datacite' as const, enabled: false, apiKey: null },
+      { id: 'core', name: 'CORE', type: 'core' as const, enabled: false, apiKey: null }
     ]
   },
 

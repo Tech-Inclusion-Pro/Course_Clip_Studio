@@ -10,7 +10,16 @@
 export interface CitationSourceProvider {
   id: string
   name: string
-  type: 'crossref' | 'datacite' | 'openalex' | 'custom'
+  type:
+    | 'crossref'
+    | 'datacite'
+    | 'openalex'
+    | 'semanticScholar'
+    | 'pubmed'
+    | 'unpaywall'
+    | 'arxiv'
+    | 'core'
+    | 'custom'
   enabled: boolean
   apiKey: string | null
   contactEmail?: string // polite-pool APIs (Crossref/Unpaywall mailto)
