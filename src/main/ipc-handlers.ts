@@ -334,6 +334,7 @@ export function registerIpcHandlers(): void {
         fileData: ArrayBuffer
         fileName: string
         fieldName: string
+        fileContentType?: string
         extraFields?: Record<string, string>
       }
     ): Promise<{ status: number; statusText: string; body: string }> => {
@@ -356,7 +357,7 @@ export function registerIpcHandlers(): void {
 
           // File field
           parts.push(Buffer.from(
-            `--${boundary}\r\nContent-Disposition: form-data; name="${opts.fieldName}"; filename="${opts.fileName}"\r\nContent-Type: application/zip\r\n\r\n`
+            `--${boundary}\r\nContent-Disposition: form-data; name="${opts.fieldName}"; filename="${opts.fileName}"\r\nContent-Type: ${opts.fileContentType ?? 'application/zip'}\r\n\r\n`
           ))
           parts.push(fileBuffer)
           parts.push(Buffer.from(`\r\n--${boundary}--\r\n`))

@@ -10,16 +10,18 @@ import * as europepmc from './europepmc'
 import * as unpaywall from './unpaywall'
 import * as arxiv from './arxiv'
 import * as core from './core'
+import * as grobid from './grobid'
 
 export * from './http'
-export { crossref, custom, semanticScholar, europepmc, unpaywall, arxiv, core }
+export { crossref, custom, semanticScholar, europepmc, unpaywall, arxiv, core, grobid }
 
 // Sources that cannot be used without an API key (spec §4.1 / §11).
 const KEY_REQUIRED: ReadonlySet<CitationSourceProvider['type']> = new Set(['openalex', 'core'])
 
-/** Whether a provider is actually usable (enabled + any required key/endpoint present). */
+/** Whether a provider can resolve a DOI/query (enabled + key/endpoint present, not a
+ *  local PDF parser like Grobid, which is a separate extraction flow). */
 export function isProviderUsable(p: CitationSourceProvider): boolean {
-  if (!p.enabled) return false
+  if (!p.enabled || p.local) return false
   if (KEY_REQUIRED.has(p.type) && !p.apiKey) return false
   if (p.type === 'custom' && !p.endpoint) return false
   return true

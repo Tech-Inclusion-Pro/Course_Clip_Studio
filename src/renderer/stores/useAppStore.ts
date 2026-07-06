@@ -275,7 +275,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       { id: 'unpaywall', name: 'Unpaywall', type: 'unpaywall' as const, enabled: true, apiKey: null },
       { id: 'arxiv', name: 'arXiv', type: 'arxiv' as const, enabled: true, apiKey: null },
       { id: 'datacite', name: 'DataCite', type: 'datacite' as const, enabled: false, apiKey: null },
-      { id: 'core', name: 'CORE', type: 'core' as const, enabled: false, apiKey: null }
+      { id: 'core', name: 'CORE', type: 'core' as const, enabled: false, apiKey: null },
+      { id: 'grobid', name: 'Grobid (local PDF parsing)', type: 'grobid' as const, enabled: false, apiKey: null, local: true, localEndpoint: 'http://localhost:8070' }
     ]
   },
 

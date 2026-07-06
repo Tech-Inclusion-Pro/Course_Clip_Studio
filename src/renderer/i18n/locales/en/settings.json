@@ -114,6 +114,12 @@
     "sourceName": "Source name",
     "endpoint": "Endpoint URL",
     "headerName": "Auth header name",
-    "addCustom": "Add Custom Source"
+    "addCustom": "Add Custom Source",
+    "local": "Local",
+    "grobidEndpoint": "Local endpoint",
+    "grobidCheck": "Check status",
+    "grobidChecking": "Checking…",
+    "grobidRunning": "Grobid is running.",
+    "grobidDown": "Not reachable. Start Grobid locally (e.g. its Docker image) to parse PDFs."
   }
 }

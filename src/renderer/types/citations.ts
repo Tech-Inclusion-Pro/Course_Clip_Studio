@@ -19,6 +19,7 @@ export interface CitationSourceProvider {
     | 'unpaywall'
     | 'arxiv'
     | 'core'
+    | 'grobid'
     | 'custom'
   enabled: boolean
   apiKey: string | null
@@ -26,6 +27,8 @@ export interface CitationSourceProvider {
   endpoint?: string // custom sources
   headerName?: string // custom sources (e.g. 'Authorization')
   headerValuePrefix?: string // custom sources (e.g. 'Bearer ')
+  local?: boolean // runs on-device (e.g. Grobid)
+  localEndpoint?: string // e.g. http://localhost:8070
 }
 
 /** Minimal CSL-JSON record — the lingua franca fed to citeproc for APA 7 formatting. */

@@ -49,6 +49,8 @@ import { ColorInput } from '@/components/ui/ColorInput'
 import { AnalyticsSettingsTab } from '@/components/settings/AnalyticsSettingsTab'
 import { TippySettingsPanel } from '@/components/tippy/TippySettingsPanel'
 import { KeyboardShortcutsSettingsPanel } from '@/components/settings/KeyboardShortcutsSettingsPanel'
+import { isGrobidRunning } from '@/lib/citations/grobid'
+import type { CitationSourceProvider } from '@/types/citations'
 import type { LRSSettings } from '@/types/course'
 
 type SettingsTab = 'general' | 'brand' | 'ai' | 'accessibility' | 'shortcuts' | 'analytics' | 'tippy'
@@ -1049,6 +1051,89 @@ const CITATION_KEY_POSTURE: Record<string, 'keyless' | 'keyOptional' | 'keyRequi
   core: 'keyRequired'
 }
 
+// Grobid is a local PDF-parsing source: endpoint config + a live reachability check.
+function GrobidRow({
+  provider,
+  update
+}: {
+  provider: CitationSourceProvider
+  update: (id: string, updates: Partial<CitationSourceProvider>) => void
+}): JSX.Element {
+  const t = useT()
+  const [status, setStatus] = useState<'unknown' | 'checking' | 'running' | 'down'>('unknown')
+  const endpoint = provider.localEndpoint ?? 'http://localhost:8070'
+
+  async function check(): Promise<void> {
+    setStatus('checking')
+    setStatus((await isGrobidRunning(endpoint)) ? 'running' : 'down')
+  }
+
+  return (
+    <div className="p-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+            {provider.name}
+          </span>
+          <span className="px-1.5 py-0.5 text-[10px] font-[var(--font-weight-medium)] text-indigo-700 bg-indigo-100 rounded">
+            {t('settings.citations.local', 'Local')}
+          </span>
+        </div>
+        <ToggleSwitch
+          checked={provider.enabled}
+          onChange={(v) => update(provider.id, { enabled: v })}
+          label={`${t('settings.citations.enable', 'Enable')} ${provider.name}`}
+        />
+      </div>
+
+      {provider.enabled && (
+        <div className="space-y-2">
+          <div>
+            <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+              {t('settings.citations.grobidEndpoint', 'Local endpoint')}
+            </label>
+            <input
+              type="text"
+              value={endpoint}
+              onChange={(e) => update(provider.id, { localEndpoint: e.target.value })}
+              className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+              placeholder="http://localhost:8070"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={check}
+              className="px-2.5 py-1 text-xs rounded-md border border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] cursor-pointer"
+            >
+              {t('settings.citations.grobidCheck', 'Check status')}
+            </button>
+            <span aria-live="polite" className="text-xs">
+              {status === 'checking' && (
+                <span className="text-[var(--text-tertiary)]">
+                  {t('settings.citations.grobidChecking', 'Checking…')}
+                </span>
+              )}
+              {status === 'running' && (
+                <span className="text-emerald-700">
+                  {t('settings.citations.grobidRunning', 'Grobid is running.')}
+                </span>
+              )}
+              {status === 'down' && (
+                <span className="text-[var(--text-tertiary)]">
+                  {t(
+                    'settings.citations.grobidDown',
+                    'Not reachable. Start Grobid locally (e.g. its Docker image) to parse PDFs.'
+                  )}
+                </span>
+              )}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function CitationApisSection(): JSX.Element {
   const t = useT()
   const providers = useAppStore((s) => s.citationApis.providers)
@@ -1066,6 +1151,9 @@ function CitationApisSection(): JSX.Element {
       </p>
       <div className="space-y-3">
         {providers.map((provider) => {
+          if (provider.type === 'grobid') {
+            return <GrobidRow key={provider.id} provider={provider} update={updateProvider} />
+          }
           const posture = CITATION_KEY_POSTURE[provider.type] ?? 'keyOptional'
           const needsKey = posture === 'keyRequired' && !provider.apiKey
           return (

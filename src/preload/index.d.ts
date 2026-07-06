@@ -60,6 +60,7 @@ interface LuminaAPI {
       fileData: ArrayBuffer
       fileName: string
       fieldName: string
+      fileContentType?: string
       extraFields?: Record<string, string>
     }): Promise<{ status: number; statusText: string; body: string }>
     downloadFile(opts: {
