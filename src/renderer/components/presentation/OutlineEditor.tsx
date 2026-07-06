@@ -1,4 +1,4 @@
-import { Plus, Sparkles, Play, Loader2 } from 'lucide-react'
+import { Plus, Sparkles, Play, Loader2, Quote } from 'lucide-react'
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor,
   useSensor, useSensors, type DragEndEvent
@@ -11,6 +11,7 @@ import { usePresentationStore } from '@/stores/usePresentationStore'
 import { useAIGenerate } from '@/hooks/useAIGenerate'
 import { promptModeOutlinePrompt, notesModeOutlinePrompt } from '@/lib/presentation/outline-prompts'
 import { uid } from '@/lib/uid'
+import { collectCitations, hasReferencesSlide, buildReferencesSlide } from '@/lib/presentation/references'
 import { SlideDraftCard } from './SlideDraftCard'
 import { ImageStylePicker } from './ImageStylePicker'
 import { ThemePicker } from './ThemePicker'
@@ -74,7 +75,7 @@ export function OutlineEditor(): JSX.Element {
         body: String(item.body ?? ''),
         speakerNotes: String(item.speakerNotes ?? ''),
         imagePrompt: String(item.imagePrompt ?? ''),
-        layoutHint: item.layoutHint ?? 'bullets',
+        layoutHint: (item.layoutHint as SlideDraft['layoutHint']) ?? 'bullets',
         flags: Array.isArray(item.flags) ? item.flags as SlideFlag[] : []
       }))
 
@@ -86,6 +87,12 @@ export function OutlineEditor(): JSX.Element {
   }
 
   const slideIds = slides.map((s) => s.id)
+  const citations = collectCitations(slides)
+  const canAddReferences = citations.length > 0 && !hasReferencesSlide(slides)
+
+  function handleAddReferences() {
+    setSlides([...slides, buildReferencesSlide(citations)])
+  }
 
   return (
     <div className="space-y-4">
@@ -100,6 +107,12 @@ export function OutlineEditor(): JSX.Element {
             <Plus size={14} />
             Add Slide
           </Button>
+          {canAddReferences && (
+            <Button variant="ghost" size="sm" onClick={handleAddReferences}>
+              <Quote size={14} />
+              Add References ({citations.length})
+            </Button>
+          )}
           <Button variant="ghost" size="sm" onClick={handleRegenerate} disabled={isGenerating || !draft?.prompt.trim()}>
             {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
             Regenerate
