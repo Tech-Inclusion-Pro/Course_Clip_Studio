@@ -30,7 +30,8 @@ import {
   X,
   MessageCircle,
   Keyboard,
-  BookMarked
+  BookMarked,
+  Sparkles
 } from 'lucide-react'
 import { useAppStore, type ThemeMode } from '@/stores/useAppStore'
 import { useLocaleStore } from '@/stores/useLocaleStore'
@@ -705,8 +706,110 @@ function AISettingsPanel(): JSX.Element {
 
       <AssetManagementApisSection />
 
+      <ImageGenSection />
+
       <CitationApisSection />
     </div>
+  )
+}
+
+function ImageGenSection(): JSX.Element {
+  const t = useT()
+  const cfg = useAppStore((s) => s.imageGen)
+  const update = useAppStore((s) => s.updateImageGen)
+  const inputClass =
+    'w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]'
+
+  return (
+    <SettingsCard title={t('settings.imageGen.title', 'AI Image Generation')} icon={Sparkles}>
+      <p className="text-xs text-[var(--text-tertiary)] mb-3">
+        {t(
+          'settings.imageGen.description',
+          'Generate slide images from a prompt (bring your own key). Used alongside stock search in the presentation builder. Generated images still require alt text.'
+        )}
+      </p>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-sm text-[var(--text-primary)]">
+          {t('settings.imageGen.enable', 'Enable image generation')}
+        </span>
+        <ToggleSwitch
+          checked={cfg.enabled}
+          onChange={(v) => update({ enabled: v })}
+          label={t('settings.imageGen.enable', 'Enable image generation')}
+        />
+      </div>
+      {cfg.enabled && (
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                {t('settings.imageGen.provider', 'Provider')}
+              </label>
+              <select
+                value={cfg.provider}
+                onChange={(e) => update({ provider: e.target.value as 'openai' | 'custom' })}
+                className={inputClass}
+              >
+                <option value="openai">OpenAI</option>
+                <option value="custom">Custom (OpenAI-compatible)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                {t('settings.imageGen.model', 'Model')}
+              </label>
+              <input
+                type="text"
+                value={cfg.model}
+                onChange={(e) => update({ model: e.target.value })}
+                className={inputClass}
+                placeholder="gpt-image-1"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+              {t('settings.imageGen.apiKey', 'API key')}
+            </label>
+            <input
+              type="password"
+              value={cfg.apiKey ?? ''}
+              onChange={(e) => update({ apiKey: e.target.value || null })}
+              className={inputClass}
+              placeholder={t('settings.imageGen.apiKeyPlaceholder', 'Enter API key...')}
+            />
+          </div>
+          {cfg.provider === 'custom' && (
+            <div>
+              <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                {t('settings.imageGen.endpoint', 'Endpoint URL')}
+              </label>
+              <input
+                type="text"
+                value={cfg.endpoint ?? ''}
+                onChange={(e) => update({ endpoint: e.target.value })}
+                className={inputClass}
+                placeholder="https://api.example.com/v1/images/generations"
+              />
+            </div>
+          )}
+          <div>
+            <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+              {t('settings.imageGen.size', 'Image size')}
+            </label>
+            <select
+              value={cfg.size}
+              onChange={(e) => update({ size: e.target.value })}
+              className={inputClass}
+            >
+              <option value="1024x1024">1024 × 1024 (square)</option>
+              <option value="1536x1024">1536 × 1024 (landscape)</option>
+              <option value="1024x1536">1024 × 1536 (portrait)</option>
+            </select>
+          </div>
+        </div>
+      )}
+    </SettingsCard>
   )
 }
 

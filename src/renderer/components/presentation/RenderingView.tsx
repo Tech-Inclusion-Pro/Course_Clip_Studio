@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ImageIcon, ArrowRight, AlertTriangle } from 'lucide-react'
+import { ImageIcon, ArrowRight, AlertTriangle, Sparkles, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { StockSearchDialog } from '@/components/ui/StockSearchDialog'
 import { usePresentationStore } from '@/stores/usePresentationStore'
@@ -7,6 +7,7 @@ import { useAppStore } from '@/stores/useAppStore'
 import { getThemeById } from '@/lib/presentation/themes'
 import { verifyThemeContrast } from '@/lib/presentation/wcag-verifier'
 import { getDeckAssetsDir } from '@/lib/presentation/deck-persistence'
+import { generateSlideImage, ImageGenError } from '@/lib/presentation/image-gen'
 import { ContrastReportPanel } from './ContrastReportPanel'
 import type { RenderedSlide, ContrastReport } from '@/types/presentation'
 
@@ -25,10 +26,13 @@ export function RenderingView(): JSX.Element {
   const finalizeDeck = usePresentationStore((s) => s.finalizeDeck)
   const setStep = usePresentationStore((s) => s.setStep)
   const workspacePath = useAppStore((s) => s.workspacePath)
+  const imageGen = useAppStore((s) => s.imageGen)
 
   const [contrastReport, setContrastReport] = useState<ContrastReport | null>(null)
   const [overrideReason, setOverrideReason] = useState('')
   const [searchSlideId, setSearchSlideId] = useState<string | null>(null)
+  const [generatingId, setGeneratingId] = useState<string | null>(null)
+  const [genError, setGenError] = useState<string | null>(null)
 
   const theme = draft ? getThemeById(draft.themeId) : getThemeById('lumina-light')
   const renderedSlides = activeDeck?.slides ?? []
@@ -67,12 +71,39 @@ export function RenderingView(): JSX.Element {
     setSearchSlideId(null)
   }
 
+  async function handleGenerateImage(slide: RenderedSlide) {
+    if (!activeDeck || !workspacePath) {
+      setGenError('Choose a workspace folder before generating images.')
+      return
+    }
+    setGenError(null)
+    setGeneratingId(slide.id)
+    try {
+      const path = await generateSlideImage({
+        prompt: slide.imagePrompt || slide.title,
+        style: imageStyle,
+        cfg: imageGen,
+        assetsDir: getDeckAssetsDir(workspacePath, activeDeck),
+        slideId: slide.id
+      })
+      handleImageSelect(slide.id, path)
+    } catch (err) {
+      setGenError(
+        err instanceof ImageGenError
+          ? err.message
+          : 'Image generation failed. Check your settings and try again.'
+      )
+    } finally {
+      setGeneratingId(null)
+    }
+  }
+
   function handleProceedToPreview() {
     finalizeDeck(theme)
     setStep('preview')
   }
 
-  const showContrastWarning = contrastReport && !contrastReport.allPass
+  const showContrastWarning = !!contrastReport && !contrastReport.allPass
 
   return (
     <div className="space-y-6">
@@ -138,6 +169,21 @@ export function RenderingView(): JSX.Element {
                     <ImageIcon size={12} />
                     {slide.imagePath ? 'Change' : 'Search'}
                   </Button>
+                  {imageGen.enabled && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleGenerateImage(slide)}
+                      disabled={generatingId === slide.id}
+                    >
+                      {generatingId === slide.id ? (
+                        <Loader2 size={12} className="animate-spin" />
+                      ) : (
+                        <Sparkles size={12} />
+                      )}
+                      Generate
+                    </Button>
+                  )}
                 </div>
               )}
 
@@ -171,6 +217,9 @@ export function RenderingView(): JSX.Element {
           </div>
         ))}
       </div>
+
+      {/* Image generation error */}
+      {genError && <p className="text-xs text-red-600">{genError}</p>}
 
       {/* Validation warning */}
       {missingAltText && (

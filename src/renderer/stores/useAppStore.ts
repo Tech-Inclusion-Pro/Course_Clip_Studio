@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { AISettings, AccessibilitySettings, BrandKit, VisualApiProvider, VideoApiProvider, ChartApiProvider, AudioApiProvider, DiagramApiProvider, InteractiveVideoApiProvider, MathApiProvider, ContentImportProvider, AssetManagementProvider, BaseBrainSettings, BaseBrainFile, ContentArea, ContentAreaFile, UserTemplate } from '@/types/course'
 import type { CitationSourceProvider, OrcidSettings } from '@/types/citations'
+import type { ImageGenConfig } from '@/types/presentation'
 import { uid } from '@/lib/uid'
 import wcagScreener from '@/assets/base-brain/01_WCAG_Accessibility_Screener.md?raw'
 import udlScreener from '@/assets/base-brain/02_UDL_Screener.md?raw'
@@ -45,6 +46,7 @@ interface AppState {
   visualApis: { providers: VisualApiProvider[] }
   citationApis: { providers: CitationSourceProvider[] }
   orcid: OrcidSettings
+  imageGen: ImageGenConfig
 
   // Video API settings
   videoApis: { providers: VideoApiProvider[] }
@@ -149,6 +151,9 @@ interface AppState {
   loadOrcidSettings: () => Promise<void>
   updateOrcidSettings: (updates: Partial<OrcidSettings>) => void
   updateOrcidNativeRecord: (updates: Partial<OrcidSettings['nativeOwnRecord']>) => void
+  // AI image generation (presentations)
+  loadImageGenSettings: () => Promise<void>
+  updateImageGen: (updates: Partial<ImageGenConfig>) => void
 
   // Video API actions
   loadVideoApiSettings: () => Promise<void>
@@ -304,6 +309,16 @@ export const useAppStore = create<AppState>((set, get) => ({
       userOrcidId: '',
       environment: 'production'
     }
+  },
+
+  // AI image generation defaults (opt-in, BYOK).
+  imageGen: {
+    enabled: false,
+    provider: 'openai',
+    apiKey: null,
+    model: 'gpt-image-1',
+    endpoint: '',
+    size: '1024x1024'
   },
 
   // Video API defaults
@@ -882,6 +897,38 @@ export const useAppStore = create<AppState>((set, get) => ({
       const orcid = { ...state.orcid, nativeOwnRecord }
       persistOrcid(orcid)
       return { orcid }
+    })
+  },
+
+  // AI image generation actions. Non-secret config → settings; key → keychain.
+  loadImageGenSettings: async () => {
+    try {
+      const saved = (await window.electronAPI.settings.get('imageGen')) as Omit<
+        ImageGenConfig,
+        'apiKey'
+      > | null
+      if (saved) {
+        const apiKey = await window.electronAPI.secrets.get('imageGen_key')
+        set({ imageGen: { ...saved, apiKey } })
+      }
+    } catch (err) {
+      console.error('Failed to load image generation settings:', err)
+    }
+  },
+
+  updateImageGen: (updates) => {
+    set((state) => {
+      const imageGen = { ...state.imageGen, ...updates }
+      if ('apiKey' in updates) {
+        if (updates.apiKey) {
+          window.electronAPI.secrets.set('imageGen_key', updates.apiKey)
+        } else {
+          window.electronAPI.secrets.delete('imageGen_key')
+        }
+      }
+      const { apiKey: _drop, ...nonSensitive } = imageGen
+      window.electronAPI.settings.set('imageGen', nonSensitive)
+      return { imageGen }
     })
   },
 

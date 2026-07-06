@@ -26,6 +26,7 @@ export function useWorkspaceInit(): void {
           useAppStore.getState().loadVisualApiSettings(),
           useAppStore.getState().loadCitationApiSettings(),
           useAppStore.getState().loadOrcidSettings(),
+          useAppStore.getState().loadImageGenSettings(),
           useAppStore.getState().loadVideoApiSettings(),
           useAppStore.getState().loadChartApiSettings(),
           useAppStore.getState().loadAudioApiSettings(),

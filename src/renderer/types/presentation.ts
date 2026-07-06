@@ -10,6 +10,16 @@ export type LayoutHint =
 
 export type ImageStyle = 'flat_vector' | 'photographic' | 'diagram' | 'abstract_gradient'
 
+/** BYOK AI image-generation config (independent of the text-LLM provider). */
+export interface ImageGenConfig {
+  enabled: boolean
+  provider: 'openai' | 'custom'
+  apiKey: string | null
+  model: string
+  endpoint?: string // custom OpenAI-compatible /images/generations endpoint
+  size: string // e.g. '1024x1024'
+}
+
 export type SlideFlagKind = 'invented' | 'condensed' | 'citation'
 
 export interface SlideFlag {

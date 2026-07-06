@@ -130,5 +130,16 @@
     "orcidClientSecret": "Client secret",
     "orcidId": "Your ORCID iD",
     "orcidEnv": "Environment"
+  },
+  "imageGen": {
+    "title": "AI Image Generation",
+    "description": "Generate slide images from a prompt (bring your own key). Used alongside stock search in the presentation builder. Generated images still require alt text.",
+    "enable": "Enable image generation",
+    "provider": "Provider",
+    "model": "Model",
+    "apiKey": "API key",
+    "apiKeyPlaceholder": "Enter API key...",
+    "endpoint": "Endpoint URL",
+    "size": "Image size"
   }
 }
