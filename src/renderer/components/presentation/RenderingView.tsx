@@ -8,7 +8,12 @@ import { resolveTheme } from '@/lib/presentation/themes'
 import { verifyThemeContrast } from '@/lib/presentation/wcag-verifier'
 import { getDeckAssetsDir } from '@/lib/presentation/deck-persistence'
 import { generateSlideImage, ImageGenError } from '@/lib/presentation/image-gen'
+import { saveIconPng } from '@/lib/presentation/icon-render'
+import { getLayoutDef } from '@/lib/presentation/slide-layouts'
 import { ContrastReportPanel } from './ContrastReportPanel'
+import { IconPicker } from './IconPicker'
+import type { LucideIcon } from 'lucide-react'
+import { Shapes, Info } from 'lucide-react'
 import type { RenderedSlide, ContrastReport } from '@/types/presentation'
 
 const IMAGE_STYLE_MODIFIERS: Record<string, string> = {
@@ -17,6 +22,9 @@ const IMAGE_STYLE_MODIFIERS: Record<string, string> = {
   diagram: 'diagram infographic',
   abstract_gradient: 'abstract gradient'
 }
+
+// Layouts whose preview/export actually render a photo or icon.
+const VISUAL_LAYOUTS = new Set(['bullets', 'image-left', 'image-right', 'full-image', 'blank'])
 
 export function RenderingView(): JSX.Element {
   const draft = usePresentationStore((s) => s.activeDraft)
@@ -34,6 +42,8 @@ export function RenderingView(): JSX.Element {
   const [searchSlideId, setSearchSlideId] = useState<string | null>(null)
   const [generatingId, setGeneratingId] = useState<string | null>(null)
   const [genError, setGenError] = useState<string | null>(null)
+  const [iconSlideId, setIconSlideId] = useState<string | null>(null)
+  const [savingIcon, setSavingIcon] = useState(false)
 
   const theme = resolveTheme(draft?.themeId ?? 'lumina-light', customThemes)
   const renderedSlides = activeDeck?.slides ?? []
@@ -113,6 +123,34 @@ export function RenderingView(): JSX.Element {
     }
   }
 
+  async function handleIconSelect(slideId: string, name: string, Icon: LucideIcon) {
+    if (!activeDeck || !workspacePath) {
+      setGenError('Choose a workspace folder before adding icons.')
+      setIconSlideId(null)
+      return
+    }
+    setSavingIcon(true)
+    try {
+      const path = await saveIconPng({
+        Icon,
+        color: theme.accent,
+        assetsDir: getDeckAssetsDir(workspacePath, activeDeck),
+        slideId,
+        name
+      })
+      const slide = renderedSlides.find((s) => s.id === slideId)
+      updateRenderedSlide(slideId, {
+        imagePath: path,
+        imageAltText: slide?.imageAltText || `${name} icon`
+      })
+      setIconSlideId(null)
+    } catch {
+      setGenError('Could not add that icon. Try another one.')
+    } finally {
+      setSavingIcon(false)
+    }
+  }
+
   function handleProceedToPreview() {
     finalizeDeck(theme)
     setStep('preview')
@@ -151,9 +189,20 @@ export function RenderingView(): JSX.Element {
       )}
 
       {/* Per-slide image assignment */}
-      <h3 className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-primary)]">
-        Assign Images & Alt Text
-      </h3>
+      <div>
+        <h3 className="text-sm font-[var(--font-weight-semibold)] text-[var(--text-primary)]">
+          Add a visual to each slide
+        </h3>
+        <div className="mt-1 flex items-start gap-2 p-3 rounded-lg bg-[var(--bg-muted)] text-xs text-[var(--text-secondary)]">
+          <Info size={14} className="shrink-0 mt-0.5 text-[var(--brand-indigo)]" />
+          <p>
+            Give each slide a <strong>photo</strong> or an <strong>icon</strong>. We suggested a
+            search term based on the slide's content — use it to search stock photos, generate an
+            image with AI, or pick an icon. Every visual needs alt text so the deck stays accessible.
+            Slides can also be left without a visual.
+          </p>
+        </div>
+      </div>
 
       <div className="space-y-3">
         {renderedSlides.map((slide, index) => (
@@ -170,36 +219,56 @@ export function RenderingView(): JSX.Element {
                 {slide.title || 'Untitled slide'}
               </p>
 
-              {/* Image prompt / search */}
-              {slide.imagePrompt && (
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs text-[var(--text-tertiary)]">
-                    Search: "{slide.imagePrompt} {IMAGE_STYLE_MODIFIERS[imageStyle] ?? ''}"
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSearchSlideId(slide.id)}
-                  >
-                    <ImageIcon size={12} />
-                    {slide.imagePath ? 'Change' : 'Search'}
-                  </Button>
-                  {imageGen.enabled && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleGenerateImage(slide)}
-                      disabled={generatingId === slide.id}
-                    >
-                      {generatingId === slide.id ? (
-                        <Loader2 size={12} className="animate-spin" />
-                      ) : (
-                        <Sparkles size={12} />
-                      )}
-                      Generate
+              {VISUAL_LAYOUTS.has(slide.layoutHint) ? (
+                <>
+                  {/* Layout hint + suggested visual */}
+                  <p className="text-[11px] text-[var(--text-tertiary)] mb-1">
+                    {getLayoutDef(slide.layoutHint).usesImage
+                      ? 'This layout features a visual — add a photo or icon.'
+                      : 'Optional: add a photo or icon.'}
+                    {slide.imagePrompt ? ` Suggested: "${slide.imagePrompt}".` : ''}
+                  </p>
+
+                  {/* Visual actions: picture (search / generate) or icon */}
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <Button variant="ghost" size="sm" onClick={() => setSearchSlideId(slide.id)}>
+                      <ImageIcon size={12} />
+                      {slide.imagePath ? 'Change photo' : 'Search photo'}
                     </Button>
-                  )}
-                </div>
+                    {imageGen.enabled && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleGenerateImage(slide)}
+                        disabled={generatingId === slide.id}
+                      >
+                        {generatingId === slide.id ? (
+                          <Loader2 size={12} className="animate-spin" />
+                        ) : (
+                          <Sparkles size={12} />
+                        )}
+                        Generate
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="sm" onClick={() => setIconSlideId(slide.id)}>
+                      <Shapes size={12} />
+                      Add icon
+                    </Button>
+                    {slide.imagePath && (
+                      <button
+                        onClick={() => updateRenderedSlide(slide.id, { imagePath: null, imageAltText: '' })}
+                        className="text-xs text-[var(--text-tertiary)] hover:text-[var(--color-danger-600)] cursor-pointer"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <p className="text-[11px] text-[var(--text-tertiary)] mb-2">
+                  This layout ({getLayoutDef(slide.layoutHint).name}) doesn't display a photo or icon.
+                  Switch it to a content or image layout in the outline step to add one.
+                </p>
               )}
 
               {/* Image preview */}
@@ -270,6 +339,15 @@ export function RenderingView(): JSX.Element {
           mediaType="image"
           initialQuery={`${searchSlide.imagePrompt} ${IMAGE_STYLE_MODIFIERS[imageStyle] ?? ''}`.trim()}
           title={`Image for: ${searchSlide.title}`}
+        />
+      )}
+
+      {/* Icon picker */}
+      {iconSlideId && (
+        <IconPicker
+          busy={savingIcon}
+          onClose={() => setIconSlideId(null)}
+          onSelect={(name, Icon) => handleIconSelect(iconSlideId, name, Icon)}
         />
       )}
     </div>
