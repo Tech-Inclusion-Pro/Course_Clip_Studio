@@ -16,8 +16,18 @@ const mockElectronAPI = {
     removeDir: vi.fn().mockResolvedValue(undefined)
   },
   settings: { get: vi.fn().mockResolvedValue(null), set: vi.fn().mockResolvedValue(undefined) },
+  secrets: {
+    get: vi.fn().mockResolvedValue(null),
+    set: vi.fn().mockResolvedValue(undefined),
+    delete: vi.fn().mockResolvedValue(undefined)
+  },
   pdf: { generate: vi.fn().mockResolvedValue(new ArrayBuffer(0)) },
-  net: { request: vi.fn(), uploadFile: vi.fn() },
+  net: {
+    request: vi
+      .fn()
+      .mockResolvedValue({ status: 200, statusText: 'OK', headers: {}, body: '{}' }),
+    uploadFile: vi.fn()
+  },
   updater: { check: vi.fn(), download: vi.fn(), install: vi.fn(), onAvailable: vi.fn(), onProgress: vi.fn(), onDownloaded: vi.fn(), onError: vi.fn() },
   deepLink: { onOpenCourse: vi.fn() }
 }
