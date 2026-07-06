@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { GripVertical, Trash2, Scissors, ChevronsDown, ChevronDown, ChevronUp, Flag, Wand2, Loader2, Copy } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { GripVertical, Trash2, Scissors, ChevronsDown, ChevronDown, ChevronUp, Flag, Wand2, Loader2, Copy, Bold, Italic, List } from 'lucide-react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { usePresentationStore } from '@/stores/usePresentationStore'
@@ -35,6 +35,25 @@ export function SlideDraftCard({ slide, index, isLast }: SlideDraftCardProps): J
   const [notesOpen, setNotesOpen] = useState(false)
   const [refining, setRefining] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const bodyRef = useRef<HTMLTextAreaElement>(null)
+
+  // Wrap the current textarea selection with Markdown markers (bold/italic) or
+  // prefix the line with a bullet.
+  function applyFormat(kind: 'bold' | 'italic' | 'bullet') {
+    const el = bodyRef.current
+    if (!el) return
+    const { selectionStart: a, selectionEnd: b, value } = el
+    if (kind === 'bullet') {
+      const lineStart = value.lastIndexOf('\n', a - 1) + 1
+      const next = `${value.slice(0, lineStart)}- ${value.slice(lineStart)}`
+      updateSlide(slide.id, { body: next })
+      return
+    }
+    const marker = kind === 'bold' ? '**' : '*'
+    const selected = value.slice(a, b) || (kind === 'bold' ? 'bold text' : 'italic text')
+    const next = `${value.slice(0, a)}${marker}${selected}${marker}${value.slice(b)}`
+    updateSlide(slide.id, { body: next })
+  }
 
   async function handleRefine(action: RefineAction) {
     setMenuOpen(false)
@@ -204,13 +223,35 @@ export function SlideDraftCard({ slide, index, isLast }: SlideDraftCardProps): J
       {slide.layoutHint === 'chart' || slide.layoutHint === 'table' ? (
         <ChartTableEditor slide={slide} />
       ) : (
-        <textarea
-          value={slide.body}
-          onChange={(e) => updateSlide(slide.id, { body: e.target.value })}
-          rows={3}
-          placeholder="Slide content..."
-          className="w-full px-2 py-1.5 text-sm rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--ring-brand)] resize-y mb-2"
-        />
+        <div className="mb-2">
+          <div className="flex items-center gap-0.5 mb-1">
+            {([
+              { k: 'bold' as const, Icon: Bold, label: 'Bold' },
+              { k: 'italic' as const, Icon: Italic, label: 'Italic' },
+              { k: 'bullet' as const, Icon: List, label: 'Bullet' }
+            ]).map(({ k, Icon, label }) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => applyFormat(k)}
+                className="p-1 rounded text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] cursor-pointer"
+                title={label}
+                aria-label={label}
+              >
+                <Icon size={13} />
+              </button>
+            ))}
+            <span className="text-[10px] text-[var(--text-tertiary)] ml-1">Markdown: **bold**, *italic*, - bullet</span>
+          </div>
+          <textarea
+            ref={bodyRef}
+            value={slide.body}
+            onChange={(e) => updateSlide(slide.id, { body: e.target.value })}
+            rows={3}
+            placeholder="Slide content..."
+            className="w-full px-2 py-1.5 text-sm rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--ring-brand)] resize-y"
+          />
+        </div>
       )}
 
       {/* Image search term */}

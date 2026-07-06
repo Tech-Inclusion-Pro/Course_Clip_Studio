@@ -1,6 +1,7 @@
 import PptxGenJS from 'pptxgenjs'
 import type { DeckObject, RenderedSlide, PresentationTheme, PptxElement, ChartSpec, TableSpec } from '@/types/presentation'
 import { getLayoutDef } from '@/lib/presentation/slide-layouts'
+import { bodyMdToPptxRuns } from '@/lib/presentation/markdown'
 
 function hexToRgb6(hex: string): string {
   return hex.replace('#', '').toUpperCase()
@@ -118,7 +119,7 @@ function applyLayout(
             valign: el.style?.valign ?? 'middle'
           })
         } else {
-          pptxSlide.addText(slide.body, {
+          pptxSlide.addText(bodyMdToPptxRuns(slide.body) as unknown as PptxGenJS.TextProps[], {
             x, y, w, h,
             fontSize: el.style?.fontSize ?? 16,
             fontFace: theme.fontFamily,

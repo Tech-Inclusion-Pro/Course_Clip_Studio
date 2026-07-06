@@ -3,6 +3,7 @@ import 'chart.js/auto'
 import type { RenderedSlide, PresentationTheme } from '@/types/presentation'
 import { getLayoutDef } from '@/lib/presentation/slide-layouts'
 import { chartToChartJsConfig } from '@/lib/presentation/chart-data'
+import { bodyMdToHtml } from '@/lib/presentation/markdown'
 
 interface SlidePreviewCardProps {
   slide: RenderedSlide
@@ -221,12 +222,10 @@ export function SlidePreviewCard({ slide, theme, index }: SlidePreviewCardProps)
                     color: theme.textPrimary,
                     fontSize: '0.6em',
                     lineHeight: 1.5,
-                    whiteSpace: 'pre-wrap',
                     opacity: 0.85
                   }}
-                >
-                  {slide.body}
-                </div>
+                  dangerouslySetInnerHTML={{ __html: bodyMdToHtml(slide.body) }}
+                />
               )}
             </div>
 

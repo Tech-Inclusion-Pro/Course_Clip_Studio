@@ -1,6 +1,7 @@
 import type { DeckObject, RenderedSlide, PresentationTheme } from '@/types/presentation'
 import { getLayoutDef } from '@/lib/presentation/slide-layouts'
 import { chartToPngDataUrl } from '@/lib/presentation/chart-data'
+import { bodyMdToHtml } from '@/lib/presentation/markdown'
 
 function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -124,7 +125,7 @@ function renderSlideHtml(
   const showImageRight = slide.layoutHint === 'image-right'
 
   const bodyHtml = slide.body
-    ? `<div style="font-size: 14px; color: ${bodyColor}; white-space: pre-wrap; line-height: 1.6; opacity: 0.9;">${escapeHtml(slide.body)}</div>`
+    ? `<div style="font-size: 14px; color: ${bodyColor}; line-height: 1.6; opacity: 0.9;">${bodyMdToHtml(slide.body)}</div>`
     : ''
 
   const content = showImageLeft
