@@ -1,4 +1,4 @@
-import { Clock, Layout, Palette, BookOpen, FileText, ClipboardList, Image, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { Clock, Layout, Palette, BookOpen, FileText, ClipboardList, Image, PanelLeftClose, PanelLeftOpen, Presentation } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useCourseStore } from '@/stores/useCourseStore'
 import { useDashboardStore, type DashboardSection } from '@/stores/useDashboardStore'
@@ -30,7 +30,8 @@ export function DashboardSidebar(): JSX.Element {
     { id: 'templates', label: t('sidebar.templates', 'Templates'), icon: FileText },
     { id: 'content-areas', label: t('sidebar.contentAreas', 'Content Areas'), icon: BookOpen },
     { id: 'syllabus', label: t('sidebar.syllabusBuilder', 'Syllabus Builder'), icon: ClipboardList },
-    { id: 'media-library', label: t('sidebar.mediaLibrary', 'Media Library'), icon: Image }
+    { id: 'media-library', label: t('sidebar.mediaLibrary', 'Media Library'), icon: Image },
+    { id: 'presentations', label: t('sidebar.presentations', 'Presentations'), icon: Presentation }
   ]
 
   return (

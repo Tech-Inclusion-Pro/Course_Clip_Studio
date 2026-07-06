@@ -15,6 +15,7 @@ import { NewCourseDialog } from '@/components/dashboard/NewCourseDialog'
 import { ImportDialog } from '@/components/dashboard/ImportDialog'
 import { ContentAreasSection } from '@/components/dashboard/ContentAreasSection'
 import { SyllabusBuilderSection } from '@/components/syllabus/SyllabusBuilderSection'
+import { PresentationBuilderSection } from '@/components/presentation/PresentationBuilderSection'
 import { MediaLibrarySection } from '@/components/dashboard/MediaLibrarySection'
 import { WorkspacePickerDialog } from '@/components/dashboard/WorkspacePickerDialog'
 import { createCourse } from '@/lib/mock-data'
@@ -219,6 +220,8 @@ export function DashboardView(): JSX.Element {
           <ContentAreasSection />
         ) : activeSection === 'syllabus' ? (
           <SyllabusBuilderSection />
+        ) : activeSection === 'presentations' ? (
+          <PresentationBuilderSection />
         ) : (
           /* Templates Section */
           <>
