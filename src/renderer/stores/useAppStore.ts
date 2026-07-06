@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { AISettings, AccessibilitySettings, BrandKit, VisualApiProvider, VideoApiProvider, ChartApiProvider, AudioApiProvider, DiagramApiProvider, InteractiveVideoApiProvider, MathApiProvider, ContentImportProvider, AssetManagementProvider, BaseBrainSettings, BaseBrainFile, ContentArea, ContentAreaFile, UserTemplate } from '@/types/course'
 import type { CitationSourceProvider, OrcidSettings } from '@/types/citations'
-import type { ImageGenConfig } from '@/types/presentation'
+import type { ImageGenConfig, PresentationTheme } from '@/types/presentation'
 import { uid } from '@/lib/uid'
 import wcagScreener from '@/assets/base-brain/01_WCAG_Accessibility_Screener.md?raw'
 import udlScreener from '@/assets/base-brain/02_UDL_Screener.md?raw'
@@ -47,6 +47,7 @@ interface AppState {
   citationApis: { providers: CitationSourceProvider[] }
   orcid: OrcidSettings
   imageGen: ImageGenConfig
+  customPresentationThemes: PresentationTheme[]
 
   // Video API settings
   videoApis: { providers: VideoApiProvider[] }
@@ -154,6 +155,10 @@ interface AppState {
   // AI image generation (presentations)
   loadImageGenSettings: () => Promise<void>
   updateImageGen: (updates: Partial<ImageGenConfig>) => void
+  // Custom presentation themes
+  loadCustomPresentationThemes: () => Promise<void>
+  saveCustomPresentationTheme: (theme: PresentationTheme) => void
+  removeCustomPresentationTheme: (id: string) => void
 
   // Video API actions
   loadVideoApiSettings: () => Promise<void>
@@ -320,6 +325,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     endpoint: '',
     size: '1024x1024'
   },
+
+  customPresentationThemes: [],
 
   // Video API defaults
   videoApis: {
@@ -929,6 +936,39 @@ export const useAppStore = create<AppState>((set, get) => ({
       const { apiKey: _drop, ...nonSensitive } = imageGen
       window.electronAPI.settings.set('imageGen', nonSensitive)
       return { imageGen }
+    })
+  },
+
+  // Custom presentation themes (global, reusable across decks).
+  loadCustomPresentationThemes: async () => {
+    try {
+      const saved = (await window.electronAPI.settings.get(
+        'customPresentationThemes'
+      )) as PresentationTheme[] | null
+      if (Array.isArray(saved)) set({ customPresentationThemes: saved })
+    } catch (err) {
+      console.error('Failed to load custom presentation themes:', err)
+    }
+  },
+
+  saveCustomPresentationTheme: (theme) => {
+    set((state) => {
+      const existing = state.customPresentationThemes
+      const idx = existing.findIndex((t) => t.id === theme.id)
+      const customPresentationThemes =
+        idx >= 0
+          ? existing.map((t) => (t.id === theme.id ? theme : t))
+          : [...existing, theme]
+      window.electronAPI.settings.set('customPresentationThemes', customPresentationThemes)
+      return { customPresentationThemes }
+    })
+  },
+
+  removeCustomPresentationTheme: (id) => {
+    set((state) => {
+      const customPresentationThemes = state.customPresentationThemes.filter((t) => t.id !== id)
+      window.electronAPI.settings.set('customPresentationThemes', customPresentationThemes)
+      return { customPresentationThemes }
     })
   },
 

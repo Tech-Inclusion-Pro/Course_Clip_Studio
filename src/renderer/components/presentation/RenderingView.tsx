@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button'
 import { StockSearchDialog } from '@/components/ui/StockSearchDialog'
 import { usePresentationStore } from '@/stores/usePresentationStore'
 import { useAppStore } from '@/stores/useAppStore'
-import { getThemeById } from '@/lib/presentation/themes'
+import { resolveTheme } from '@/lib/presentation/themes'
 import { verifyThemeContrast } from '@/lib/presentation/wcag-verifier'
 import { getDeckAssetsDir } from '@/lib/presentation/deck-persistence'
 import { generateSlideImage, ImageGenError } from '@/lib/presentation/image-gen'
@@ -27,6 +27,7 @@ export function RenderingView(): JSX.Element {
   const setStep = usePresentationStore((s) => s.setStep)
   const workspacePath = useAppStore((s) => s.workspacePath)
   const imageGen = useAppStore((s) => s.imageGen)
+  const customThemes = useAppStore((s) => s.customPresentationThemes)
 
   const [contrastReport, setContrastReport] = useState<ContrastReport | null>(null)
   const [overrideReason, setOverrideReason] = useState('')
@@ -34,7 +35,7 @@ export function RenderingView(): JSX.Element {
   const [generatingId, setGeneratingId] = useState<string | null>(null)
   const [genError, setGenError] = useState<string | null>(null)
 
-  const theme = draft ? getThemeById(draft.themeId) : getThemeById('lumina-light')
+  const theme = resolveTheme(draft?.themeId ?? 'lumina-light', customThemes)
   const renderedSlides = activeDeck?.slides ?? []
 
   // Initialize rendered slides from draft
