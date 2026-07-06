@@ -62,6 +62,12 @@ export function RenderingView(): JSX.Element {
 
   // Validation: all slides with images must have alt text
   const missingAltText = renderedSlides.some((s) => s.imagePath && !s.imageAltText.trim())
+  // Chart/table slides must carry a text summary (accessibility parity with alt text)
+  const missingDataSummary = renderedSlides.some(
+    (s) =>
+      (s.layoutHint === 'chart' && !s.chart?.summary.trim()) ||
+      (s.layoutHint === 'table' && !s.table?.summary.trim())
+  )
 
   function handleImageSelect(slideId: string, localPath: string) {
     const slide = renderedSlides.find((s) => s.id === slideId)
@@ -228,6 +234,11 @@ export function RenderingView(): JSX.Element {
           All images require alt text before proceeding.
         </p>
       )}
+      {missingDataSummary && (
+        <p className="text-xs text-red-600">
+          Chart and table slides need a text summary (add it in the outline step) before proceeding.
+        </p>
+      )}
 
       {/* Proceed button */}
       <div className="flex justify-end">
@@ -235,7 +246,7 @@ export function RenderingView(): JSX.Element {
           variant="primary"
           size="md"
           onClick={handleProceedToPreview}
-          disabled={missingAltText || (showContrastWarning && !overrideReason.trim())}
+          disabled={missingAltText || missingDataSummary || (showContrastWarning && !overrideReason.trim())}
         >
           Preview & Export
           <ArrowRight size={16} />

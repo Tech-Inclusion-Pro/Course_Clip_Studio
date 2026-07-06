@@ -213,6 +213,39 @@ export const SLIDE_LAYOUTS: SlideLayoutDef[] = [
       { kind: 'title', rect: { x: 0.7, y: 0.3, w: 11.9, h: 0.9 }, style: { fontSize: 26, bold: true, valign: 'bottom', colorKey: 'titleColor' } },
       { kind: 'accent-bar', rect: { x: 0, y: 7.0, w: 13.33, h: 0.5 }, style: { colorKey: 'accentColor' } }
     ]
+  },
+  {
+    id: 'chart',
+    name: 'Chart',
+    description: 'A data chart (bar, line, or pie) with a title and a required text summary.',
+    usesImage: false,
+    usesBody: false,
+    accentBackground: false,
+    thumbnailRegions: [
+      { kind: 'text', x: 5, y: 6, w: 90, h: 12 },
+      { kind: 'image', x: 12, y: 24, w: 76, h: 60 },
+      { kind: 'accent', x: 0, y: 93, w: 100, h: 7 }
+    ],
+    // Chart slides are rendered as a generated image at export time (not pptxElements).
+    pptxElements: [
+      { kind: 'title', rect: { x: 0.7, y: 0.3, w: 11.9, h: 0.9 }, style: { fontSize: 26, bold: true, valign: 'bottom', colorKey: 'titleColor' } }
+    ]
+  },
+  {
+    id: 'table',
+    name: 'Table',
+    description: 'A data table with headers and a required text summary.',
+    usesImage: false,
+    usesBody: false,
+    accentBackground: false,
+    thumbnailRegions: [
+      { kind: 'text', x: 5, y: 6, w: 90, h: 12 },
+      { kind: 'text', x: 8, y: 26, w: 84, h: 58 },
+      { kind: 'accent', x: 0, y: 93, w: 100, h: 7 }
+    ],
+    pptxElements: [
+      { kind: 'title', rect: { x: 0.7, y: 0.3, w: 11.9, h: 0.9 }, style: { fontSize: 26, bold: true, valign: 'bottom', colorKey: 'titleColor' } }
+    ]
   }
 ]
 

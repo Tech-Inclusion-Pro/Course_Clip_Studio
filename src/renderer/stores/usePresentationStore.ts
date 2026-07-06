@@ -59,7 +59,15 @@ interface PresentationState {
 }
 
 function defaultIntake(): IntakeConfig {
-  return { audience: '', slideCount: 10, density: 'medium' }
+  return {
+    audience: '',
+    slideCount: 10,
+    density: 'medium',
+    tone: 'professional',
+    verbosity: 'standard',
+    includeTitleSlide: true,
+    includeToc: false
+  }
 }
 
 function defaultSlide(): SlideDraft {

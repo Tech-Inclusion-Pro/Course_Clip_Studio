@@ -1,5 +1,8 @@
+import { Chart } from 'react-chartjs-2'
+import 'chart.js/auto'
 import type { RenderedSlide, PresentationTheme } from '@/types/presentation'
 import { getLayoutDef } from '@/lib/presentation/slide-layouts'
+import { chartToChartJsConfig } from '@/lib/presentation/chart-data'
 
 interface SlidePreviewCardProps {
   slide: RenderedSlide
@@ -40,6 +43,10 @@ export function SlidePreviewCard({ slide, theme, index }: SlidePreviewCardProps)
     colRight = (parts[1] || '').trim()
   }
 
+  const isChart = slide.layoutHint === 'chart' && !!slide.chart
+  const isTable = slide.layoutHint === 'table' && !!slide.table
+  const chartCfg = isChart ? chartToChartJsConfig(slide.chart!, theme) : null
+
   return (
     <div className="rounded-lg border border-[var(--border-default)] overflow-hidden shadow-sm">
       {/* Slide label bar */}
@@ -69,6 +76,49 @@ export function SlidePreviewCard({ slide, theme, index }: SlidePreviewCardProps)
                 {slide.body}
               </div>
             )}
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '7%', backgroundColor: theme.accent }} />
+          </div>
+        )}
+
+        {/* Chart layout */}
+        {isChart && chartCfg && (
+          <div style={{ padding: '5%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ color: theme.textPrimary, fontSize: '0.85em', fontWeight: 700, marginBottom: '0.4em' }}>
+              {slide.title}
+            </div>
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <Chart type={chartCfg.type as never} data={chartCfg.data as never} options={chartCfg.options as never} />
+            </div>
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '7%', backgroundColor: theme.accent }} />
+          </div>
+        )}
+
+        {/* Table layout */}
+        {isTable && slide.table && (
+          <div style={{ padding: '5%', height: '100%', overflow: 'hidden' }}>
+            <div style={{ color: theme.textPrimary, fontSize: '0.85em', fontWeight: 700, marginBottom: '0.4em' }}>
+              {slide.title}
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.5em', color: theme.textPrimary }}>
+              <thead>
+                <tr>
+                  {slide.table.headers.map((h, i) => (
+                    <th key={i} style={{ border: `1px solid ${theme.accent}`, background: theme.surface, padding: '0.3em', textAlign: 'left' }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {slide.table.rows.map((r, ri) => (
+                  <tr key={ri}>
+                    {r.map((c, ci) => (
+                      <td key={ci} style={{ border: `1px solid ${theme.surface}`, padding: '0.3em' }}>{c}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
             <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '7%', backgroundColor: theme.accent }} />
           </div>
         )}

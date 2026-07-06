@@ -29,6 +29,19 @@ const DENSITY_OPTIONS = [
   { value: 'dense' as const, label: 'Dense', desc: '5-8 bullets per slide' }
 ]
 
+const TONE_OPTIONS = [
+  { value: 'professional' as const, label: 'Professional' },
+  { value: 'conversational' as const, label: 'Conversational' },
+  { value: 'educational' as const, label: 'Educational' },
+  { value: 'enthusiastic' as const, label: 'Enthusiastic' }
+]
+
+const VERBOSITY_OPTIONS = [
+  { value: 'concise' as const, label: 'Concise' },
+  { value: 'standard' as const, label: 'Standard' },
+  { value: 'detailed' as const, label: 'Detailed' }
+]
+
 export function EntryScreen(): JSX.Element {
   const { generate, isGenerating, isConfigured } = useAIGenerate()
   const draft = usePresentationStore((s) => s.activeDraft)
@@ -281,6 +294,60 @@ export function EntryScreen(): JSX.Element {
             ))}
           </select>
         </div>
+      </div>
+
+      {/* Tone + verbosity */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+            Tone
+          </label>
+          <select
+            value={draft.intake.tone}
+            onChange={(e) => setIntake({ tone: e.target.value as typeof draft.intake.tone })}
+            className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+          >
+            {TONE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+            Verbosity
+          </label>
+          <select
+            value={draft.intake.verbosity}
+            onChange={(e) => setIntake({ verbosity: e.target.value as typeof draft.intake.verbosity })}
+            className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+          >
+            {VERBOSITY_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Structure toggles */}
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={draft.intake.includeTitleSlide}
+            onChange={(e) => setIntake({ includeTitleSlide: e.target.checked })}
+            className="rounded border-[var(--border-default)] text-[var(--brand-magenta)] focus:ring-[var(--ring-brand)]"
+          />
+          <span className="text-sm text-[var(--text-secondary)]">Include title slide</span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={draft.intake.includeToc}
+            onChange={(e) => setIntake({ includeToc: e.target.checked })}
+            className="rounded border-[var(--border-default)] text-[var(--brand-magenta)] focus:ring-[var(--ring-brand)]"
+          />
+          <span className="text-sm text-[var(--text-secondary)]">Include table of contents</span>
+        </label>
       </div>
 
       {/* Bilingual toggle — shown when audience includes 'families' */}

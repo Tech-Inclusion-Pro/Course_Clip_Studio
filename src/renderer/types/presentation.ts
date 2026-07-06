@@ -7,6 +7,28 @@ export type EntryMode = 'prompt' | 'notes' | 'document' | 'contentArea' | 'data'
 export type LayoutHint =
   | 'title' | 'bullets' | 'two-column' | 'image-left' | 'image-right'
   | 'full-image' | 'section' | 'big-number' | 'quote' | 'comparison' | 'blank'
+  | 'chart' | 'table'
+
+export type ChartKind = 'bar' | 'line' | 'pie'
+
+export interface ChartSeries {
+  label: string
+  data: number[]
+}
+
+export interface ChartSpec {
+  kind: ChartKind
+  title?: string
+  labels: string[]
+  series: ChartSeries[]
+  summary: string // required text alternative (accessibility)
+}
+
+export interface TableSpec {
+  headers: string[]
+  rows: string[][]
+  summary: string // required text alternative (accessibility)
+}
 
 export type ImageStyle = 'flat_vector' | 'photographic' | 'diagram' | 'abstract_gradient'
 
@@ -27,11 +49,18 @@ export interface SlideFlag {
   detail: string
 }
 
+export type PresentationTone = 'professional' | 'conversational' | 'educational' | 'enthusiastic'
+export type PresentationVerbosity = 'concise' | 'standard' | 'detailed'
+
 export interface IntakeConfig {
   audience: string
   slideCount: number
   density: 'light' | 'medium' | 'dense'
   language?: string
+  tone: PresentationTone
+  verbosity: PresentationVerbosity
+  includeTitleSlide: boolean
+  includeToc: boolean
 }
 
 export interface SlideDraft {
@@ -42,6 +71,8 @@ export interface SlideDraft {
   imagePrompt: string
   layoutHint: LayoutHint
   flags: SlideFlag[]
+  chart?: ChartSpec
+  table?: TableSpec
 }
 
 export interface RenderedSlide extends SlideDraft {

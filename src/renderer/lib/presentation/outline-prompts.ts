@@ -7,6 +7,32 @@ const DENSITY_MAP: Record<string, string> = {
   dense: '5-8 bullet points per slide, detailed content'
 }
 
+const TONE_MAP: Record<string, string> = {
+  professional: 'a professional, polished tone',
+  conversational: 'a warm, conversational tone',
+  educational: 'a clear, instructional tone suited to teaching',
+  enthusiastic: 'an energetic, enthusiastic tone'
+}
+
+const VERBOSITY_MAP: Record<string, string> = {
+  concise: 'Keep text short — favor a few crisp phrases over full sentences.',
+  standard: 'Use a balanced amount of text per slide.',
+  detailed: 'Provide thorough, text-rich slides with fuller explanations.'
+}
+
+function structureInstruction(intake: IntakeConfig): string {
+  const parts: string[] = []
+  if (intake.includeTitleSlide) {
+    parts.push('Begin with a "title" slide introducing the presentation.')
+  }
+  if (intake.includeToc) {
+    parts.push(
+      'After the title slide, add a "bullets" slide titled "Overview" (or the Spanish equivalent when bilingual) listing the main sections as an agenda / table of contents.'
+    )
+  }
+  return parts.length ? '\n' + parts.join(' ') : ''
+}
+
 const ALL_LAYOUT_HINTS: LayoutHint[] = SLIDE_LAYOUTS.map((l) => l.id)
 
 function layoutGuidance(): string {
@@ -24,7 +50,9 @@ function baseInstructions(intake: IntakeConfig): string {
   if (intake.audience) parts.push(`Target audience: ${intake.audience}`)
   parts.push(`Number of slides: ${intake.slideCount}`)
   parts.push(`Content density: ${DENSITY_MAP[intake.density] || DENSITY_MAP.medium}`)
-  return parts.join('\n') + bilingualInstruction(intake)
+  parts.push(`Tone: Write in ${TONE_MAP[intake.tone] || TONE_MAP.professional}.`)
+  parts.push(`Verbosity: ${VERBOSITY_MAP[intake.verbosity] || VERBOSITY_MAP.standard}`)
+  return parts.join('\n') + structureInstruction(intake) + bilingualInstruction(intake)
 }
 
 function jsonSchema(): string {

@@ -3,8 +3,10 @@ import { GripVertical, Trash2, Scissors, ChevronsDown, ChevronDown, ChevronUp, F
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { usePresentationStore } from '@/stores/usePresentationStore'
+import { emptyChart, emptyTable } from '@/lib/presentation/chart-data'
 import type { SlideDraft, LayoutHint } from '@/types/presentation'
 import { LayoutPicker } from './LayoutPicker'
+import { ChartTableEditor } from './ChartTableEditor'
 
 interface SlideDraftCardProps {
   slide: SlideDraft
@@ -68,7 +70,12 @@ export function SlideDraftCard({ slide, index, isLast }: SlideDraftCardProps): J
         {/* Layout hint */}
         <LayoutPicker
           currentLayout={slide.layoutHint}
-          onSelect={(layout) => updateSlide(slide.id, { layoutHint: layout })}
+          onSelect={(layout) => {
+            const patch: Partial<SlideDraft> = { layoutHint: layout }
+            if (layout === 'chart' && !slide.chart) patch.chart = emptyChart()
+            if (layout === 'table' && !slide.table) patch.table = emptyTable()
+            updateSlide(slide.id, patch)
+          }}
         />
 
         {/* Flags indicator */}
@@ -111,14 +118,18 @@ export function SlideDraftCard({ slide, index, isLast }: SlideDraftCardProps): J
         </div>
       </div>
 
-      {/* Body */}
-      <textarea
-        value={slide.body}
-        onChange={(e) => updateSlide(slide.id, { body: e.target.value })}
-        rows={3}
-        placeholder="Slide content..."
-        className="w-full px-2 py-1.5 text-sm rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--ring-brand)] resize-y mb-2"
-      />
+      {/* Body — or chart/table editor for data layouts */}
+      {slide.layoutHint === 'chart' || slide.layoutHint === 'table' ? (
+        <ChartTableEditor slide={slide} />
+      ) : (
+        <textarea
+          value={slide.body}
+          onChange={(e) => updateSlide(slide.id, { body: e.target.value })}
+          rows={3}
+          placeholder="Slide content..."
+          className="w-full px-2 py-1.5 text-sm rounded border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--ring-brand)] resize-y mb-2"
+        />
+      )}
 
       {/* Image search term */}
       <div className="flex gap-2 mb-2">

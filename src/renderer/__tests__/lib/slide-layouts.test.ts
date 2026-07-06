@@ -11,8 +11,8 @@ const CANVAS_W = 13.33
 const CANVAS_H = 7.5
 
 describe('SLIDE_LAYOUTS', () => {
-  it('has exactly 11 layout definitions', () => {
-    expect(SLIDE_LAYOUTS).toHaveLength(11)
+  it('has exactly 13 layout definitions', () => {
+    expect(SLIDE_LAYOUTS).toHaveLength(13)
   })
 
   it('every LayoutHint value has a definition', () => {

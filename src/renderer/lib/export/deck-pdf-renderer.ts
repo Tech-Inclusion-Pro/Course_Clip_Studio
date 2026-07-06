@@ -1,5 +1,6 @@
 import type { DeckObject, RenderedSlide, PresentationTheme } from '@/types/presentation'
 import { getLayoutDef } from '@/lib/presentation/slide-layouts'
+import { chartToPngDataUrl } from '@/lib/presentation/chart-data'
 
 function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -9,11 +10,45 @@ function accentBar(theme: PresentationTheme): string {
   return `<div style="position: absolute; bottom: 0; left: 0; right: 0; height: 7%; background: ${theme.accent};"></div>`
 }
 
-function renderSlideHtml(slide: RenderedSlide, theme: PresentationTheme): string {
+function renderSlideHtml(
+  slide: RenderedSlide,
+  theme: PresentationTheme,
+  chartImages: Record<string, string> = {}
+): string {
   const layout = getLayoutDef(slide.layoutHint)
   const bg = layout.accentBackground ? theme.accent : theme.background
   const titleColor = layout.accentBackground ? theme.textOnAccent : theme.textPrimary
   const bodyColor = theme.textPrimary
+
+  // Chart slide — embed the pre-rendered PNG.
+  if (slide.layoutHint === 'chart' && slide.chart) {
+    const img = chartImages[slide.id]
+    return `
+      <div class="slide" style="background: ${bg}; position: relative; padding: 32px 40px;">
+        <h2 style="font-size: 24px; color: ${titleColor}; margin: 0 0 12px 0;">${escapeHtml(slide.title)}</h2>
+        ${img ? `<img src="${img}" alt="${escapeHtml(slide.chart.summary || slide.title)}" style="max-width: 100%; max-height: 78%; object-fit: contain;" />` : ''}
+        ${accentBar(theme)}
+      </div>
+    `
+  }
+
+  // Table slide — HTML table.
+  if (slide.layoutHint === 'table' && slide.table) {
+    const t = slide.table
+    const header = t.headers
+      .map((h) => `<th style="border: 1px solid ${theme.accent}; background: ${theme.surface}; color: ${bodyColor}; padding: 6px 10px; text-align: left;">${escapeHtml(h)}</th>`)
+      .join('')
+    const rows = t.rows
+      .map((r) => `<tr>${r.map((c) => `<td style="border: 1px solid ${theme.surface}; color: ${bodyColor}; padding: 6px 10px;">${escapeHtml(c)}</td>`).join('')}</tr>`)
+      .join('')
+    return `
+      <div class="slide" style="background: ${bg}; position: relative; padding: 32px 40px;">
+        <h2 style="font-size: 24px; color: ${titleColor}; margin: 0 0 12px 0;">${escapeHtml(slide.title)}</h2>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;"><thead><tr>${header}</tr></thead><tbody>${rows}</tbody></table>
+        ${accentBar(theme)}
+      </div>
+    `
+  }
 
   const hasImage = !!slide.imagePath
   const imageHtml = hasImage && slide.imagePath
@@ -107,8 +142,16 @@ function renderSlideHtml(slide: RenderedSlide, theme: PresentationTheme): string
 }
 
 export async function buildDeckPdf(deck: DeckObject): Promise<Blob> {
+  // Pre-render chart slides to PNG data URLs (async) before building the HTML.
+  const chartImages: Record<string, string> = {}
+  for (const slide of deck.slides) {
+    if (slide.layoutHint === 'chart' && slide.chart) {
+      chartImages[slide.id] = await chartToPngDataUrl(slide.chart, deck.theme)
+    }
+  }
+
   const slidesHtml = deck.slides
-    .map((slide) => renderSlideHtml(slide, deck.theme))
+    .map((slide) => renderSlideHtml(slide, deck.theme, chartImages))
     .join('\n')
 
   const html = `<!DOCTYPE html>
