@@ -12,6 +12,9 @@ interface StockSearchDialogProps {
   mediaType: 'image' | 'video'
   initialQuery?: string
   title?: string
+  /** Where to save the downloaded asset. Defaults to the active course's assets dir;
+   *  callers with no active course (e.g. the presentation builder) must pass this. */
+  assetsDir?: string
 }
 
 export function StockSearchDialog({
@@ -20,7 +23,8 @@ export function StockSearchDialog({
   onSelect,
   mediaType,
   initialQuery = '',
-  title
+  title,
+  assetsDir
 }: StockSearchDialogProps): JSX.Element | null {
   const [query, setQuery] = useState(initialQuery)
   const [results, setResults] = useState<StockResult[]>([])
@@ -71,16 +75,21 @@ export function StockSearchDialog({
   }
 
   async function handleSelect(result: StockResult) {
-    if (!workspacePath || !course) return
+    // Use the explicit assetsDir when provided (e.g. presentation builder), else the
+    // active course's assets dir. Either way we need a workspace + a destination.
+    const dir = assetsDir ?? (workspacePath && course ? getCourseAssetsDir(workspacePath, course) : null)
+    if (!workspacePath || !dir) {
+      setError('Choose a workspace folder before adding a photo.')
+      return
+    }
     setIsDownloading(result.id)
     try {
-      const assetsDir = getCourseAssetsDir(workspacePath, course)
-      await window.electronAPI.fs.mkdir(assetsDir)
+      await window.electronAPI.fs.mkdir(dir)
 
       const ext = mediaType === 'video' ? '.mp4' : '.jpg'
       const safeName = result.title.replace(/[^a-zA-Z0-9-_ ]/g, '').slice(0, 40).trim() || result.provider
       const fileName = `${safeName}-${result.id}-${Date.now().toString(36)}${ext}`
-      const destPath = `${assetsDir}/${fileName}`
+      const destPath = `${dir}/${fileName}`
 
       await window.electronAPI.net.downloadFile({
         url: result.downloadUrl,

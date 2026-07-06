@@ -339,6 +339,9 @@ export function RenderingView(): JSX.Element {
           mediaType="image"
           initialQuery={`${searchSlide.imagePrompt} ${IMAGE_STYLE_MODIFIERS[imageStyle] ?? ''}`.trim()}
           title={`Image for: ${searchSlide.title}`}
+          assetsDir={
+            workspacePath && activeDeck ? getDeckAssetsDir(workspacePath, activeDeck) : undefined
+          }
         />
       )}
 
