@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
-import { Plus, Pencil, Trash2, X, Check, FileUp, File, GripVertical, MessageSquarePlus } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Check, FileUp, File, GripVertical, MessageSquarePlus, BookMarked } from 'lucide-react'
+import { BindCitationDialog } from './BindCitationDialog'
 import { useAppStore } from '@/stores/useAppStore'
 import type { ContentArea, ContentAreaFile } from '@/types/course'
 
@@ -100,6 +101,8 @@ export function ContentAreasSection(): JSX.Element {
   // Context editing — which file's context textarea is open
   const [contextEditFileId, setContextEditFileId] = useState<string | null>(null)
   const [contextEditCardFileId, setContextEditCardFileId] = useState<string | null>(null)
+  // Content area whose "Cite a source" dialog is open
+  const [citeContentAreaId, setCiteContentAreaId] = useState<string | null>(null)
   // Drag-to-reorder state (for form files)
   const [dragReorderIndex, setDragReorderIndex] = useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
@@ -782,14 +785,24 @@ export function ContentAreasSection(): JSX.Element {
                   <span className="text-[10px] font-[var(--font-weight-medium)] text-[var(--text-tertiary)]">
                     Files ({ca.files?.length ?? 0}) {(ca.files?.length ?? 0) > 1 ? '— drag to reorder' : ''}
                   </span>
-                  <button
-                    onClick={() => handleCardFileUpload(ca.id)}
-                    className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)] rounded hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
-                    title="Upload files"
-                  >
-                    <FileUp size={10} />
-                    Add
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setCiteContentAreaId(ca.id)}
+                      className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)] rounded hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
+                      title="Cite a source (DOI → verified APA reference)"
+                    >
+                      <BookMarked size={10} />
+                      Cite
+                    </button>
+                    <button
+                      onClick={() => handleCardFileUpload(ca.id)}
+                      className="flex items-center gap-1 px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)] rounded hover:bg-[var(--bg-hover)] transition-colors cursor-pointer"
+                      title="Upload files"
+                    >
+                      <FileUp size={10} />
+                      Add
+                    </button>
+                  </div>
                 </div>
                 {(ca.files ?? []).length > 0 && (
                   <div className="space-y-1">
@@ -874,6 +887,14 @@ export function ContentAreasSection(): JSX.Element {
           ))}
         </div>
       )}
+
+      {citeContentAreaId &&
+        (() => {
+          const ca = contentAreas.find((c) => c.id === citeContentAreaId)
+          return ca ? (
+            <BindCitationDialog contentArea={ca} onClose={() => setCiteContentAreaId(null)} />
+          ) : null
+        })()}
     </div>
   )
 }
