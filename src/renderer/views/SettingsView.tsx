@@ -29,7 +29,8 @@ import {
   FileText,
   X,
   MessageCircle,
-  Keyboard
+  Keyboard,
+  BookMarked
 } from 'lucide-react'
 import { useAppStore, type ThemeMode } from '@/stores/useAppStore'
 import { useLocaleStore } from '@/stores/useLocaleStore'
@@ -701,6 +702,8 @@ function AISettingsPanel(): JSX.Element {
       <ContentImportApisSection />
 
       <AssetManagementApisSection />
+
+      <CitationApisSection />
     </div>
   )
 }
@@ -1028,6 +1031,170 @@ function VisualApisSection(): JSX.Element {
         >
           <Plus size={14} />
           Add Custom API
+        </button>
+      </div>
+    </SettingsCard>
+  )
+}
+
+// Key posture per built-in source (spec §4.1). Most citation APIs are keyless.
+const CITATION_KEY_POSTURE: Record<string, 'keyless' | 'keyOptional' | 'keyRequired'> = {
+  crossref: 'keyless',
+  datacite: 'keyless',
+  openalex: 'keyOptional'
+}
+
+function CitationApisSection(): JSX.Element {
+  const t = useT()
+  const providers = useAppStore((s) => s.citationApis.providers)
+  const updateProvider = useAppStore((s) => s.updateCitationApiProvider)
+  const addCustom = useAppStore((s) => s.addCustomCitationApi)
+  const removeApi = useAppStore((s) => s.removeCitationApi)
+
+  return (
+    <SettingsCard title={t('settings.citations.title', 'Citation & Research Sources')} icon={BookMarked}>
+      <p className="text-xs text-[var(--text-tertiary)] mb-3">
+        {t(
+          'settings.citations.description',
+          'Look up and verify scholarly references. Only identifiers and queries leave your machine — never learner data or course content.'
+        )}
+      </p>
+      <div className="space-y-3">
+        {providers.map((provider) => {
+          const posture = CITATION_KEY_POSTURE[provider.type] ?? 'keyOptional'
+          return (
+            <div
+              key={provider.id}
+              className="p-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-muted)] space-y-3"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-[var(--font-weight-medium)] text-[var(--text-primary)]">
+                    {provider.name}
+                  </span>
+                  {provider.type !== 'custom' && posture === 'keyless' && (
+                    <span className="px-1.5 py-0.5 text-[10px] font-[var(--font-weight-medium)] text-emerald-700 bg-emerald-100 rounded">
+                      {t('settings.citations.keyless', 'No key needed')}
+                    </span>
+                  )}
+                  {provider.type !== 'custom' && posture === 'keyOptional' && (
+                    <span className="px-1.5 py-0.5 text-[10px] font-[var(--font-weight-medium)] text-[var(--text-secondary)] bg-[var(--bg-surface)] border border-[var(--border-default)] rounded">
+                      {t('settings.citations.keyOptional', 'Key optional')}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {provider.type === 'custom' && (
+                    <button
+                      onClick={() => removeApi(provider.id)}
+                      className="p-1 rounded cursor-pointer text-[var(--text-tertiary)] hover:text-[var(--color-danger-600)] hover:bg-[var(--color-danger-100,#fee2e2)]"
+                      aria-label={t('settings.citations.deleteCustom', 'Delete custom source')}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                  <ToggleSwitch
+                    checked={provider.enabled}
+                    onChange={(v) => updateProvider(provider.id, { enabled: v })}
+                    label={`${t('settings.citations.enable', 'Enable')} ${provider.name}`}
+                  />
+                </div>
+              </div>
+
+              {provider.enabled && (
+                <div className="space-y-2">
+                  {provider.type !== 'custom' && (
+                    <div>
+                      <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                        {t('settings.citations.contactEmail', 'Contact email (polite API pool)')}
+                      </label>
+                      <input
+                        type="email"
+                        value={provider.contactEmail ?? ''}
+                        onChange={(e) =>
+                          updateProvider(provider.id, { contactEmail: e.target.value || undefined })
+                        }
+                        className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                        placeholder="you@example.edu"
+                      />
+                    </div>
+                  )}
+
+                  {(provider.type === 'custom' || posture !== 'keyless') && (
+                    <div>
+                      <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                        {posture === 'keyOptional'
+                          ? t('settings.citations.apiKeyOptional', 'API key (optional)')
+                          : t('settings.citations.apiKey', 'API key')}
+                      </label>
+                      <input
+                        type="password"
+                        value={provider.apiKey ?? ''}
+                        onChange={(e) =>
+                          updateProvider(provider.id, { apiKey: e.target.value || null })
+                        }
+                        className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                        placeholder={t('settings.citations.apiKeyPlaceholder', 'Enter API key...')}
+                      />
+                    </div>
+                  )}
+
+                  {provider.type === 'custom' && (
+                    <>
+                      <div>
+                        <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                          {t('settings.citations.sourceName', 'Source name')}
+                        </label>
+                        <input
+                          type="text"
+                          value={provider.name}
+                          onChange={(e) => updateProvider(provider.id, { name: e.target.value })}
+                          className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                          placeholder="My scholarly API"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                          {t('settings.citations.endpoint', 'Endpoint URL')}
+                        </label>
+                        <input
+                          type="text"
+                          value={provider.endpoint ?? ''}
+                          onChange={(e) => updateProvider(provider.id, { endpoint: e.target.value })}
+                          className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                          placeholder="https://api.example.org/works"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] mb-1">
+                          {t('settings.citations.headerName', 'Auth header name')}
+                        </label>
+                        <input
+                          type="text"
+                          value={provider.headerName ?? ''}
+                          onChange={(e) =>
+                            updateProvider(provider.id, { headerName: e.target.value })
+                          }
+                          className="w-full px-2.5 py-1.5 text-sm rounded-md border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--ring-brand)]"
+                          placeholder="Authorization"
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="pt-2">
+        <button
+          onClick={addCustom}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-[var(--font-weight-medium)] text-[var(--text-secondary)] border border-[var(--border-default)] rounded-md hover:bg-[var(--bg-hover)] cursor-pointer"
+        >
+          <Plus size={14} />
+          {t('settings.citations.addCustom', 'Add Custom Source')}
         </button>
       </div>
     </SettingsCard>

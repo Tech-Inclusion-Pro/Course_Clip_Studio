@@ -96,5 +96,21 @@
     "ja": "Japanese",
     "zh": "Chinese",
     "ko": "Korean"
+  },
+  "citations": {
+    "title": "Citation & Research Sources",
+    "description": "Look up and verify scholarly references. Only identifiers and queries leave your machine — never learner data or course content.",
+    "keyless": "No key needed",
+    "keyOptional": "Key optional",
+    "enable": "Enable",
+    "deleteCustom": "Delete custom source",
+    "contactEmail": "Contact email (polite API pool)",
+    "apiKey": "API key",
+    "apiKeyOptional": "API key (optional)",
+    "apiKeyPlaceholder": "Enter API key...",
+    "sourceName": "Source name",
+    "endpoint": "Endpoint URL",
+    "headerName": "Auth header name",
+    "addCustom": "Add Custom Source"
   }
 }
